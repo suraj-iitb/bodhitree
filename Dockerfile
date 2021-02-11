@@ -1,5 +1,5 @@
 # For more information, please refer to https://aka.ms/vscode-docker-python
-FROM python:3.8-slim-buster
+FROM python:3.9-slim-buster
 
 EXPOSE 8923
 
@@ -11,15 +11,14 @@ ENV PYTHONUNBUFFERED=1
 
 # Install pip requirements
 COPY requirements.txt .
-RUN python -m pip install -r requirements.txt
+RUN pip install --upgrade pip && python -m pip install -r requirements.txt
 
-WORKDIR /app
-COPY . /app
+WORKDIR /bodhitree
+COPY . /bodhitree
 
 # Switching to a non-root user, please refer to https://aka.ms/vscode-docker-python-user-rights
-RUN useradd appuser && chown -R appuser /app
-USER appuser
+RUN useradd bodhitree && chown -R bodhitree /bodhitree
+USER bodhitree
 
 # During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
-# File wsgi.py was not found in subfolder: 'bodhitree'. Please enter the Python path to wsgi file.
-CMD ["gunicorn", "--bind", "0.0.0.0:8923", "pythonPath.to.wsgi"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8923", "main.wsgi"]

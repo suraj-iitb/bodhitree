@@ -14,7 +14,6 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && python -m pip install -r requirements.txt
 
 WORKDIR /bodhitree
-COPY . /bodhitree
 
 # Switching to a non-root user, please refer to https://aka.ms/vscode-docker-python-user-rights
 RUN useradd bodhitree && chown -R bodhitree /bodhitree

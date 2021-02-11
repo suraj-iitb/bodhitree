@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-            "name": "Python: Remote Attach",
+            "name": "Docker: Python - Django",
             "type": "python",
             "request": "attach",
             "connect": {

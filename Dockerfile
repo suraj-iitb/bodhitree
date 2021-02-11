@@ -9,7 +9,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Install pip requirements
 COPY requirements.txt .
-RUN pip install --upgrade pip && python -m pip install -r requirements.txt
+RUN pip install --upgrade pip && python -m pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /bodhitree
 

@@ -2,8 +2,6 @@ version: '3.4'
 
 services:
   backend:
-    networks:
-      - bodhitree_network
     depends_on:
       - db
     env_file:
@@ -13,14 +11,8 @@ services:
     image: postgres:13.2
     volumes:
       - bodhitree_postgres_volume:/var/lib/postgresql/data
-    networks:
-      - bodhitree_network
     env_file:
       - ./.env
 
 volumes:
     bodhitree_postgres_volume:
-
-networks:
-    bodhitree_network:
-        driver: overlay

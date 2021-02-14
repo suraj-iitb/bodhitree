@@ -2,36 +2,14 @@ version: '3.4'
 
 services:
   backend:
-    image: bodhitree
+    image: bodhitree:dev
     build:
       context: .
       dockerfile: ./Dockerfile
-    volumes:
-      - .:/bodhitree
-    networks:
-      - bodhitree_network
     command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 manage.py runserver 0.0.0.0:8765"]
-    ports:
-      - 8765:8765
-      - 5678:5678
-      - 8764:8764
-    depends_on:
-      - db
-
-  db:
-    image: postgres:13.2
     volumes:
-      - bodhitree_postgres_volume:/var/lib/postgresql/data
-    networks:
-      - bodhitree_network
-    environment:
-      - POSTGRES_DB=elearning_academy
-      - POSTGRES_USER=bodhitree
-      - POSTGRES_PASSWORD=bodhitree123
-
-volumes:
-    bodhitree_postgres_volume:
-
-networks:
-    bodhitree_network:
-        driver: overlay
+      - .:/bodhitree  # bind mount for hot reloading of changes during debugging
+    ports:
+      - 8765:8765 # for vs code debugger
+      - 5678:5678 # for debugpy
+      - 8764:8764 # just exposing if we want to run manage.py runserver 0.0.0.0:8764 inside container without vs code debugging

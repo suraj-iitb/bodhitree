@@ -1,8 +1,8 @@
 version: '3.4'
 
 services:
-  sut:
-    image: bodhitree
+  backend:
+    image: bodhitree:test
     build:
       context: .
       dockerfile: ./Dockerfile

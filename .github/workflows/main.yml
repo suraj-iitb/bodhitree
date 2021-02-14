@@ -27,7 +27,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-20.04]
+        os: [windows-2019]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -48,7 +48,7 @@ jobs:
     # Ensure test job passes before pushing image.
     needs: test
 
-    runs-on: ubuntu-20.04
+    runs-on: windows-2019
     if: github.event_name != 'pull_request'
 
     steps:

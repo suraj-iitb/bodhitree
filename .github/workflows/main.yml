@@ -25,10 +25,7 @@ jobs:
   # Run tests.
   # See also https://docs.docker.com/docker-hub/builds/automated-testing/
   test:
-    strategy:
-      matrix:
-        os: [ubuntu-20.04, macos-11.0, windows-2019]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v2
@@ -41,7 +38,6 @@ jobs:
           else
             docker build . --file Dockerfile
           fi
-        shell: bash
 
   # Push image to github and docker hub registry
   # See also https://docs.docker.com/docker-hub/builds/
@@ -82,7 +78,7 @@ jobs:
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
-
+      
       - name: Log into docker hub registry
         run: echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
 

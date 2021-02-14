@@ -1,1 +1,0 @@
-BodhiTree is an online learning platform developed at IIT Bombay with the mission of providing accessible quality technical education for all, through personalized, flexible, and hands-on complete learning.

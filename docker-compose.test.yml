@@ -1,0 +1,11 @@
+version: '3.4'
+
+services:
+  sut:
+    image: bodhitree
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - .:/bodhitree
+    command: python manage.py test

@@ -12,3 +12,11 @@ services:
     ports:
       - 8765:8765
       - 5678:5678
+
+  db:
+    image: postgres:13.2
+    environment:
+      - POSTGRES_DB=elearning_academy
+      - POSTGRES_USER=bodhitree
+      - POSTGRES_PASSWORD=bodhitree123
+

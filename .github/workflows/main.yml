@@ -80,11 +80,11 @@ jobs:
           docker push $IMAGE_ID:$VERSION
       
       - name: Log into docker hub registry
-        run: echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login hub.docker.com -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+        run: echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
 
       - name: Push image
         run: |
-          IMAGE_ID=hub.docker.com/${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME
+          IMAGE_ID=${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME
 
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')

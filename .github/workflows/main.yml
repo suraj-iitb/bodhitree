@@ -12,6 +12,8 @@ on:
 
   # Run tests for any PRs.
   pull_request:
+    branches:
+      - main
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -23,7 +25,10 @@ jobs:
   # Run tests.
   # See also https://docs.docker.com/docker-hub/builds/automated-testing/
   test:
-    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-11.0, windows-2019]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v2

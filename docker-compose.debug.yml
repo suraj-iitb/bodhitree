@@ -8,15 +8,30 @@ services:
       dockerfile: ./Dockerfile
     volumes:
       - .:/bodhitree
+    networks:
+      - bodhitree_network
     command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 manage.py runserver 0.0.0.0:8765"]
     ports:
       - 8765:8765
       - 5678:5678
+      - 8764:8764
+    depends_on:
+      - db
 
   db:
     image: postgres:13.2
+    volumes:
+      - bodhitree_postgres_volume:/var/lib/postgresql/data
+    networks:
+      - bodhitree_network
     environment:
       - POSTGRES_DB=elearning_academy
       - POSTGRES_USER=bodhitree
       - POSTGRES_PASSWORD=bodhitree123
 
+volumes:
+    bodhitree_postgres_volume:
+
+networks:
+    bodhitree_network:
+        driver: overlay

@@ -27,7 +27,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [windows-2019]
+        os: ubuntu-20.04
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -48,7 +48,7 @@ jobs:
     # Ensure test job passes before pushing image.
     needs: test
 
-    runs-on: windows-2019
+    runs-on: ubuntu-20.04
     if: github.event_name != 'pull_request'
 
     steps:
@@ -57,12 +57,37 @@ jobs:
       - name: Build image
         run: docker build . --file Dockerfile --tag $IMAGE_NAME
 
-      - name: Log into registry
+      - name: Log into github registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push image
         run: |
           IMAGE_ID=ghcr.io/${{ github.actor }}/$IMAGE_NAME
+
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "main" ] && VERSION=latest
+
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+
+          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
+      
+      - name: Log into docker hub registry
+        run: echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login hub.docker.com -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+
+      - name: Push image
+        run: |
+          IMAGE_ID=hub.docker.com/${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME
 
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')

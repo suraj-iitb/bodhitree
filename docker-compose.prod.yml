@@ -12,5 +12,4 @@ services:
           delay: 10s
       restart_policy:
           condition: on-failure
-          max-attempts: 5
           window: 60s

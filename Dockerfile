@@ -1,8 +1,10 @@
 ARG BUILD_ENV=prod
 
+# Copy source code if production env
 FROM python:3.9-slim-buster as prod
 ONBUILD COPY . /bodhitree
 
+# Dont copy source code if development env
 FROM python:3.9-slim-buster as dev
 ONBUILD RUN echo "No source code copy for dev env"
 

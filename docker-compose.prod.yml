@@ -2,7 +2,9 @@ version: '3.4'
 
 services:
   backend:
-    image: ${BDODHITREE_IMAGE}:${BDODHITREE_TAG}
+    # Use surrajk/bodhitree or ghcr.io/suraj-iitb/bodhitree
+    # Use latest or v*.*.*
+    image: ghcr.io/suraj-iitb/bodhitree:latest
     ports:
       - 8765:8765
       - 8764:8764 # For directly running `manage.py runserver 0.0.0.0:8764` inside container (sometime required)

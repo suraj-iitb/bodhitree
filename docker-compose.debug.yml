@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   backend:
-    image: ${BDODHITREE_IMAGE}:${BDODHITREE_TAG}
+    image: bodhitree:dev
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -16,6 +16,6 @@ services:
       - 5678:5678 # For debugpy
       - 8764:8764 # For directly running `manage.py runserver 0.0.0.0:8764` inside container without debugger
     restart: always
-
+    
   db:
     restart: always

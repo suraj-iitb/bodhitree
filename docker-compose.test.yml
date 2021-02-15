@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   backend:
-    image: ${BDODHITREE_IMAGE}:${BDODHITREE_TAG}
+    image: bodhitree:test
     build:
       context: .
       dockerfile: ./Dockerfile

@@ -2,3 +2,5 @@ BodhiTree is an online learning platform developed at IIT Bombay with the missio
 
 Command: docker-compose -f docker-compose.yml -f docker-compose.debug.yml up -d --build
          docker-compose -f docker-compose.yml -f docker-compose.debug.yml down
+         
+         

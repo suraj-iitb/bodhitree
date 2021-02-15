@@ -1,7 +1,7 @@
 ARG BUILD_ENV=prod
 
 FROM python:3.9-slim-buster as prod
-ONBUILD COPY . .
+ONBUILD COPY . /bodhitree
 
 FROM python:3.9-slim-buster as dev
 ONBUILD RUN echo "No source code copy for dev env"
@@ -15,8 +15,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install pip requirements
-COPY requirements.txt .
-RUN pip install --upgrade pip && python -m pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --upgrade pip && python -m pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Working directory
 WORKDIR /bodhitree

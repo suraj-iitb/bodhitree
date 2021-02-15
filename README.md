@@ -2,14 +2,15 @@
 
 # Commands for developer
 
-## Containers Up:
+## Containers up
 
 ```bash
 docker-compose -f docker-compose.yml -f docker-compose.debug.yml up -d --build
 ```
+## Attach debugger in VS Code
+1. Click on run icon in left side bar
+2. Click on green traingle to start the debugger
 
-## Containers Down
+    ![Debugger Image](.images/debug.png)
 
-```bash
-docker-compose -f docker-compose.yml -f docker-compose.debug.yml down
-```
+2. Access API via http://localhost:8765/accounts in browser

@@ -2,15 +2,15 @@ version: '3.4'
 
 services:
   backend:
-    image: ghcr.io/suraj-iitb/bodhitree:latest  # Take out image & tag in .env
+    image: ${BDODHITREE_IMAGE}:${BDODHITREE_TAG}
     ports:
       - 8765:8765
-      - 8764:8764 # For directly running $ manage.py runserver 0.0.0.0:8764 inside container (sometime required)
+      - 8764:8764 # For directly running `manage.py runserver 0.0.0.0:8764` inside container (sometime required)
     deploy:
-      replicas: 1 # Take out in .env
+      replicas: ${BODHITREE_REPLICAS:-1}
       update_config:
-          parallelism: 1
-          delay: 10s
+        parallelism: 1
+        delay: 10s
       restart_policy:
-          condition: on-failure
-          window: 60s
+        condition: on-failure
+        window: 60s

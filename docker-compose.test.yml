@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   backend:
-    image: bodhitree:test # Take out tag in .env
+    image: ${BDODHITREE_IMAGE}:${BDODHITREE_TAG}
     build:
       context: .
       dockerfile: ./Dockerfile

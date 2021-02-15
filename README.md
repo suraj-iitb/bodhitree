@@ -30,6 +30,7 @@ https://github.com/suraj-iitb/bodhitree.git
 
 ## Containers up
 ```bash
+docker swarm init
 docker stack deploy -c docker-compose.yml -c docker-compose.prod.yml <INSTANCE_NAME>
 ```
 

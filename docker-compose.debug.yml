@@ -2,14 +2,18 @@ version: '3.4'
 
 services:
   backend:
-    image: bodhitree:dev
+    image: bodhitree:dev  # Take out tag in .env
     build:
       context: .
       dockerfile: ./Dockerfile
     command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 manage.py runserver 0.0.0.0:8765"]
     volumes:
-      - .:/bodhitree  # bind mount for hot reloading of changes during debugging
+      - .:/bodhitree  # Bind mount for hot reloading of changes during vs code debugger
     ports:
-      - 8765:8765 # for vs code debugger
-      - 5678:5678 # for debugpy
-      - 8764:8764 # just exposing if we want to run manage.py runserver 0.0.0.0:8764 inside container without vs code debugging
+      - 8765:8765 # For vs code debugger
+      - 5678:5678 # For debugpy
+      - 8764:8764 # For directly running $ manage.py runserver 0.0.0.0:8764 inside container without vs code debugger
+    restart: always
+
+  db:
+    restart: always

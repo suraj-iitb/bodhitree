@@ -2,10 +2,14 @@ version: '3.4'
 
 services:
   backend:
-    image: bodhitree:test
+    image: bodhitree:test # Take out tag in .env
     build:
       context: .
       dockerfile: ./Dockerfile
+    command: python manage.py test
     volumes:
       - .:/bodhitree
-    command: python manage.py test
+    restart: always
+
+  db:
+    restart: always

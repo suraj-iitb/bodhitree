@@ -53,3 +53,9 @@ class Section(models.Model):
     content_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
+
+class Notification(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    title = models.CharField(max_length=50)
+    url = models.CharField(max_length=100)
+    created_on = models.DateTimeField(auto_now_add=True)

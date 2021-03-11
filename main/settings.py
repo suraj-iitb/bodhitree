@@ -113,7 +113,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -129,3 +129,6 @@ STATIC_URL = '/static/'
 
 # User Uploaded Files Locations
 MEDIA_ROOT = os.path.join(BASE_DIR, 'main/data/media/')
+
+# User Model
+AUTH_USER_MODEL = 'registration.User'

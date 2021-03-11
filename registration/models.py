@@ -4,7 +4,7 @@ from django.contrib.auth.models import (
 )
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, password=None):
+    def create_user(self, email, password=None, full_name='', is_active=None, is_staff=None, is_admin=False):
         """
         Creates and saves a User with the given email and password.
         """
@@ -19,7 +19,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_staffuser(self, email, password):
+    def create_staffuser(self, email, password=None):
         """
         Creates and saves a staff user with the given email and password.
         """
@@ -31,7 +31,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password):
+    def create_superuser(self, email, password=None):
         """
         Creates and saves a superuser with the given email and password.
         """
@@ -50,13 +50,15 @@ class User(AbstractBaseUser):
         max_length=255,
         unique=True,
     )
+    full_name = models.CharField(max_length=50, blank=True)
     active = models.BooleanField(default=True)
     staff = models.BooleanField(default=False) # a admin user; non super-user
     admin = models.BooleanField(default=False) # a superuser
     # notice the absence of a "Password field", that is built in.
+    date_joined = models.DateTimeField(auto_now_add=True)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = [] # Email & Password are required by default.
+    REQUIRED_FIELDS = [] # Email & Password are required by default in createsuperuser command.
 
     objects = UserManager()
     

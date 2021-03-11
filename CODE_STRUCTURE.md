@@ -9,10 +9,10 @@ quiz |  All quiz related functionalities
 document |  All document functionalities
 discussion_forum | All discussion forum realted functionalities
 announcements | All announcements realted functionalities
-email | All email realted functionalities
+email_notices | All email realted functionalities
 cribs | All cribs realted functionalities
 leaderboard | All marks related functionalities
-statistics | All statistics related to a course
+stats | All statistics related to a course
 programming_assignments | All programming assignments related functionalities
 subjective_assignments | All subjective assignments related functionalities
 

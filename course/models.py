@@ -59,3 +59,11 @@ class Notification(models.Model):
     title = models.CharField(max_length=50)
     url = models.CharField(max_length=100)
     created_on = models.DateTimeField(auto_now_add=True)
+
+class Schedule(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    description = models.TextField(blank=True)
+    content_list = ArrayField(models.IntegerField(), null=True, blank=True)
+

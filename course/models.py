@@ -38,3 +38,18 @@ class CourseHistory(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 
+class Chapter(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    name = models.CharField(max_length=75)
+    description = models.TextField(blank=True)
+    content_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
+    created_on = models.DateTimeField(auto_now_add=True)
+    modified_on = models.DateTimeField(auto_now=True)
+
+class Section(models.Model):
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE)
+    name = models.CharField(max_length=75)
+    description = models.TextField(blank=True)
+    content_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
+    created_on = models.DateTimeField(auto_now_add=True)
+    modified_on = models.DateTimeField(auto_now=True)

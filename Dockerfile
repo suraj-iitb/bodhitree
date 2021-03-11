@@ -24,10 +24,6 @@ RUN pip install --upgrade pip && python -m pip install --no-cache-dir -r /tmp/re
 # Working directory
 WORKDIR /bodhitree
 
-# Switching to a non-root user
-RUN useradd bodhitree && chown -R bodhitree /bodhitree
-USER bodhitree
-
 # During debugging, this entry point will be overridden
 # TODO: Configure properly for prod
 CMD ["gunicorn", "--bind", "0.0.0.0:8765", "main.wsgi"]

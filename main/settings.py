@@ -39,8 +39,19 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Our Apps
+    'announcements',
+    'discussion_forum',
+    'cribs',
     'registration',
-    'course'
+    'course',
+    'document',
+    'email_notices',
+    'leaderboard',
+    'programming_assignments',
+    'quiz',
+    'stats',
+    'subjective_assignments',
+    'video',
 ]
 
 MIDDLEWARE = [

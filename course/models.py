@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
+from django.conf import settings
 
 course_types = (
     ('O', 'Open'),
@@ -19,7 +20,7 @@ status_type = (
 )
 
 class Course(models.Model):
-    owner = models.IntegerField() # We will replace this with foreign key in future
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     code = models.CharField(max_length=8,blank=True)
     title = models.CharField(max_length=50)
     description = models.TextField(blank=True)
@@ -31,7 +32,7 @@ class Course(models.Model):
     chapters_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
     
 class CourseHistory(models.Model):
-    user = models.IntegerField()
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     role = models.CharField(max_length=1, choices=user_roles, default='S')
     status = models.CharField(max_length=1, choices=status_type, default='P')
@@ -57,7 +58,7 @@ class Section(models.Model):
 class Notification(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     title = models.CharField(max_length=50)
-    url = models.CharField(max_length=100)
+    url = models.URLField()
     created_on = models.DateTimeField(auto_now_add=True)
 
 class Schedule(models.Model):

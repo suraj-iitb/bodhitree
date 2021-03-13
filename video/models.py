@@ -7,25 +7,28 @@ from course.models import (
     Chapter, Section
 )
 from django.conf import settings
+from datetime import datetime, timedelta
 
 #can be optimized to 1 function later
 
 def video_upload_path(instance, filename):
     course = instance.chapter.course
-    return os.path.join(course.id + '-' + course.title + '/videos' + filename)
+    return os.path.join(str(course.id) + '-' + course.title + '/videos/' + filename)
 
 def video_doc_upload_path(instance, filename):
     course = instance.chapter.course
-    return os.path.join(course.id + '-' + course.title + '/video_doc_files' + filename)
+    return os.path.join(str(course.id) + '-' + course.title + '/video_doc_files/' + filename)
 
 def in_video_quiz_upload_path(instance, filename):
     course = instance.chapter.course
-    return os.path.join(course.id + '-' + course.title + '/in_video_quiz_files' + filename)
+    return os.path.join(str(course.id) + '-' + course.title + '/in_video_quiz_files/' + filename)
 
 marker_type = (
     ('S', 'Section marker'),
     ('Q', 'Quiz marker'),
 )
+
+#section, chapter can be made null and they can be together not null
 
 class Video(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE)
@@ -42,7 +45,7 @@ class Video(models.Model):
 class VideoHistory(models.Model):
     video = models.ForeignKey(Video, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    video_watched_duration = models.DurationField(default = 0)                      
+    video_watched_duration = models.DurationField(default = timedelta(seconds=0))                      
 
 class Marker(models.Model):
     video = models.ForeignKey(Video, on_delete=models.CASCADE)

@@ -1,3 +1,4 @@
+import os
 from django.db import models
 from course.models import (
     Chapter, Section
@@ -5,7 +6,7 @@ from course.models import (
 
 def document_upload_path(instance, filename):
     course = instance.chapter.course
-    return os.path.join(course.id + '-' + course.title + '/documents')
+    return os.path.join(str(course.id) + '-' + course.title + '/documents/'+filename)
         
 class Document(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE)

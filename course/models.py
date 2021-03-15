@@ -84,3 +84,10 @@ class Schedule(models.Model):
     description = models.TextField(blank=True)
     content_list = ArrayField(models.IntegerField(), null=True, blank=True)
 
+class Page(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    title = models.CharField(max_length=50)
+    description = models.TextField(blank=True)
+    created_on = models.DateTimeField(auto_now_add=True)
+    modified_on = models.DateTimeField(auto_now=True)
+

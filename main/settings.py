@@ -143,3 +143,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'main/data/media/')
 
 # User Model
 AUTH_USER_MODEL = 'registration.User'
+
+MAX_CHARFIELD_LENGTH = 100

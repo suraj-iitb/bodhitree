@@ -1,31 +1,31 @@
 from django.contrib import admin
 
-from discussion_forum.models import (DiscussionForum, Content, DiscussionThread, DiscussionComment, DiscussionReply, Tag, DiscussionThreadTag)
-
+from discussion_forum.models import (DiscussionForum, Content, DiscussionThread, DiscussionComment, DiscussionReply, Tag)
+from course.models import Course
 
 class DiscussionForumAdmin(admin.ModelAdmin):
     list_display = ('id', 'course')
-
+    search_fields = ('course__title',)
 
 class ContentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'content')
+    list_display = ('id', 'user', 'description')
+    search_fields = ('user__email','description')
 
 class DiscussionThreadAdmin(admin.ModelAdmin):
     list_display = ('id', 'content', 'discussion_forum')
-
+    search_fields = ('content__description',)
 
 class DiscussionCommentAdmin(admin.ModelAdmin):
     list_display = ('id', 'content', 'discussion_thread')
+    search_fields = ('content__description',)
 
 class DiscussionReplyAdmin(admin.ModelAdmin):
     list_display = ('id', 'content', 'discussion_comment')
+    search_fields = ('content__description',)
 
 class TagAdmin(admin.ModelAdmin):
-    list_display = ('id', 'content', 'discussion_forum')
-
-
-class DiscussionThreadTagAdmin(admin.ModelAdmin):
-    list_display = ('id', 'tag', 'discussion_thread')
+    list_display = ('id', 'discussion_forum', 'tag_name')
+    search_fields = ('content__description', 'tag_name')
 
 
 admin.site.register(DiscussionForum, DiscussionForumAdmin)
@@ -34,5 +34,4 @@ admin.site.register(DiscussionThread, DiscussionThreadAdmin)
 admin.site.register(DiscussionComment, DiscussionCommentAdmin)
 admin.site.register(DiscussionReply, DiscussionReplyAdmin)
 admin.site.register(Tag, TagAdmin)
-admin.site.register(DiscussionThreadTag, DiscussionThreadTagAdmin)
 

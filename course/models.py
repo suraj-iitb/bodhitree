@@ -28,8 +28,8 @@ CONTENT_TYPES = (
 
 class Course(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    code = models.CharField(max_length=8,blank=True)
-    title = models.CharField(max_length=50)
+    code = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH,blank=True)
+    title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to='course_images', null=True, blank=True)
     is_published = models.BooleanField(default=False)
@@ -51,7 +51,7 @@ class CourseHistory(models.Model):
 
 class Chapter(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    name = models.CharField(max_length=75)
+    name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
     content_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
@@ -62,7 +62,7 @@ class Chapter(models.Model):
 
 class Section(models.Model):
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE)
-    name = models.CharField(max_length=75)
+    name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
     content_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
@@ -73,7 +73,7 @@ class Section(models.Model):
 
 class Notification(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    title = models.CharField(max_length=50)
+    title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     url = models.URLField()
     created_on = models.DateTimeField(auto_now_add=True)
 
@@ -86,7 +86,7 @@ class Schedule(models.Model):
 
 class Page(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    title = models.CharField(max_length=50)
+    title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)

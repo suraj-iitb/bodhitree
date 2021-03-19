@@ -37,7 +37,7 @@ prog_lang = (
     ('C++','C++'),
     ('Java','Java'),
     ('Python','Python'),
-    ('others','others')
+    ('Others','Others')
 )
 
 policy = (
@@ -56,7 +56,7 @@ class TAAllocation(models.Model):
 
 class Assignment(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    name = models.CharField(max_length=50)          
+    name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)          
     description = models.TextField(blank=True)  
     is_published = models.BooleanField(default=False)
     start_date = models.DateField()
@@ -65,6 +65,9 @@ class Assignment(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on= models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.name
+
 class AssignmentHistory(models.Model):
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -72,14 +75,23 @@ class AssignmentHistory(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on= models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.user.email
+
 class SimpleProgrammingAssignment(models.Model):
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
     programming_language = models.CharField(max_length=10, choices=prog_lang, default='C')
     document = models.FileField(upload_to=assignment_history_file_upload_path)
 
+    def __str__(self):
+        return self.assignment.name
+
 class SimpleProgrammingAssignmentHistory(models.Model):
     assignment_history = models.ForeignKey(AssignmentHistory, on_delete=models.CASCADE)
     file_submitted = models.FileField(upload_to=assignment_history_file_upload_path)       
+
+    def __str__(self):
+        return self.assignment_history.assignment.name
 
 class SimpleProgrammingAssignmentHistoryVersion(models.Model):
     simple_programming_assignment_history = models.ForeignKey(SimpleProgrammingAssignmentHistory, on_delete=models.CASCADE)
@@ -88,7 +100,7 @@ class AdvancedProgrammingAssignment(models.Model):
     simple_programming_assignment = models.ForeignKey(SimpleProgrammingAssignment, on_delete=models.CASCADE)
     helper_code = models.FileField(upload_to=assignment_history_file_upload_path)       
     instruction_solution_code = models.FileField(upload_to=assignment_history_file_upload_path)
-    files_to_be_submitted = ArrayField(models.CharField(max_length=40), null=True, blank=True)
+    files_to_be_submitted = ArrayField(models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH), null=True, blank=True)
     ta_allocation_file = models.FileField(upload_to=assignment_history_file_upload_path, null=True, blank=True)      
     ta_allocation = models.ForeignKey(TAAllocation,  on_delete=models.CASCADE, blank=True, null=True)    
     policy = models.CharField(max_length=10, choices=policy, default='A')
@@ -101,30 +113,39 @@ class AdvancedProgrammingAssignmentHistory(models.Model):
     execution_time = models.FloatField(null=True, blank=True)
     indentation = models.FloatField(null=True, blank=True)
 
+    def __str__(self):
+        return self.simple_programming_assignment.assignment.name
+
 class AdvancedProgrammingAssignmentHistoryVersion(models.Model):
     advanced_programming_assignment_history = models.ForeignKey(AdvancedProgrammingAssignmentHistory, on_delete=models.CASCADE)
 
 class AssignmentSection(models.Model):
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
-    name = models.CharField(max_length=25)          
+    name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)          
     description = models.TextField(blank=True)  
     section_type = models.CharField(max_length=1, choices=section_type, default='V')
-    compiler_command = models.CharField(max_length=40, null=True, blank=True)       
-    execution_command = models.CharField(max_length=40, null=True, blank=True)      
+    compiler_command = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, null=True, blank=True)       
+    execution_command = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, null=True, blank=True)      
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on= models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
 
 class Testcase(models.Model):
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
     assignment_section = models.ForeignKey(AssignmentSection, on_delete=models.CASCADE)
-    name = models.CharField(max_length=75)     
-    cmd_line_args = ArrayField(models.CharField(max_length=40), null=True, blank=True)   
+    name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)     
+    cmd_line_args = ArrayField(models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH), null=True, blank=True)   
     marks = models.FloatField(default=0)
     input_file = models.FileField(upload_to=assignment_history_file_upload_path, null=True, blank=True) 
     output_file = models.FileField(upload_to=assignment_history_file_upload_path, null=True, blank=True) 
     is_published = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on= models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
 
 class TestcaseHistory(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

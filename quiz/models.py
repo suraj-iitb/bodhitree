@@ -8,19 +8,25 @@ from django.conf import settings
 class Quiz(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE, null=True, blank=True)
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE,  null=True, blank=True)
-    title = models.CharField(max_length=50)
+    title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
     question_module_sequence = ArrayField(models.IntegerField(), null=True, blank=True)    
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on= models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.title
+
 class QuestionModule(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
-    title = models.CharField(max_length=50)
+    title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
     questions_sequence = ArrayField(models.IntegerField(), null=True, blank=True)    
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on= models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
 
 class Question(models.Model):
     quiz_module = models.ForeignKey(QuestionModule, on_delete=models.CASCADE)
@@ -34,12 +40,18 @@ class Question(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on= models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.question_description
+
 class QuestionHistory(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     no_of_times_attempted = models.IntegerField()
     marks_obtained = models.IntegerField(null=True, blank=True)
     hint_taken = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.question.question_description
 
 class SingleCorrectQuestion(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)

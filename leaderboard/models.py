@@ -9,6 +9,9 @@ class GradesHeader(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.sheet_name
+
 class GradesBody(models.Model):
     grades_header = models.ForeignKey(GradesHeader, on_delete=models.CASCADE)
     student_marks =  ArrayField(models.IntegerField(), null=True, blank=True)

@@ -3,9 +3,8 @@ from django.db import models
 # Create your models here.
 import os
 from django.db import models
-from course.models import (
-    Chapter, Section
-)
+from course.models import (Chapter, Section)
+from quiz.models import Quiz
 from django.conf import settings
 from datetime import datetime, timedelta
 
@@ -31,9 +30,9 @@ marker_type = (
 #section, chapter can be made null and they can be together not null
 
 class Video(models.Model):
-    section = models.ForeignKey(Section, on_delete=models.CASCADE)
-    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE)
-    title = models.CharField(max_length=75)
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, blank=True, null=True)
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, blank=True, null=True)
+    title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
     video_file = models.FileField(upload_to=video_upload_path)
     doc_file = models.FileField(upload_to=video_doc_upload_path, null=True, blank=True)
@@ -50,16 +49,16 @@ class VideoHistory(models.Model):
 class Marker(models.Model):
     video = models.ForeignKey(Video, on_delete=models.CASCADE)
     time = models.DurationField()                               
-    marker_type = models.CharField(max_length=1, choices=marker_type, default='Q')
+    marker_type = models.CharField(max_length=1, choices=marker_type)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on= models.DateTimeField(auto_now=True)
 
 class SectionMarker(models.Model):
-    marker = models.ForeignKey(Marker, on_delete=models.CASCADE)
-    title = models.CharField(max_length=75)
+    marker = models.OneToOneField(Marker, on_delete=models.CASCADE)
+    title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
 
 class QuizMarker(models.Model):
-    marker = models.ForeignKey(Marker, on_delete=models.CASCADE)
-    title = models.CharField(max_length=75)                                      
-    quiz = models.IntegerField()                                                    #link to quiz later
+    marker = models.OneToOneField(Marker, on_delete=models.CASCADE)
+    title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)                                      
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
 

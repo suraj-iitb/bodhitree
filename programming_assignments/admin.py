@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from programming_assignments.models import (TAAllocation, Assignment, AssignmentHistory, SimpleProgrammingAssignment, SimpleProgrammingAssignmentHistory,
-SimpleProgrammingAssignmentHistoryVersion, AdvancedProgrammingAssignment, AdvancedProgrammingAssignmentHistory,  AdvancedProgrammingAssignmentHistoryVersion, AssignmentSection, Testcase, TestcaseHistory)
+SimpleProgrammingAssignmentHistoryVersion, AdvancedProgrammingAssignment, AdvancedProgrammingAssignmentHistory,  AdvancedProgrammingAssignmentHistoryVersion, AssignmentSection, Testcase, TestcaseHistory, Exam, ExamHistory)
 
 class TAAllocationAdmin(admin.ModelAdmin):
     list_display = ('id','mapping')
@@ -48,6 +48,16 @@ class TestcaseHistoryAdmin(admin.ModelAdmin):
     list_display = ('id', 'user')
     search_fields = ('user__email',)
 
+class ExamAdmin(admin.ModelAdmin):
+    list_display = ('id', 'course', 'duration', 'late_duration', 'allowed_ip_range', 'assignment')
+    search_fields = ('assignment__name',)
+
+class ExamHistoryAdmin(admin.ModelAdmin):
+    list_display = ('id', 'exam', 'user', 'ip_address', 'is_paused', 'is_approved', 'start_time', 'remaining_time', 'additional_time')
+    search_fields = ('user__email',)
+
+admin.site.register(Exam, ExamAdmin)
+admin.site.register(ExamHistory, ExamHistoryAdmin)
 admin.site.register(TAAllocation, TAAllocationAdmin)
 admin.site.register(Assignment, AssignmentAdmin)
 admin.site.register(AssignmentHistory, AssignmentHistoryAdmin)

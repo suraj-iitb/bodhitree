@@ -151,6 +151,27 @@ class TestcaseHistory(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     marks_obtained = models.FloatField(default=0)
 
+class Exam(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    duration = models.DurationField()
+    late_duration = models.DurationField()
+    allowed_ip_range = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.course.title + ':' + self.assignment.name
+
+
+class ExamHistory(models.Model):
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    ip_address = ArrayField(models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH), null=True, blank=True)
+    is_paused = models.BooleanField(default=False)
+    is_approved = models.BooleanField(default=True)
+    start_time = models.DateTimeField()
+    remaining_time = models.DurationField()
+    additional_time =  ArrayField(models.FloatField(),null=True, blank=True)
 
 
 

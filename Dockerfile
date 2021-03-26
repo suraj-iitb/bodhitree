@@ -7,7 +7,8 @@ ONBUILD COPY . /bodhitree
 
 # Dont copy source code if development env
 FROM python:3.9-slim-buster as dev
-ONBUILD RUN echo "No source code copy for dev env"
+ONBUILD COPY requirements.dev.txt /tmp/requirements.dev.txt
+ONBUILD RUN pip install --upgrade pip && python -m pip install --no-cache-dir -r /tmp/requirements.dev.txt
 
 FROM ${BUILD_ENV}
 

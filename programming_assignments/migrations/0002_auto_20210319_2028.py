@@ -14,7 +14,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='advancedprogrammingassignment',
             name='files_to_be_submitted',
-            field=django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=100), blank=True, null=True, size=None),
+            field=django.contrib.postgres.fields.ArrayField(
+                base_field=models.CharField(max_length=100),
+                blank=True,
+                null=True,
+                size=None),
         ),
         migrations.AlterField(
             model_name='assignment',
@@ -39,12 +43,21 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='simpleprogrammingassignment',
             name='programming_language',
-            field=models.CharField(choices=[('C', 'C'), ('C++', 'C++'), ('Java', 'Java'), ('Python', 'Python'), ('Others', 'Others')], default='C', max_length=10),
+            field=models.CharField(choices=[('C', 'C'), ('C++', 'C++'),
+                                            ('Java', 'Java'),
+                                            ('Python', 'Python'),
+                                            ('Others', 'Others')],
+                                   default='C',
+                                   max_length=10),
         ),
         migrations.AlterField(
             model_name='testcase',
             name='cmd_line_args',
-            field=django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=100), blank=True, null=True, size=None),
+            field=django.contrib.postgres.fields.ArrayField(
+                base_field=models.CharField(max_length=100),
+                blank=True,
+                null=True,
+                size=None),
         ),
         migrations.AlterField(
             model_name='testcase',

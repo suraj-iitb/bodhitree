@@ -10,5 +10,6 @@ class CribAdmin(admin.ModelAdmin):
 class CribReplyAdmin(admin.ModelAdmin):
     list_display = ('id', 'crib', 'user')
 
+
 admin.site.register(Crib, CribAdmin)
 admin.site.register(CribReply, CribReplyAdmin)

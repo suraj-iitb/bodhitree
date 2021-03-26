@@ -6,7 +6,8 @@ from .models import User
 
 class RegisterForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
-    password2 = forms.CharField(label='Confirm password', widget=forms.PasswordInput)
+    password2 = forms.CharField(label='Confirm password',
+                                widget=forms.PasswordInput)
 
     class Meta:
         model = User
@@ -34,11 +35,15 @@ class UserAdminCreationForm(forms.ModelForm):
     fields, plus a repeated password.
     """
     password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
-    password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput)
+    password2 = forms.CharField(label='Password confirmation',
+                                widget=forms.PasswordInput)
 
     class Meta:
         model = User
-        fields = ('full_name', 'email',)
+        fields = (
+            'full_name',
+            'email',
+        )
 
     def clean_password2(self):
         # Check that the two password entries match
@@ -64,9 +69,8 @@ class UserAdminChangeForm(forms.ModelForm):
     """
     password = ReadOnlyPasswordHashField(
         help_text=("Raw passwords are not stored, so there is no way to see "
-            "this user's password, but you can change the password "
-            "using <a href=\"../password/\">this form</a>.")
-    )
+                   "this user's password, but you can change the password "
+                   "using <a href=\"../password/\">this form</a>."))
 
     class Meta:
         model = User

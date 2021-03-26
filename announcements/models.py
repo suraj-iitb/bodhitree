@@ -1,6 +1,7 @@
 from django.db import models
 from course.models import Course
 
+
 class Announcement(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     body = models.TextField()

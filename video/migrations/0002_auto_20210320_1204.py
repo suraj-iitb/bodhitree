@@ -16,17 +16,21 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='marker',
             name='marker_type',
-            field=models.CharField(choices=[('S', 'Section marker'), ('Q', 'Quiz marker')], max_length=1),
+            field=models.CharField(choices=[('S', 'Section marker'),
+                                            ('Q', 'Quiz marker')],
+                                   max_length=1),
         ),
         migrations.AlterField(
             model_name='quizmarker',
             name='marker',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='video.marker'),
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE, to='video.marker'),
         ),
         migrations.AlterField(
             model_name='quizmarker',
             name='quiz',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='quiz.quiz'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                    to='quiz.quiz'),
         ),
         migrations.AlterField(
             model_name='quizmarker',
@@ -36,7 +40,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='sectionmarker',
             name='marker',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='video.marker'),
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE, to='video.marker'),
         ),
         migrations.AlterField(
             model_name='sectionmarker',
@@ -46,12 +51,18 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='video',
             name='chapter',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='course.chapter'),
+            field=models.ForeignKey(blank=True,
+                                    null=True,
+                                    on_delete=django.db.models.deletion.CASCADE,
+                                    to='course.chapter'),
         ),
         migrations.AlterField(
             model_name='video',
             name='section',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='course.section'),
+            field=models.ForeignKey(blank=True,
+                                    null=True,
+                                    on_delete=django.db.models.deletion.CASCADE,
+                                    to='course.section'),
         ),
         migrations.AlterField(
             model_name='video',

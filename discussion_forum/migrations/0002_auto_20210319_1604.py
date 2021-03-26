@@ -35,30 +35,39 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='tag',
             name='content_type',
-            field=models.CharField(choices=[('V', 'Video'), ('D', 'Document'), ('Q', 'Quiz'), ('S', 'Section')], default='D', max_length=1),
+            field=models.CharField(choices=[('V', 'Video'), ('D', 'Document'),
+                                            ('Q', 'Quiz'), ('S', 'Section')],
+                                   default='D',
+                                   max_length=1),
             preserve_default=False,
         ),
         migrations.AlterField(
             model_name='discussioncomment',
             name='content',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='discussion_forum.content'),
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                to='discussion_forum.content'),
         ),
         migrations.AlterField(
             model_name='discussionforum',
             name='course',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='course.course'),
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                to='course.course'),
         ),
         migrations.AlterField(
             model_name='discussionreply',
             name='content',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='discussion_forum.content'),
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                to='discussion_forum.content'),
         ),
         migrations.AlterField(
             model_name='discussionthread',
             name='content',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='discussion_forum.content'),
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                to='discussion_forum.content'),
         ),
-        migrations.DeleteModel(
-            name='DiscussionThreadTag',
-        ),
+        migrations.DeleteModel(name='DiscussionThreadTag',),
     ]

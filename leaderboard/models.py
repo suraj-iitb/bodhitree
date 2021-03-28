@@ -1,6 +1,7 @@
-from django.db import models
-from course.models import Course
 from django.contrib.postgres.fields import ArrayField
+from django.db import models
+
+from course.models import Course
 
 
 class GradesHeader(models.Model):

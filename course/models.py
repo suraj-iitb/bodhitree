@@ -1,30 +1,25 @@
-from django.db import models
-from django.contrib.postgres.fields import ArrayField
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
+from django.db import models
 
-COURSE_TYPES = (('O', 'Open'), ('M', 'Moderated'))
 
-USER_ROLES = (('I', 'Instructor'), ('T', 'Teaching Assistant'), ('S',
-                                                                 'Student'))
+COURSE_TYPES = (("O", "Open"), ("M", "Moderated"))
 
-STATUS_TYPES = (('E', 'Enrolled'), ('U', 'Unenrolled'), ('P', 'Pending'))
+USER_ROLES = (("I", "Instructor"), ("T", "Teaching Assistant"), ("S", "Student"))
 
-CONTENT_TYPES = (('V', 'Video'), ('D', 'Document'), ('Q', 'Quiz'), ('S',
-                                                                    'Section'))
+STATUS_TYPES = (("E", "Enrolled"), ("U", "Unenrolled"), ("P", "Pending"))
+
+CONTENT_TYPES = (("V", "Video"), ("D", "Document"), ("Q", "Quiz"), ("S", "Section"))
 
 
 class Course(models.Model):
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL,
-                              on_delete=models.CASCADE)
-    code = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH,
-                            blank=True)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    code = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
     title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
-    image = models.ImageField(upload_to='course_images', null=True, blank=True)
+    image = models.ImageField(upload_to="course_images", null=True, blank=True)
     is_published = models.BooleanField(default=False)
-    course_type = models.CharField(max_length=1,
-                                   choices=COURSE_TYPES,
-                                   default='O')
+    course_type = models.CharField(max_length=1, choices=COURSE_TYPES, default="O")
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
     chapters_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
@@ -36,8 +31,8 @@ class Course(models.Model):
 class CourseHistory(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    role = models.CharField(max_length=1, choices=USER_ROLES, default='S')
-    status = models.CharField(max_length=1, choices=STATUS_TYPES, default='P')
+    role = models.CharField(max_length=1, choices=USER_ROLES, default="S")
+    status = models.CharField(max_length=1, choices=STATUS_TYPES, default="P")
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 

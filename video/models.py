@@ -1,49 +1,54 @@
 # In-built imports
-from django.db import models
-from django.conf import settings
-from datetime import timedelta
 import os
+from datetime import timedelta
+
+from django.conf import settings
+from django.db import models
+
 # Other imports
-from course.models import (Chapter, Section)
+from course.models import Chapter, Section
 from quiz.models import Quiz
 
 
 def video_upload_path(instance, filename):
-    course = instance.chapter.course if instance.chapter else instance.section.chapter.course
-    return os.path.join(
-        str(course.id) + '.' + course.title, 'video_files', filename)
+    course = (
+        instance.chapter.course if instance.chapter else instance.section.chapter.course
+    )
+    return os.path.join(str(course.id) + "." + course.title, "video_files", filename)
 
 
 def video_doc_upload_path(instance, filename):
-    course = instance.chapter.course if instance.chapter else instance.section.chapter.course
+    course = (
+        instance.chapter.course if instance.chapter else instance.section.chapter.course
+    )
     return os.path.join(
-        str(course.id) + '.' + course.title, 'video_doc_files', filename)
+        str(course.id) + "." + course.title, "video_doc_files", filename
+    )
 
 
 def in_video_quiz_upload_path(instance, filename):
-    course = instance.chapter.course if instance.chapter else instance.section.chapter.course
+    course = (
+        instance.chapter.course if instance.chapter else instance.section.chapter.course
+    )
     return os.path.join(
-        str(course.id) + '.' + course.title, 'in_video_quiz_files', filename)
+        str(course.id) + "." + course.title, "in_video_quiz_files", filename
+    )
 
 
 class Video(models.Model):
-    chapter = models.ForeignKey(Chapter,
-                                on_delete=models.CASCADE,
-                                blank=True,
-                                null=True)
-    section = models.ForeignKey(Section,
-                                on_delete=models.CASCADE,
-                                blank=True,
-                                null=True)
+    chapter = models.ForeignKey(
+        Chapter, on_delete=models.CASCADE, blank=True, null=True
+    )
+    section = models.ForeignKey(
+        Section, on_delete=models.CASCADE, blank=True, null=True
+    )
     title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
     video_file = models.FileField(upload_to=video_upload_path)
-    doc_file = models.FileField(upload_to=video_doc_upload_path,
-                                blank=True,
-                                null=True)
-    in_video_quiz_file = models.FileField(upload_to=in_video_quiz_upload_path,
-                                          blank=True,
-                                          null=True)
+    doc_file = models.FileField(upload_to=video_doc_upload_path, blank=True, null=True)
+    in_video_quiz_file = models.FileField(
+        upload_to=in_video_quiz_upload_path, blank=True, null=True
+    )
     video_duration = models.DurationField()
     uploaded_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
@@ -56,8 +61,8 @@ class VideoHistory(models.Model):
 
 
 marker_type = (
-    ('S', 'Section Marker'),
-    ('Q', 'Quiz Marker'),
+    ("S", "Section Marker"),
+    ("Q", "Quiz Marker"),
 )
 
 
@@ -73,11 +78,11 @@ class Marker(models.Model):
 
 
 class SectionMarker(Marker):
-
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['video', 'time'],
-                                    name='unique_section_marker')
+            models.UniqueConstraint(
+                fields=["video", "time"], name="unique_section_marker"
+            )
         ]
 
 
@@ -86,6 +91,5 @@ class QuizMarker(Marker):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['video', 'time'],
-                                    name='unique_quiz_marker')
+            models.UniqueConstraint(fields=["video", "time"], name="unique_quiz_marker")
         ]

@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class ProgrammingAssignmentsConfig(AppConfig):
-    name = 'programming_assignments'
+    name = "programming_assignments"

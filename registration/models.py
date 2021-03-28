@@ -1,24 +1,27 @@
-from django.db import models
-from django.contrib.auth.models import (BaseUserManager, AbstractBaseUser)
 from django.conf import settings
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.db import models
 
 
 class UserManager(BaseUserManager):
-
-    def create_user(self,
-                    email,
-                    password=None,
-                    full_name='',
-                    is_active=None,
-                    is_staff=None,
-                    is_admin=False):
+    def create_user(
+        self,
+        email,
+        password=None,
+        full_name="",
+        is_active=None,
+        is_staff=None,
+        is_admin=False,
+    ):
         """
         Creates and saves a User with the given email and password.
         """
         if not email:
-            raise ValueError('Users must have an email address')
+            raise ValueError("Users must have an email address")
 
-        user = self.model(email=self.normalize_email(email),)
+        user = self.model(
+            email=self.normalize_email(email),
+        )
 
         user.set_password(password)
         user.save(using=self._db)
@@ -52,7 +55,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser):
     email = models.EmailField(
-        verbose_name='email address',
+        verbose_name="email address",
         max_length=255,
         unique=True,
     )
@@ -63,9 +66,10 @@ class User(AbstractBaseUser):
     # notice the absence of a "Password field", that is built in.
     date_joined = models.DateTimeField(auto_now_add=True)
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = [
-    ]  # Email & Password are required by default in createsuperuser command.
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = (
+        []
+    )  # Email & Password are required by default in createsuperuser command.
 
     objects = UserManager()
 
@@ -114,10 +118,10 @@ class PlanType(models.Model):
 
 
 UNIT = (
-    ('KB', 'Kilobytes'),
-    ('MB', 'MegaBytes'),
-    ('GB', 'GigaBytes'),
-    ('TB', 'TeraBytes'),
+    ("KB", "Kilobytes"),
+    ("MB", "MegaBytes"),
+    ("GB", "GigaBytes"),
+    ("TB", "TeraBytes"),
 )
 
 
@@ -138,15 +142,15 @@ class Subscription(models.Model):
 
     subjective_lab_submission_size_per_student = models.FloatField()
     subjective_lab_submission_size_per_student_unit = models.CharField(
-        max_length=2, choices=UNIT)
+        max_length=2, choices=UNIT
+    )
 
     def __str__(self):
         return self.plan_type.name
 
 
 class SubscriptionHistory(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL,
-                                on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE)
     start_date = models.DateTimeField(auto_now_add=True)
     duration = models.DurationField()
@@ -154,5 +158,4 @@ class SubscriptionHistory(models.Model):
     modified_on = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return "%s : %s" % (str(
-            self.user.email), self.subscription.plan_type.name)
+        return "%s : %s" % (str(self.user.email), self.subscription.plan_type.name)

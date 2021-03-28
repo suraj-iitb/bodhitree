@@ -52,7 +52,7 @@ class DiscussionThread(Content):
     discussion_forum = models.ForeignKey(DiscussionForum, on_delete=models.CASCADE)
     title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     mark_as_important = models.BooleanField(default=False)
-    tag = models.ManyToManyField(Tag)
+    tag = models.ManyToManyField(Tag, blank=True)
 
 
 class DiscussionComment(Content):

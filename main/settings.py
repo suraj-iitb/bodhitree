@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Our Apps
-    "announcements",
     "discussion_forum",
     "cribs",
     "registration",

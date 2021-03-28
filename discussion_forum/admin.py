@@ -1,7 +1,6 @@
 from django.contrib import admin
 
 from discussion_forum.models import (
-    Content,
     DiscussionComment,
     DiscussionForum,
     DiscussionReply,
@@ -11,37 +10,77 @@ from discussion_forum.models import (
 
 
 class DiscussionForumAdmin(admin.ModelAdmin):
-    list_display = ("id", "course")
+    list_display = (
+        "id",
+        "course",
+        "anonymous_to_instructor",
+        "send_email_to_all",
+    )
     search_fields = ("course__title",)
 
 
-class ContentAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "description")
-    search_fields = ("user__email", "description")
-
-
 class DiscussionThreadAdmin(admin.ModelAdmin):
-    list_display = ("id", "content", "discussion_forum")
-    search_fields = ("content__description",)
+    list_display = (
+        "id",
+        "author",
+        "author_category",
+        "title",
+        "description",
+        "pinned",
+        "anonymous_to_student",
+        "upvote",
+        "downvote",
+        "created_on",
+        "modified_on",
+        "discussion_forum",
+        "mark_as_important",
+    )
+    search_fields = (
+        "title",
+        "description",
+    )
 
 
 class DiscussionCommentAdmin(admin.ModelAdmin):
-    list_display = ("id", "content", "discussion_thread")
-    search_fields = ("content__description",)
+    list_display = (
+        "id",
+        "author",
+        "author_category",
+        "description",
+        "pinned",
+        "anonymous_to_student",
+        "upvote",
+        "downvote",
+        "created_on",
+        "modified_on",
+        "discussion_thread",
+    )
+    search_fields = ("description",)
 
 
 class DiscussionReplyAdmin(admin.ModelAdmin):
-    list_display = ("id", "content", "discussion_comment")
-    search_fields = ("content__description",)
+    list_display = (
+        "id",
+        "author",
+        "author_category",
+        "description",
+        "pinned",
+        "anonymous_to_student",
+        "upvote",
+        "downvote",
+        "created_on",
+        "modified_on",
+        "discussion_comment",
+    )
+    search_fields = ("description",)
 
 
 class TagAdmin(admin.ModelAdmin):
-    list_display = ("id", "discussion_forum", "tag_name")
-    search_fields = ("content__description", "tag_name")
+    list_display = ("id", "discussion_forum", "content_id", "content_type", "tag_name")
+    search_fields = ("tag_name",)
 
 
 admin.site.register(DiscussionForum, DiscussionForumAdmin)
-admin.site.register(Content, ContentAdmin)
 admin.site.register(DiscussionThread, DiscussionThreadAdmin)
 admin.site.register(DiscussionComment, DiscussionCommentAdmin)
 admin.site.register(DiscussionReply, DiscussionReplyAdmin)

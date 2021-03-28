@@ -6,15 +6,14 @@ from .models import User
 
 class RegisterForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
-    password2 = forms.CharField(label='Confirm password',
-                                widget=forms.PasswordInput)
+    password2 = forms.CharField(label="Confirm password", widget=forms.PasswordInput)
 
     class Meta:
         model = User
-        fields = ('email',)
+        fields = ("email",)
 
     def clean_email(self):
-        email = self.cleaned_data.get('email')
+        email = self.cleaned_data.get("email")
         qs = User.objects.filter(email=email)
         if qs.exists():
             raise forms.ValidationError("email is taken")
@@ -34,15 +33,17 @@ class UserAdminCreationForm(forms.ModelForm):
     A form for creating new users. Includes all the required
     fields, plus a repeated password.
     """
-    password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
-    password2 = forms.CharField(label='Password confirmation',
-                                widget=forms.PasswordInput)
+
+    password1 = forms.CharField(label="Password", widget=forms.PasswordInput)
+    password2 = forms.CharField(
+        label="Password confirmation", widget=forms.PasswordInput
+    )
 
     class Meta:
         model = User
         fields = (
-            'full_name',
-            'email',
+            "full_name",
+            "email",
         )
 
     def clean_password2(self):
@@ -67,14 +68,18 @@ class UserAdminChangeForm(forms.ModelForm):
     the user, but replaces the password field with admin's
     password hash display field.
     """
+
     password = ReadOnlyPasswordHashField(
-        help_text=("Raw passwords are not stored, so there is no way to see "
-                   "this user's password, but you can change the password "
-                   "using <a href=\"../password/\">this form</a>."))
+        help_text=(
+            "Raw passwords are not stored, so there is no way to see "
+            "this user's password, but you can change the password "
+            'using <a href="../password/">this form</a>.'
+        )
+    )
 
     class Meta:
         model = User
-        fields = ('full_name', 'email', 'password', 'active', 'admin')
+        fields = ("full_name", "email", "password", "active", "admin")
 
     def clean_password(self):
         # Regardless of what the user provides, return the initial value.

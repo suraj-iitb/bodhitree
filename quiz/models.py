@@ -1,23 +1,20 @@
-from django.db import models
-from django.contrib.postgres.fields import ArrayField
-from course.models import (Chapter, Section)
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
+from django.db import models
+
+from course.models import Chapter, Section
 
 
 class Quiz(models.Model):
-    section = models.ForeignKey(Section,
-                                on_delete=models.CASCADE,
-                                null=True,
-                                blank=True)
-    chapter = models.ForeignKey(Chapter,
-                                on_delete=models.CASCADE,
-                                null=True,
-                                blank=True)
+    section = models.ForeignKey(
+        Section, on_delete=models.CASCADE, null=True, blank=True
+    )
+    chapter = models.ForeignKey(
+        Chapter, on_delete=models.CASCADE, null=True, blank=True
+    )
     title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
-    question_module_sequence = ArrayField(models.IntegerField(),
-                                          null=True,
-                                          blank=True)
+    question_module_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 
@@ -29,9 +26,7 @@ class QuestionModule(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
     title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
-    questions_sequence = ArrayField(models.IntegerField(),
-                                    null=True,
-                                    blank=True)
+    questions_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 
@@ -73,8 +68,7 @@ class SingleCorrectQuestion(models.Model):
 
 
 class SingleCorrectQuestionHistory(models.Model):
-    question_history = models.ForeignKey(QuestionHistory,
-                                         on_delete=models.CASCADE)
+    question_history = models.ForeignKey(QuestionHistory, on_delete=models.CASCADE)
     option_selected = models.IntegerField()
 
 
@@ -85,8 +79,7 @@ class MultipleCorrectQuestion(models.Model):
 
 
 class MulitpleCorrectQuestionHistory(models.Model):
-    question_history = models.ForeignKey(QuestionHistory,
-                                         on_delete=models.CASCADE)
+    question_history = models.ForeignKey(QuestionHistory, on_delete=models.CASCADE)
     option_selected = ArrayField(models.IntegerField())
 
 
@@ -96,8 +89,7 @@ class FixedAnswerQuestion(models.Model):
 
 
 class FixedCorrectQuestionHistory(models.Model):
-    question_history = models.ForeignKey(QuestionHistory,
-                                         on_delete=models.CASCADE)
+    question_history = models.ForeignKey(QuestionHistory, on_delete=models.CASCADE)
     answer_submitted = models.TextField()
 
 
@@ -107,6 +99,5 @@ class DescriptiveQuestion(models.Model):
 
 
 class DescriptiveQuestionHistory(models.Model):
-    question_history = models.ForeignKey(QuestionHistory,
-                                         on_delete=models.CASCADE)
+    question_history = models.ForeignKey(QuestionHistory, on_delete=models.CASCADE)
     answer_submitted = models.TextField()

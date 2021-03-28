@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class DiscussionForumConfig(AppConfig):
-    name = 'discussion_forum'
+    name = "discussion_forum"

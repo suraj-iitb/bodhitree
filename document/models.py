@@ -1,12 +1,13 @@
 import os
+
 from django.db import models
-from course.models import (Chapter, Section)
+
+from course.models import Chapter, Section
 
 
 def document_upload_path(instance, filename):
     course = instance.chapter.course
-    return os.path.join(
-        str(course.id) + '-' + course.title + '/documents/' + filename)
+    return os.path.join(str(course.id) + "-" + course.title + "/documents/" + filename)
 
 
 class Document(models.Model):

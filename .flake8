@@ -1,0 +1,7 @@
+# This .flake8 config used together with *Black* config
+
+[flake8]
+max-line-length = 88
+max-complexity = 18
+select = B,C,E,F,W,T4,B9
+ignore = E203, E266, C901, C408, W503

@@ -1,5 +1,3 @@
-import os
-
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -30,17 +28,12 @@ CONTENT_TYPES = (
 )
 
 
-def course_image_upload_path(instance, filename):
-    course_path = "{}. {}:{}".format(instance.id, instance.code, instance.title)
-    return os.path.join(course_path, filename)
-
-
 class Course(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     code = models.CharField(max_length=6, blank=True)
     title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
-    image = models.ImageField(upload_to=course_image_upload_path, null=True, blank=True)
+    image = models.ImageField(upload_to="course_images", null=True, blank=True)
     is_published = models.BooleanField(default=False)
     course_type = models.CharField(max_length=1, choices=COURSE_TYPES)
     created_on = models.DateTimeField(auto_now_add=True)

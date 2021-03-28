@@ -1,11 +1,18 @@
 from django.contrib import admin
 
-from announcements.models import Announcement
+from .models import Announcement
 
 
 class AnnouncementAdmin(admin.ModelAdmin):
-    list_display = ("id", "course", "is_pinned")
-    search_fields = ("course__title",)
+    list_display = (
+        "id",
+        "course",
+        "body",
+        "is_pinned",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = ("body",)
 
 
 admin.site.register(Announcement, AnnouncementAdmin)

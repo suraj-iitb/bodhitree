@@ -1,64 +1,118 @@
+import os
+
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 
-COURSE_TYPES = (("O", "Open"), ("M", "Moderated"))
+COURSE_TYPES = (
+    ("O", "Open"),
+    ("M", "Moderated"),
+)
 
-USER_ROLES = (("I", "Instructor"), ("T", "Teaching Assistant"), ("S", "Student"))
+USER_ROLES = (
+    ("I", "Instructor"),
+    ("T", "Teaching Assistant"),
+    ("S", "Student"),
+)
 
-STATUS_TYPES = (("E", "Enrolled"), ("U", "Unenrolled"), ("P", "Pending"))
+ENROLLMENT_STATUS = (
+    ("E", "Enrolled"),
+    ("U", "Unenrolled"),
+    ("P", "Pending"),
+)
 
-CONTENT_TYPES = (("V", "Video"), ("D", "Document"), ("Q", "Quiz"), ("S", "Section"))
+CONTENT_TYPES = (
+    ("V", "Video"),
+    ("D", "Document"),
+    ("Q", "Quiz"),
+    ("S", "Section"),
+)
+
+
+def course_image_upload_path(instance, filename):
+    course_path = "{}. {}:{}".format(instance.id, instance.code, instance.title)
+    return os.path.join(course_path, filename)
 
 
 class Course(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    code = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
+    code = models.CharField(max_length=6, blank=True)
     title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
-    image = models.ImageField(upload_to="course_images", null=True, blank=True)
+    image = models.ImageField(upload_to=course_image_upload_path, null=True, blank=True)
     is_published = models.BooleanField(default=False)
-    course_type = models.CharField(max_length=1, choices=COURSE_TYPES, default="O")
+    course_type = models.CharField(max_length=1, choices=COURSE_TYPES)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
     chapters_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "code", "title"], name="unique_course"
+            )
+        ]
+
     def __str__(self):
-        return self.title
+        return "{}: {}".format(self.code, self.title) if self.code else self.title
 
 
 class CourseHistory(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     role = models.CharField(max_length=1, choices=USER_ROLES, default="S")
-    status = models.CharField(max_length=1, choices=STATUS_TYPES, default="P")
+    status = models.CharField(max_length=1, choices=ENROLLMENT_STATUS, default="P")
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["course", "user"], name="unique_course_history"
+            )
+        ]
+
+    def __str__(self):
+        return "{}: {}".format(self.user, self.course)
 
 
 class Chapter(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
+    title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
-    content_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
+    content_sequence = ArrayField(
+        ArrayField(models.IntegerField(), size=2), null=True, blank=True
+    )
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["course", "title"], name="unique_chapter")
+        ]
+
     def __str__(self):
-        return self.name
+        return self.title
 
 
 class Section(models.Model):
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE)
-    name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
+    title = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
-    content_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
+    content_sequence = ArrayField(
+        ArrayField(models.IntegerField(), size=2), null=True, blank=True
+    )
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["chapter", "title"], name="unique_section")
+        ]
+
     def __str__(self):
-        return self.name
+        return self.title
 
 
 class Notification(models.Model):
@@ -67,13 +121,37 @@ class Notification(models.Model):
     url = models.URLField()
     created_on = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["url"], name="unique_notification")
+        ]
+
+    def __str__(self):
+        return self.title
+
 
 class Schedule(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     start_date = models.DateField()
     end_date = models.DateField()
     description = models.TextField(blank=True)
-    content_list = ArrayField(models.IntegerField(), null=True, blank=True)
+    content_list = ArrayField(
+        ArrayField(models.IntegerField(), size=2), null=True, blank=True
+    )
+    created_on = models.DateTimeField(auto_now_add=True)
+    modified_on = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["course", "start_date", "end_date"], name="unique_schedule"
+            )
+        ]
+
+    def __str__(self):
+        return "{}: From:- {} To:- {}".format(
+            self.course, self.start_date, self.end_date
+        )
 
 
 class Page(models.Model):
@@ -82,3 +160,11 @@ class Page(models.Model):
     description = models.TextField(blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["course", "title"], name="unique_page")
+        ]
+
+    def __str__(self):
+        return self.title

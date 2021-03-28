@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from course.models import (
+from .models import (
     Chapter,
     Course,
     CourseHistory,
@@ -12,38 +12,115 @@ from course.models import (
 
 
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ("id", "owner", "title", "course_type")
-    search_fields = ("title",)
+    list_display = (
+        "id",
+        "owner",
+        "code",
+        "title",
+        "description",
+        "image",
+        "is_published",
+        "course_type",
+        "created_on",
+        "modified_on",
+        "chapters_sequence",
+    )
+    search_fields = (
+        "code",
+        "title",
+        "description",
+    )
 
 
 class CourseHistoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "course", "role")
-    search_fields = ("course__title", "user__email")
+    list_display = (
+        "id",
+        "user",
+        "course",
+        "role",
+        "status",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = (
+        "user__email",
+        "user__full_name",
+    )
 
 
 class ChapterAdmin(admin.ModelAdmin):
-    list_display = ("id", "course", "name")
-    search_fields = ("course__title",)
+    list_display = (
+        "id",
+        "course",
+        "title",
+        "description",
+        "content_sequence",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = (
+        "title",
+        "description",
+    )
 
 
 class SectionAdmin(admin.ModelAdmin):
-    list_display = ("id", "chapter", "name")
-    search_fields = ("chapter__name",)
+    list_display = (
+        "id",
+        "chapter",
+        "title",
+        "description",
+        "content_sequence",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = (
+        "title",
+        "description",
+    )
 
 
 class NotificationAdmin(admin.ModelAdmin):
-    list_display = ("id", "course", "title")
-    search_fields = ("course__title", "title")
+    list_display = (
+        "id",
+        "course",
+        "title",
+        "url",
+        "created_on",
+    )
+    search_fields = (
+        "title",
+        "url",
+    )
 
 
 class ScheduleAdmin(admin.ModelAdmin):
-    list_display = ("id", "course", "start_date", "end_date")
-    search_fields = ("course__title",)
+    list_display = (
+        "id",
+        "course",
+        "start_date",
+        "end_date",
+        "description",
+        "content_list",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = ("description",)
 
 
 class PageAdmin(admin.ModelAdmin):
-    list_display = ("id", "course", "title")
-    search_fields = ("course__title", "title")
+    list_display = (
+        "id",
+        "course",
+        "title",
+        "description",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = (
+        "title",
+        "description",
+    )
 
 
 admin.site.register(Course, CourseAdmin)

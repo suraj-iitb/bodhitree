@@ -1,10 +1,9 @@
-from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 
 from .forms import UserAdminChangeForm, UserAdminCreationForm
-from .models import PlanType, Subscription, SubscriptionHistory
+from .models import PlanType, Subscription, SubscriptionHistory, User
 
 
 class UserAdmin(BaseUserAdmin):
@@ -21,11 +20,13 @@ class UserAdmin(BaseUserAdmin):
         "full_name",
         "is_active",
         "is_admin",
+        "is_staff",
         "date_joined",
         "last_login",
     )
     list_filter = (
         "is_admin",
+        "is_staff",
         "is_active",
     )
     fieldsets = (
@@ -43,8 +44,9 @@ class UserAdmin(BaseUserAdmin):
             "Permissions",
             {
                 "fields": (
-                    "is_active",
                     "is_admin",
+                    "is_staff",
+                    "is_active",
                 )
             },
         ),
@@ -68,6 +70,7 @@ class UserAdmin(BaseUserAdmin):
         "email",
         "full_name",
     )
+    ordering = ("email",)
     filter_horizontal = ()
 
 
@@ -111,7 +114,7 @@ class SubscriptionHistoryAdmin(admin.ModelAdmin):
     search_fields = ("user__email",)
 
 
-admin.site.register(settings.AUTH_USER_MODEL, UserAdmin)
+admin.site.register(User, UserAdmin)
 # Remove Group Model from admin. We're not using it.
 admin.site.unregister(Group)
 admin.site.register(PlanType, PlanTypeAdmin)

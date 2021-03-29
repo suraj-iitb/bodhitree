@@ -5,52 +5,46 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from programming_assignments.models import Assignment, AssignmentHistory
+from utils.utils import get_assignment_folder, get_course_folder
+
+
+def get_file_full_path(assignment, sub_folder_name, filename):
+    course_folder = get_course_folder(assignment.course)
+    assignment_folder = get_assignment_folder(assignment, "subjective")
+    return os.path.join(course_folder, assignment_folder, sub_folder_name, filename)
 
 
 def assignment_file_upload_path(instance, filename):
-    course = instance.assignment.course
     assignment = instance.assignment
-    course_name = course.title.replace(" ", "_")
-    assignment_name = assignment.name.replace(" ", "_")
-    assignment_path = (
-        str(course.id)
-        + "-"
-        + course_name
-        + "/"
-        + str(assignment.id)
-        + "-"
-        + assignment_name
-    )
-    return os.path.join(assignment_path + "/question_files/" + filename)
+    return get_file_full_path(assignment, "question_files", filename)
 
 
-class SubjectiveAssignment(models.Model):
-    assignment = models.OneToOneField(Assignment, on_delete=models.CASCADE)
+class SubjectiveAssignment(Assignment):
     team_size = models.IntegerField()
     question_file = models.FileField(upload_to=assignment_file_upload_path)
     helper_file = models.FileField(upload_to=assignment_file_upload_path)
-    files_to_be_submitted = ArrayField(models.IntegerField(), null=True, blank=True)
+    files_to_be_submitted = ArrayField(
+        models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH),
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
-        return self.assignment.name
+        return self.name
 
 
 class SubjectiveAssignmentTeam(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user_ids = ArrayField(models.IntegerField())
     subjective_assignment = models.ForeignKey(
         SubjectiveAssignment, on_delete=models.CASCADE
     )
 
     def __str__(self):
-        return self.subjective_assignment.assignment.name + ":" + self.user.email
+        return "{}: {}".format(self.user_ids, self.subjective_assignment.name)
 
 
-class SubjectiveAssignmentHistory(models.Model):
-    assignment_history = models.OneToOneField(
-        AssignmentHistory, on_delete=models.CASCADE
-    )
-    submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    marks_obtained = models.FloatField()
+class SubjectiveAssignmentHistory(AssignmentHistory):
+    marks_obtained = models.FloatField(default=0)
     subjective_assignment_team = models.ForeignKey(
         SubjectiveAssignmentTeam, on_delete=models.CASCADE
     )

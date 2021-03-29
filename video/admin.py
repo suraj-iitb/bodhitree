@@ -17,22 +17,45 @@ class VideoAdmin(admin.ModelAdmin):
         "uploaded_on",
         "modified_on",
     )
-    search_fields = ("title",)
+    search_fields = (
+        "title",
+        "description",
+    )
 
 
 class VideoHistoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "video", "user", "video_watched_duration")
-    search_fields = ("video__title", "user__email")
+    list_display = (
+        "id",
+        "video",
+        "user",
+        "video_watched_duration",
+    )
+    search_fields = ("user__email",)
 
 
 class SectionMarkerAdmin(admin.ModelAdmin):
-    list_display = ("id", "video", "time", "title", "created_on", "modified_on")
-    search_fields = ("video__title", "title")
+    list_display = (
+        "id",
+        "video",
+        "time",
+        "title",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = ("title",)
 
 
 class QuizMarkerAdmin(admin.ModelAdmin):
-    list_display = ("id", "video", "time", "title", "quiz", "created_on", "modified_on")
-    search_fields = ("video__title", "title")
+    list_display = (
+        "id",
+        "video",
+        "time",
+        "title",
+        "quiz",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = ("title",)
 
 
 admin.site.register(Video, VideoAdmin)

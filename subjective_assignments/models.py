@@ -32,14 +32,6 @@ class SubjectiveAssignment(models.Model):
         null=True,
     )
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["assignment__course", "assignment__name"],
-                name="unique_subjective_assignment",
-            )
-        ]
-
     def __str__(self):
         return self.assignment.name
 

@@ -1,4 +1,4 @@
 {
     "files.eol": "\n",
-    "python.pythonPath": "dev/bin/python3.9",
+    "python.pythonPath": "pre_commit_env/bin/python3.9",
 }

@@ -4,4 +4,4 @@
 main/data/
 
 # Venv
-dev/
+pre_commit_env

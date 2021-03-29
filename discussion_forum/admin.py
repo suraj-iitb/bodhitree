@@ -76,7 +76,13 @@ class DiscussionReplyAdmin(admin.ModelAdmin):
 
 
 class TagAdmin(admin.ModelAdmin):
-    list_display = ("id", "discussion_forum", "content_id", "content_type", "tag_name")
+    list_display = (
+        "id",
+        "discussion_forum",
+        "content_id",
+        "content_type",
+        "tag_name",
+    )
     search_fields = ("tag_name",)
 
 

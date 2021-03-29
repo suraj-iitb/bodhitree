@@ -10,7 +10,7 @@ class DiscussionForum(models.Model):
     send_email_to_all = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.course.title + ": Discussion Forum"
+        return "{}: Discussion Forum".format(self.course.title)
 
 
 class Content(models.Model):
@@ -28,7 +28,7 @@ class Content(models.Model):
         abstract = True
 
     def __str__(self):
-        return self.description[0:20] + "..."
+        return "{}...".format(self.description[0:20])
 
 
 class Tag(models.Model):
@@ -45,7 +45,7 @@ class Tag(models.Model):
         ]
 
     def __str__(self):
-        return self.tag_name[0:20] + "..."
+        return "{}...".format(self.tag_name[0:20])
 
 
 class DiscussionThread(Content):

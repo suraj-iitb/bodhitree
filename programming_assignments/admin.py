@@ -3,7 +3,6 @@ from django.contrib import admin
 from programming_assignments.models import (
     AdvancedProgrammingAssignment,
     AdvancedProgrammingAssignmentHistory,
-    AdvancedProgrammingAssignmentHistoryVersion,
     Assignment,
     AssignmentHistory,
     AssignmentSection,
@@ -11,7 +10,6 @@ from programming_assignments.models import (
     ExamHistory,
     SimpleProgrammingAssignment,
     SimpleProgrammingAssignmentHistory,
-    SimpleProgrammingAssignmentHistoryVersion,
     TAAllocation,
     Testcase,
     TestcaseHistory,
@@ -23,68 +21,139 @@ class TAAllocationAdmin(admin.ModelAdmin):
 
 
 class AssignmentAdmin(admin.ModelAdmin):
-    list_display = ("id", "course", "name")
-    search_fields = ("course__title", "name")
+    list_display = (
+        "id",
+        "course",
+        "name",
+        "description",
+        "is_published",
+        "start_date",
+        "end_date",
+        "extended_date",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = ("name", "description")
 
 
 class AssignmentHistoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "assignment", "user")
-    search_fields = ("assignment__name", "user__email")
+    list_display = (
+        "id",
+        "assignment",
+        "user",
+        "instructor_feedback",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = ("user__email",)
 
 
 class SimpleProgrammingAssignmentAdmin(admin.ModelAdmin):
-    list_display = ("id", "assignment")
-    search_fields = ("assignment__name",)
+    list_display = (
+        "id",
+        "assignment",
+        "programming_language",
+        "document",
+    )
+    search_fields = (
+        "assignment__name",
+        "assignment_description",
+    )
 
 
 class SimpleProgrammingAssignmentHistoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "assignment_history")
+    list_display = (
+        "id",
+        "assignment_history",
+        "file_submitted",
+    )
     search_fields = ("assignment_history__user__email",)
 
 
-class SimpleProgrammingAssignmentHistoryVersionAdmin(admin.ModelAdmin):
-    list_display = ("id", "simple_programming_assignment_history")
-
-
 class AdvancedProgrammingAssignmentAdmin(admin.ModelAdmin):
-    list_display = ("id", "simple_programming_assignment", "ta_allocation")
-    search_fields = ("simple_programming_assignment__assignment__name",)
+    list_display = (
+        "id",
+        "simple_programming_assignment",
+        "helper_code",
+        "instructor_solution_code",
+        "files_to_be_submitted",
+        "ta_allocation_file",
+        "ta_allocation",
+        "policy",
+        "execution_time_calculate",
+        "ignore_whitespaces_in_output",
+        "indentation_percentage_calculate",
+    )
+    search_fields = (
+        "simple_programming_assignment__assignment__name",
+        "simple_programming_assignment__assignment__description",
+    )
 
 
 class AdvancedProgrammingAssignmentHistoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "simple_programming_assignment")
+    list_display = (
+        "id",
+        "simple_programming_assignment_history",
+        "execution_time",
+        "indentation_percentage",
+    )
     search_fields = (
         "simple_programming_assignment_history__assignment_history__user__email",
     )
 
 
-class AdvancedProgrammingAssignmentHistoryVersionAdmin(admin.ModelAdmin):
-    list_display = ("id", "advanced_programming_assignment_history")
-
-
 class AssignmentSectionAdmin(admin.ModelAdmin):
-    list_display = ("id", "assignment", "name", "section_type")
-    search_fields = ("assignment__name", "name", "section_type")
+    list_display = (
+        "id",
+        "assignment",
+        "name",
+        "description",
+        "section_type",
+        "compiler_command",
+        "execution_command",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = (
+        "name",
+        "description",
+    )
 
 
 class TestcaseAdmin(admin.ModelAdmin):
-    list_display = ("id", "assignment", "assignment_section", "name", "marks")
-    search_fields = ("assignment__name", "name", "assignment_section__name")
+    list_display = (
+        "id",
+        "assignment",
+        "assignment_section",
+        "name",
+        "cmd_line_args",
+        "marks",
+        "input_file",
+        "output_file",
+        "is_published",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = ("name",)
 
 
 class TestcaseHistoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "user")
+    list_display = (
+        "id",
+        "user",
+        "testcase",
+        "marks_obtained",
+    )
     search_fields = ("user__email",)
 
 
 class ExamAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "course",
+        "assignment",
         "duration",
         "late_duration",
         "allowed_ip_range",
-        "assignment",
     )
     search_fields = ("assignment__name",)
 
@@ -113,17 +182,9 @@ admin.site.register(SimpleProgrammingAssignment, SimpleProgrammingAssignmentAdmi
 admin.site.register(
     SimpleProgrammingAssignmentHistory, SimpleProgrammingAssignmentHistoryAdmin
 )
-admin.site.register(
-    SimpleProgrammingAssignmentHistoryVersion,
-    SimpleProgrammingAssignmentHistoryVersionAdmin,
-)
 admin.site.register(AdvancedProgrammingAssignment, AdvancedProgrammingAssignmentAdmin)
 admin.site.register(
     AdvancedProgrammingAssignmentHistory, AdvancedProgrammingAssignmentHistoryAdmin
-)
-admin.site.register(
-    AdvancedProgrammingAssignmentHistoryVersion,
-    AdvancedProgrammingAssignmentHistoryVersionAdmin,
 )
 admin.site.register(AssignmentSection, AssignmentSectionAdmin)
 admin.site.register(Testcase, TestcaseAdmin)

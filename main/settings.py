@@ -134,9 +134,10 @@ USE_TZ = True
 STATIC_URL = "/static/"
 
 # User Uploaded Files Locations
-MEDIA_ROOT = os.path.join(BASE_DIR, "main/data/media/")
+MEDIA_ROOT = os.path.join(BASE_DIR, "main/data/")
 
 # User Model
 AUTH_USER_MODEL = "registration.User"
 
+# Max CharField limit
 MAX_CHARFIELD_LENGTH = 100

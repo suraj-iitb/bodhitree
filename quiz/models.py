@@ -46,58 +46,56 @@ class Question(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        abstract = True
+
     def __str__(self):
-        return self.question_description
+        return "{}...".format(self.question_description[0:20])
 
 
 class QuestionHistory(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    no_of_times_attempted = models.IntegerField()
+    no_of_times_attempted = models.IntegerField(default=0)
     marks_obtained = models.IntegerField(null=True, blank=True)
     hint_taken = models.BooleanField(default=False)
 
+    class Meta:
+        abstract = True
+
     def __str__(self):
-        return self.question.question_description
+        return "{}: {}...".format(self.user.email, self.question_description[0:20])
 
 
-class SingleCorrectQuestion(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+class SingleCorrectQuestion(Question):
     options = ArrayField(models.TextField())
     correct_option = models.IntegerField()
 
 
-class SingleCorrectQuestionHistory(models.Model):
-    question_history = models.ForeignKey(QuestionHistory, on_delete=models.CASCADE)
+class SingleCorrectQuestionHistory(QuestionHistory):
     option_selected = models.IntegerField()
 
 
-class MultipleCorrectQuestion(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+class MultipleCorrectQuestion(Question):
     options = ArrayField(models.TextField())
-    correct_option = ArrayField(models.IntegerField())
+    correct_options = ArrayField(models.IntegerField())
 
 
-class MulitpleCorrectQuestionHistory(models.Model):
-    question_history = models.ForeignKey(QuestionHistory, on_delete=models.CASCADE)
-    option_selected = ArrayField(models.IntegerField())
+class MulitpleCorrectQuestionHistory(QuestionHistory):
+    options_selected = ArrayField(models.IntegerField())
 
 
-class FixedAnswerQuestion(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+class FixedAnswerQuestion(Question):
     answer = models.TextField()
 
 
-class FixedCorrectQuestionHistory(models.Model):
-    question_history = models.ForeignKey(QuestionHistory, on_delete=models.CASCADE)
+class FixedCorrectQuestionHistory(QuestionHistory):
     answer_submitted = models.TextField()
 
 
-class DescriptiveQuestion(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+class DescriptiveQuestion(Question):
     answer = models.TextField()
 
 
-class DescriptiveQuestionHistory(models.Model):
-    question_history = models.ForeignKey(QuestionHistory, on_delete=models.CASCADE)
+class DescriptiveQuestionHistory(QuestionHistory):
     answer_submitted = models.TextField()

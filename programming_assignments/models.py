@@ -1,32 +1,32 @@
-import os
-
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from course.models import Course
-from utils.utils import get_assignment_folder, get_course_folder
+from utils.utils import get_assignment_file_upload_path
 
 
-def get_file_full_path(assignment, sub_folder_name, filename):
-    course_folder = get_course_folder(assignment.course)
-    assignment_folder = get_assignment_folder(assignment, "programming")
-    return os.path.join(course_folder, assignment_folder, sub_folder_name, filename)
-
-
-def assignment_file_upload_path(instance, filename):
+def programming_assignment_file_upload_path(instance, filename):
     if type(instance) is SimpleProgrammingAssignment:
         assignment = instance.assignment
-        return get_file_full_path(assignment, "question_files", filename)
+        return get_assignment_file_upload_path(
+            assignment, "programming", "question_files", filename
+        )
     elif type(instance) is AdvancedProgrammingAssignment:
         assignment = instance.simple_programming_assignment.assignment
-        return get_file_full_path(assignment, "question_files", filename)
+        return get_assignment_file_upload_path(
+            assignment, "programming", "question_files", filename
+        )
     elif type(instance) is SimpleProgrammingAssignmentHistory:
         assignment = instance.assignment_history.assignment
-        return get_file_full_path(assignment, "submission_files", filename)
+        return get_assignment_file_upload_path(
+            assignment, "programming", "submission_files", filename
+        )
     elif type(instance) is Testcase:
         assignment = instance.assignment
-        return get_file_full_path(assignment, "testcase_files", filename)
+        return get_assignment_file_upload_path(
+            assignment, "programming", "testcase_files", filename
+        )
 
 
 PROG_LANG = (
@@ -82,7 +82,7 @@ class AssignmentHistory(models.Model):
 class SimpleProgrammingAssignment(models.Model):
     assignment = models.OneToOneField(Assignment, on_delete=models.CASCADE)
     programming_language = models.CharField(max_length=10, choices=PROG_LANG)
-    document = models.FileField(upload_to=assignment_file_upload_path)
+    document = models.FileField(upload_to=programming_assignment_file_upload_path)
 
     def __str__(self):
         return self.assignment.name
@@ -92,7 +92,7 @@ class SimpleProgrammingAssignmentHistory(models.Model):
     assignment_history = models.OneToOneField(
         AssignmentHistory, on_delete=models.CASCADE
     )
-    file_submitted = models.FileField(upload_to=assignment_file_upload_path)
+    file_submitted = models.FileField(upload_to=programming_assignment_file_upload_path)
 
     def __str__(self):
         assign_history = self.assignment_history
@@ -106,18 +106,16 @@ class AdvancedProgrammingAssignment(models.Model):
         SimpleProgrammingAssignment, on_delete=models.CASCADE
     )
     helper_code = models.FileField(
-        upload_to=assignment_file_upload_path, null=True, blank=True
+        upload_to=programming_assignment_file_upload_path, null=True, blank=True
     )
     instructor_solution_code = models.FileField(
-        upload_to=assignment_file_upload_path, null=True, blank=True
+        upload_to=programming_assignment_file_upload_path, null=True, blank=True
     )
     files_to_be_submitted = ArrayField(
-        models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH),
-        null=True,
-        blank=True,
+        models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH), blank=True
     )
     ta_allocation_file = models.FileField(
-        upload_to=assignment_file_upload_path, null=True, blank=True
+        upload_to=programming_assignment_file_upload_path, null=True, blank=True
     )
     ta_allocation = models.ForeignKey(
         TAAllocation, on_delete=models.CASCADE, blank=True, null=True
@@ -151,10 +149,10 @@ class AssignmentSection(models.Model):
     description = models.TextField(blank=True)
     section_type = models.CharField(max_length=1, choices=SECTION_TYPE, default="V")
     compiler_command = models.CharField(
-        max_length=settings.MAX_CHARFIELD_LENGTH, null=True, blank=True
+        max_length=settings.MAX_CHARFIELD_LENGTH, blank=True
     )
     execution_command = models.CharField(
-        max_length=settings.MAX_CHARFIELD_LENGTH, null=True, blank=True
+        max_length=settings.MAX_CHARFIELD_LENGTH, blank=True
     )
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
@@ -174,10 +172,10 @@ class Testcase(models.Model):
     )
     marks = models.FloatField(default=0)
     input_file = models.FileField(
-        upload_to=assignment_file_upload_path, null=True, blank=True
+        upload_to=programming_assignment_file_upload_path, null=True, blank=True
     )
     output_file = models.FileField(
-        upload_to=assignment_file_upload_path, null=True, blank=True
+        upload_to=programming_assignment_file_upload_path, null=True, blank=True
     )
     is_published = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
@@ -209,11 +207,8 @@ class Exam(models.Model):
 class ExamHistory(models.Model):
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-
     ip_address = ArrayField(
-        models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH),
-        null=True,
-        blank=True,
+        models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH), blank=True
     )
     is_paused = models.BooleanField(default=False)
     is_approved = models.BooleanField(default=True)

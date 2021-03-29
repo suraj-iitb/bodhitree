@@ -56,7 +56,8 @@ class SingleCorrectQuestionAdmin(admin.ModelAdmin):
         "gradable",
         "is_published",
         "created_on",
-        "modified_on" "options",
+        "modified_on",
+        "options",
         "correct_option",
     )
     search_fields = ("question_description",)
@@ -71,7 +72,8 @@ class SingleCorrectQuestionHistoryAdmin(admin.ModelAdmin):
         "marks_obtained",
         "hint_taken",
         "created_on",
-        "modified_on" "option_selected",
+        "modified_on",
+        "option_selected",
     )
     search_fields = ("question_history__user__email",)
 
@@ -88,8 +90,9 @@ class MultipleCorrectQuestionAdmin(admin.ModelAdmin):
         "gradable",
         "is_published",
         "created_on",
-        "modified_on" "options",
-        "correct_option",
+        "modified_on",
+        "options",
+        "correct_options",
     )
     search_fields = ("question_description",)
 
@@ -103,7 +106,8 @@ class MulitpleCorrectQuestionHistoryAdmin(admin.ModelAdmin):
         "marks_obtained",
         "hint_taken",
         "created_on",
-        "modified_on" "option_selected",
+        "modified_on",
+        "options_selected",
     )
     search_fields = ("question_history__user__email",)
 
@@ -120,8 +124,8 @@ class FixedAnswerQuestionAdmin(admin.ModelAdmin):
         "gradable",
         "is_published",
         "created_on",
-        "modified_on" "options",
-        "correct_option",
+        "modified_on",
+        "answer",
     )
     search_fields = ("question_description",)
 
@@ -135,7 +139,8 @@ class FixedCorrectQuestionHistoryAdmin(admin.ModelAdmin):
         "marks_obtained",
         "hint_taken",
         "created_on",
-        "modified_on" "option_selected",
+        "modified_on",
+        "answer_submitted",
     )
     search_fields = ("question_history__user__email",)
 
@@ -152,8 +157,8 @@ class DescriptiveQuestionAdmin(admin.ModelAdmin):
         "gradable",
         "is_published",
         "created_on",
-        "modified_on" "options",
-        "correct_option",
+        "modified_on",
+        "answer",
     )
     search_fields = ("question_description",)
 
@@ -167,7 +172,8 @@ class DescriptiveQuestionHistoryAdmin(admin.ModelAdmin):
         "marks_obtained",
         "hint_taken",
         "created_on",
-        "modified_on" "option_selected",
+        "modified_on",
+        "answer_submitted",
     )
     search_fields = ("question_history__user__email",)
 

@@ -7,7 +7,9 @@ from course.models import Course
 
 class Email(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sender"
+    )
     from_email = models.EmailField()
     to_email_list = ArrayField(models.EmailField())
     reply_to = models.EmailField(blank=True)

@@ -31,6 +31,18 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+    def create_staffuser(self, email, password=None):
+        """
+        Creates and saves a staff user with the given email and password.
+        """
+        user = self.create_user(
+            email,
+            password=password,
+        )
+        user.is_staff = True
+        user.save(using=self._db)
+        return user
+
     def create_superuser(self, email, password=None):
         """
         Creates and saves a superuser with the given email and password.
@@ -39,6 +51,7 @@ class UserManager(BaseUserManager):
             email,
             password=password,
         )
+        user.is_staff = True
         user.is_admin = True
         user.save(using=self._db)
         return user
@@ -48,6 +61,7 @@ class User(AbstractBaseUser):
     email = models.EmailField(verbose_name="email address", unique=True)
     full_name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
     is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)  # a superuser
     # notice the absence of a "password" field, that is built in.
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -90,7 +104,7 @@ class PlanType(models.Model):
 
 
 class Subscription(models.Model):
-    plan_type = models.ForeignKey(PlanType, on_delete=models.CASCADE, unique=True)
+    plan_type = models.OneToOneField(PlanType, on_delete=models.CASCADE)
     no_of_courses = models.IntegerField()
     no_of_students_per_course = models.IntegerField()
 

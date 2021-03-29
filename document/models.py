@@ -4,16 +4,15 @@ from django.conf import settings
 from django.db import models
 
 from course.models import Chapter, Section
+from utils.utils import get_course_folder
 
 
 def document_upload_path(instance, filename):
     course = (
         instance.chapter.course if instance.chapter else instance.section.chapter.course
     )
-    course_id = str(course.id)
-    course_title = course.title.replace(" ", "_")
-    course_path = course_id + "." + course_title
-    return os.path.join(course_path, "document_files", filename)
+    course_folder = get_course_folder(course)
+    return os.path.join(course_folder, "document_files", filename)
 
 
 class Document(models.Model):

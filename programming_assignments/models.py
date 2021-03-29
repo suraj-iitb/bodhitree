@@ -80,7 +80,7 @@ class AssignmentHistory(models.Model):
 
 
 class SimpleProgrammingAssignment(models.Model):
-    assignment = models.OneToOne(Assignment, on_delete=models.CASCADE)
+    assignment = models.OneToOneField(Assignment, on_delete=models.CASCADE)
     programming_language = models.CharField(max_length=10, choices=PROG_LANG)
     document = models.FileField(upload_to=assignment_file_upload_path)
 
@@ -89,7 +89,9 @@ class SimpleProgrammingAssignment(models.Model):
 
 
 class SimpleProgrammingAssignmentHistory(models.Model):
-    assignment_history = models.OneToOne(AssignmentHistory, on_delete=models.CASCADE)
+    assignment_history = models.OneToOneField(
+        AssignmentHistory, on_delete=models.CASCADE
+    )
     file_submitted = models.FileField(upload_to=assignment_file_upload_path)
 
     def __str__(self):
@@ -100,7 +102,7 @@ class SimpleProgrammingAssignmentHistory(models.Model):
 
 
 class AdvancedProgrammingAssignment(models.Model):
-    simple_programming_assignment = models.OneToOne(
+    simple_programming_assignment = models.OneToOneField(
         SimpleProgrammingAssignment, on_delete=models.CASCADE
     )
     helper_code = models.FileField(
@@ -130,7 +132,7 @@ class AdvancedProgrammingAssignment(models.Model):
 
 
 class AdvancedProgrammingAssignmentHistory(models.Model):
-    simple_programming_assignment_history = models.OneToOne(
+    simple_programming_assignment_history = models.OneToOneField(
         SimpleProgrammingAssignmentHistory, on_delete=models.CASCADE
     )
     execution_time = models.FloatField(null=True, blank=True)
@@ -195,7 +197,7 @@ class TestcaseHistory(models.Model):
 
 
 class Exam(models.Model):
-    assignment = models.OneToOne(Assignment, on_delete=models.CASCADE)
+    assignment = models.OneToOneField(Assignment, on_delete=models.CASCADE)
     duration = models.DurationField()
     late_duration = models.DurationField()
     allowed_ip_range = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)

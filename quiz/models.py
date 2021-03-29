@@ -35,7 +35,7 @@ class QuestionModule(models.Model):
 
 
 class Question(models.Model):
-    quiz_module = models.ForeignKey(QuestionModule, on_delete=models.CASCADE)
+    question_module = models.ForeignKey(QuestionModule, on_delete=models.CASCADE)
     question_description = models.TextField()
     answer_description = models.TextField()
     hint = models.TextField(blank=True)
@@ -45,9 +45,6 @@ class Question(models.Model):
     is_published = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
 
     def __str__(self):
         return "{}...".format(self.question_description[0:20])
@@ -59,9 +56,8 @@ class QuestionHistory(models.Model):
     no_of_times_attempted = models.IntegerField(default=0)
     marks_obtained = models.IntegerField(null=True, blank=True)
     hint_taken = models.BooleanField(default=False)
-
-    class Meta:
-        abstract = True
+    created_on = models.DateTimeField(auto_now_add=True)
+    modified_on = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return "{}: {}...".format(self.user.email, self.question_description[0:20])

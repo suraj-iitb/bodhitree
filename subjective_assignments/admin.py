@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from subjective_assignments.models import (
+from .models import (
     SubjectiveAssignment,
     SubjectiveAssignmentHistory,
     SubjectiveAssignmentTeam,

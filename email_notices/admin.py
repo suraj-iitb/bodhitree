@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from email_notices.models import Email
+from .models import Email
 
 
 class EmailAdmin(admin.ModelAdmin):

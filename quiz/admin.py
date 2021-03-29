@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from quiz.models import (
+from .models import (
     DescriptiveQuestion,
     DescriptiveQuestionHistory,
     FixedAnswerQuestion,

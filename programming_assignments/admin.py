@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from programming_assignments.models import (
+from .models import (
     AdvancedProgrammingAssignment,
     AdvancedProgrammingAssignmentHistory,
     Assignment,

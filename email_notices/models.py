@@ -17,3 +17,6 @@ class Email(models.Model):
     subject = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     body = models.TextField(blank=True)
     sent_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.subject

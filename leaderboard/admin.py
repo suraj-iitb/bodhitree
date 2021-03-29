@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from leaderboard.models import MarksBody, MarksHeader
+from .models import MarksBody, MarksHeader
 
 
 class MarksHeaderAdmin(admin.ModelAdmin):

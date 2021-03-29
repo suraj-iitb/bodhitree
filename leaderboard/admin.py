@@ -1,16 +1,30 @@
 from django.contrib import admin
 
-from leaderboard.models import GradesBody, GradesHeader
+from leaderboard.models import MarksBody, MarksHeader
 
 
-class GradesHeaderAdmin(admin.ModelAdmin):
-    list_display = ("id", "course", "sheet_name")
-    search_fields = ("course__title",)
+class MarksHeaderAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "course",
+        "sheet_name",
+        "header_list",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = ("sheet_name",)
 
 
-class GradesBodyAdmin(admin.ModelAdmin):
-    list_display = ("id", "grades_header")
+class MarksBodyAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "marks_header",
+        "student_marks",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = ("student_marks",)
 
 
-admin.site.register(GradesHeader, GradesHeaderAdmin)
-admin.site.register(GradesBody, GradesBodyAdmin)
+admin.site.register(MarksHeader, MarksHeaderAdmin)
+admin.site.register(MarksBody, MarksBodyAdmin)

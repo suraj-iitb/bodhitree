@@ -34,14 +34,17 @@ class QuizAdmin(admin.ModelAdmin):
 class QuestionModuleAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "title",
         "quiz",
+        "title",
         "description",
         "questions_sequence",
         "created_on",
         "modified_on",
     )
-    search_fields = ("title", "description")
+    search_fields = (
+        "title",
+        "description",
+    )
 
 
 class SingleCorrectQuestionAdmin(admin.ModelAdmin):
@@ -55,10 +58,10 @@ class SingleCorrectQuestionAdmin(admin.ModelAdmin):
         "marks",
         "gradable",
         "is_published",
-        "created_on",
-        "modified_on",
         "options",
         "correct_option",
+        "created_on",
+        "modified_on",
     )
     search_fields = ("question_description",)
 
@@ -71,11 +74,11 @@ class SingleCorrectQuestionHistoryAdmin(admin.ModelAdmin):
         "no_of_times_attempted",
         "marks_obtained",
         "hint_taken",
+        "option_selected",
         "created_on",
         "modified_on",
-        "option_selected",
     )
-    search_fields = ("question_history__user__email",)
+    search_fields = ("user__email",)
 
 
 class MultipleCorrectQuestionAdmin(admin.ModelAdmin):
@@ -89,10 +92,10 @@ class MultipleCorrectQuestionAdmin(admin.ModelAdmin):
         "marks",
         "gradable",
         "is_published",
-        "created_on",
-        "modified_on",
         "options",
         "correct_options",
+        "created_on",
+        "modified_on",
     )
     search_fields = ("question_description",)
 
@@ -105,11 +108,11 @@ class MulitpleCorrectQuestionHistoryAdmin(admin.ModelAdmin):
         "no_of_times_attempted",
         "marks_obtained",
         "hint_taken",
+        "options_selected",
         "created_on",
         "modified_on",
-        "options_selected",
     )
-    search_fields = ("question_history__user__email",)
+    search_fields = ("user__email",)
 
 
 class FixedAnswerQuestionAdmin(admin.ModelAdmin):
@@ -123,9 +126,9 @@ class FixedAnswerQuestionAdmin(admin.ModelAdmin):
         "marks",
         "gradable",
         "is_published",
+        "answer",
         "created_on",
         "modified_on",
-        "answer",
     )
     search_fields = ("question_description",)
 
@@ -138,11 +141,11 @@ class FixedCorrectQuestionHistoryAdmin(admin.ModelAdmin):
         "no_of_times_attempted",
         "marks_obtained",
         "hint_taken",
+        "answer_submitted",
         "created_on",
         "modified_on",
-        "answer_submitted",
     )
-    search_fields = ("question_history__user__email",)
+    search_fields = ("user__email",)
 
 
 class DescriptiveQuestionAdmin(admin.ModelAdmin):
@@ -156,9 +159,9 @@ class DescriptiveQuestionAdmin(admin.ModelAdmin):
         "marks",
         "gradable",
         "is_published",
+        "answer",
         "created_on",
         "modified_on",
-        "answer",
     )
     search_fields = ("question_description",)
 
@@ -171,11 +174,11 @@ class DescriptiveQuestionHistoryAdmin(admin.ModelAdmin):
         "no_of_times_attempted",
         "marks_obtained",
         "hint_taken",
+        "answer_submitted",
         "created_on",
         "modified_on",
-        "answer_submitted",
     )
-    search_fields = ("question_history__user__email",)
+    search_fields = ("user__email",)
 
 
 admin.site.register(Quiz, QuizAdmin)

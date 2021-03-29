@@ -18,3 +18,9 @@ def get_assignment_folder(assignment, assignment_type):
         return os.path.join("ProgrammingAssignment", assignment_folder)
     elif assignment_type == "subjective":
         return os.path.join("SubjectiveAssignment", assignment_folder)
+
+
+def get_assignment_file_upload_path(assignment, assignment_type, sub_folder, filename):
+    course_folder = get_course_folder(assignment.course)
+    assignment_folder = get_assignment_folder(assignment, assignment_type)
+    return os.path.join(course_folder, assignment_folder, sub_folder, filename)

@@ -3,7 +3,19 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 
 from .forms import UserAdminChangeForm, UserAdminCreationForm
-from .models import PlanType, Subscription, SubscriptionHistory, User
+from .models import (
+    College,
+    Degree,
+    Department,
+    InstructorProfile,
+    PlanType,
+    Profile,
+    Registration,
+    StudentProfile,
+    Subscription,
+    SubscriptionHistory,
+    User,
+)
 
 
 class UserAdmin(BaseUserAdmin):
@@ -114,9 +126,81 @@ class SubscriptionHistoryAdmin(admin.ModelAdmin):
     search_fields = ("user__email",)
 
 
+class RegistrationAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "activation_key",
+        "forgot_password",
+        "created_on",
+    )
+    search_fields = ("user__email",)
+
+
+class CollegeAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)
+
+
+class DepartmentAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)
+
+
+class DegreeAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)
+
+
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "gender",
+        "college",
+        "city",
+        "state",
+        "created_on",
+        "modified_on",
+    )
+    search_fields = (
+        "user__email",
+        "gender",
+        "college",
+        "city",
+        "state",
+        "created_on",
+        "modified_on",
+    )
+
+
+class InstructorProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "profile",
+        "domain",
+    )
+    search_fields = ("profile", "domain", "college")
+
+
+class StudentProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "profile",
+        "roll_no",
+        "department",
+        "degree",
+        "year_of_passing",
+    )
+    search_fields = ("profile", "roll_no", "department", "degree", "year_of_passing")
+
+
 admin.site.register(User, UserAdmin)
 # Remove Group Model from admin. We're not using it.
 admin.site.unregister(Group)
 admin.site.register(PlanType, PlanTypeAdmin)
 admin.site.register(SubscriptionHistory, SubscriptionHistoryAdmin)
 admin.site.register(Subscription, SubscriptionAdmin)
+admin.site.register(Registration, RegistrationAdmin)
+admin.site.register(College, CollegeAdmin)
+admin.site.register(Department, DepartmentAdmin)
+admin.site.register(Degree, DegreeAdmin)
+admin.site.register(Profile, ProfileAdmin)
+admin.site.register(InstructorProfile, InstructorProfileAdmin)
+admin.site.register(StudentProfile, StudentProfileAdmin)

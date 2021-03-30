@@ -137,3 +137,75 @@ class SubscriptionHistory(models.Model):
 
     def __str__(self):
         return "{}: {}".format(self.user.email, self.subscription.plan_type.name)
+
+
+class Registration(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    activation_key = models.CharField(
+        max_length=settings.MAX_CHARFIELD_LENGTH, blank=True
+    )
+    forgot_password = models.BooleanField()
+    created_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return "{}: {}".format(self.user.email, self.activation_key)
+
+
+GENDER_CATEGORY = (
+    ("M", "Male"),
+    ("F", "Female"),
+    ("O", "Others"),
+)
+
+
+class College(models.Model):
+    name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
+
+    def __str__(self):
+        return "{}".format(self.name)
+
+
+class Department(models.Model):
+    name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
+
+    def __str__(self):
+        return "{}".format(self.name)
+
+
+class Degree(models.Model):
+    name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
+
+    def __str__(self):
+        return "{}".format(self.name)
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    gender = models.CharField(max_length=1, choices=GENDER_CATEGORY)
+    college = models.ForeignKey(College, on_delete=models.CASCADE)
+    city = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
+    state = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
+    created_on = models.DateTimeField(auto_now_add=True)
+    modified_on = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "{}: {}".format(self.user.email, self.college)
+
+
+class InstructorProfile(models.Model):
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE)
+    domain = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
+
+    def __str__(self):
+        return "{}: {}".format(self.profile.user.email, self.domain)
+
+
+class StudentProfile(models.Model):
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE)
+    roll_no = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    degree = models.ForeignKey(Degree, on_delete=models.CASCADE)
+    year_of_passing = models.DateField()
+
+    def __str__(self):
+        return "{}: {}".format(self.profile.user.email, self.department)

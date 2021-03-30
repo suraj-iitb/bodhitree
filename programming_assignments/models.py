@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from course.models import Course
@@ -58,9 +59,9 @@ class Assignment(models.Model):
     name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
     is_published = models.BooleanField(default=False)
-    start_date = models.DateField()
-    end_date = models.DateField()
-    extended_date = models.DateField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    extended_date = models.DateTimeField()
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 
@@ -82,7 +83,9 @@ class AssignmentHistory(models.Model):
 class SimpleProgrammingAssignment(models.Model):
     assignment = models.OneToOneField(Assignment, on_delete=models.CASCADE)
     programming_language = models.CharField(max_length=10, choices=PROG_LANG)
-    document = models.FileField(upload_to=programming_assignment_file_upload_path)
+    document = models.FileField(
+        upload_to=programming_assignment_file_upload_path, blank=True, null=True
+    )
 
     def __str__(self):
         return self.assignment.name
@@ -162,8 +165,12 @@ class AssignmentSection(models.Model):
 
 
 class Testcase(models.Model):
-    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
-    assignment_section = models.ForeignKey(AssignmentSection, on_delete=models.CASCADE)
+    assignment = models.ForeignKey(
+        Assignment, on_delete=models.CASCADE, blank=True, null=True
+    )
+    assignment_section = models.ForeignKey(
+        AssignmentSection, on_delete=models.CASCADE, blank=True, null=True
+    )
     name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     cmd_line_args = ArrayField(
         models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH),
@@ -181,6 +188,22 @@ class Testcase(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(assignment__isnull=False)
+                | models.Q(assignment_section__isnull=False),
+                name="both_not_null_in_testcase",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.assignment is None and self.assignment_section is None:
+            raise ValidationError(
+                "Both Assignment and Assignment Section can't be Empty"
+            )
+
     def __str__(self):
         return self.name
 
@@ -189,6 +212,8 @@ class TestcaseHistory(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     testcase = models.ForeignKey(Testcase, on_delete=models.CASCADE)
     marks_obtained = models.FloatField(default=0)
+    created_on = models.DateTimeField(auto_now_add=True)
+    modified_on = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return "{}: {}".format(self.user.email, self.testcase.name)
@@ -199,6 +224,8 @@ class Exam(models.Model):
     duration = models.DurationField()
     late_duration = models.DurationField()
     allowed_ip_range = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
+    created_on = models.DateTimeField(auto_now_add=True)
+    modified_on = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return "{} Exam".format(self.assignment.name)
@@ -215,6 +242,8 @@ class ExamHistory(models.Model):
     start_time = models.DateTimeField()
     remaining_time = models.DurationField()
     additional_time = ArrayField(models.FloatField(), null=True, blank=True)
+    created_on = models.DateTimeField(auto_now_add=True)
+    modified_on = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return "{}: {} Exam History".format(self.user.email, self.exam.assignment.name)

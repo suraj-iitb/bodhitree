@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from course.models import Chapter, Section
@@ -17,6 +18,19 @@ class Quiz(models.Model):
     question_module_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(chapter__isnull=False) | models.Q(section__isnull=False),
+                name="both_not_null_in_quiz",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.chapter is None and self.section is None:
+            raise ValidationError("Both Chapter and Section can't be Empty")
 
     def __str__(self):
         return self.title
@@ -60,7 +74,9 @@ class QuestionHistory(models.Model):
     modified_on = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return "{}: {}...".format(self.user.email, self.question_description[0:20])
+        return "{}: {}...".format(
+            self.user.email, self.question.question_description[0:20]
+        )
 
 
 class SingleCorrectQuestion(Question):

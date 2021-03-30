@@ -32,4 +32,4 @@ class MarksBody(models.Model):
     modified_on = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.student_marks
+        return "{} Body".format(self.marks_header.sheet_name)

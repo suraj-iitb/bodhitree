@@ -15,9 +15,9 @@ def get_assignment_folder(assignment, assignment_type):
     assignment_name = assignment.name.replace(" ", "_")
     assignment_folder = "{}.{}".format(assignment_id, assignment_name)
     if assignment_type == "programming":
-        return os.path.join("ProgrammingAssignment", assignment_folder)
+        return os.path.join("programming_assignment", assignment_folder)
     elif assignment_type == "subjective":
-        return os.path.join("SubjectiveAssignment", assignment_folder)
+        return os.path.join("subjective_assignment", assignment_folder)
 
 
 def get_assignment_file_upload_path(assignment, assignment_type, sub_folder, filename):

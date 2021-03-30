@@ -143,6 +143,8 @@ class TestcaseHistoryAdmin(admin.ModelAdmin):
         "user",
         "testcase",
         "marks_obtained",
+        "created_on",
+        "modified_on",
     )
     search_fields = ("user__email",)
 
@@ -154,6 +156,8 @@ class ExamAdmin(admin.ModelAdmin):
         "duration",
         "late_duration",
         "allowed_ip_range",
+        "created_on",
+        "modified_on",
     )
     search_fields = ("assignment__name",)
 
@@ -169,6 +173,8 @@ class ExamHistoryAdmin(admin.ModelAdmin):
         "start_time",
         "remaining_time",
         "additional_time",
+        "created_on",
+        "modified_on",
     )
     search_fields = ("user__email",)
 

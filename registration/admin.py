@@ -9,7 +9,6 @@ from .models import (
     Department,
     InstructorProfile,
     PlanType,
-    Profile,
     Registration,
     StudentProfile,
     Subscription,
@@ -128,6 +127,7 @@ class SubscriptionHistoryAdmin(admin.ModelAdmin):
 
 class RegistrationAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
         "user",
         "activation_key",
         "forgot_password",
@@ -137,22 +137,32 @@ class RegistrationAdmin(admin.ModelAdmin):
 
 
 class CollegeAdmin(admin.ModelAdmin):
-    list_display = ("name",)
+    list_display = (
+        "id",
+        "name",
+    )
     search_fields = ("name",)
 
 
 class DepartmentAdmin(admin.ModelAdmin):
-    list_display = ("name",)
+    list_display = (
+        "id",
+        "name",
+    )
     search_fields = ("name",)
 
 
 class DegreeAdmin(admin.ModelAdmin):
-    list_display = ("name",)
+    list_display = (
+        "id",
+        "name",
+    )
     search_fields = ("name",)
 
 
-class ProfileAdmin(admin.ModelAdmin):
+class InstructorProfileAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
         "user",
         "gender",
         "college",
@@ -160,35 +170,27 @@ class ProfileAdmin(admin.ModelAdmin):
         "state",
         "created_on",
         "modified_on",
+        "domain",
     )
-    search_fields = (
-        "user__email",
+    search_fields = ("user__email",)
+
+
+class StudentProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user",
         "gender",
         "college",
         "city",
         "state",
         "created_on",
         "modified_on",
-    )
-
-
-class InstructorProfileAdmin(admin.ModelAdmin):
-    list_display = (
-        "profile",
-        "domain",
-    )
-    search_fields = ("profile", "domain", "college")
-
-
-class StudentProfileAdmin(admin.ModelAdmin):
-    list_display = (
-        "profile",
         "roll_no",
         "department",
         "degree",
         "year_of_passing",
     )
-    search_fields = ("profile", "roll_no", "department", "degree", "year_of_passing")
+    search_fields = ("user__email", "roll_no")
 
 
 admin.site.register(User, UserAdmin)
@@ -201,6 +203,5 @@ admin.site.register(Registration, RegistrationAdmin)
 admin.site.register(College, CollegeAdmin)
 admin.site.register(Department, DepartmentAdmin)
 admin.site.register(Degree, DegreeAdmin)
-admin.site.register(Profile, ProfileAdmin)
 admin.site.register(InstructorProfile, InstructorProfileAdmin)
 admin.site.register(StudentProfile, StudentProfileAdmin)

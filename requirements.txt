@@ -1,4 +1,13 @@
+# Django Framework & Gunicorn Server 
 django==3.1.6
 gunicorn==20.0.4
+# Postgres Driver
 psycopg2-binary==2.8.6
+# Image Support for Django DB
 Pillow==8.1.2
+# Djanfo REST Framework & Its Related Functionality
+djangorestframework==3.12.4
+markdown==3.3.4
+django-filter==2.4.0
+# For React integration
+django-cors-headers==3.7.0

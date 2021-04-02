@@ -1,8 +1,10 @@
 from django.urls import path
 
-from . import views
+from .api import UserList
 
+
+app_name = "registration"
 
 urlpatterns = [
-    path("", views.index),
+    path("", UserList.as_view(), name="listcreate"),
 ]

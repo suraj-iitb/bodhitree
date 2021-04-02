@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth import password_validation
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
 from .models import User
@@ -10,9 +11,17 @@ class UserAdminCreationForm(forms.ModelForm):
     fields, plus a repeated password.
     """
 
-    password1 = forms.CharField(label="Password", widget=forms.PasswordInput)
+    password1 = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput,
+        validators=[password_validation.validate_password],
+        help_text=password_validation.password_validators_help_text_html(),
+    )
     password2 = forms.CharField(
-        label="Password confirmation", widget=forms.PasswordInput
+        label="Password confirmation",
+        widget=forms.PasswordInput,
+        validators=[password_validation.validate_password],
+        help_text=("Enter the same password as before, for verification."),
     )
 
     class Meta:

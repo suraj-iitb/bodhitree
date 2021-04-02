@@ -1,10 +1,15 @@
-from django.urls import path
+from django.urls import include, path
+from rest_framework import routers
 
-from .api import UserList
+from .api import UserViewSet
 
 
 app_name = "registration"
 
+
+router = routers.DefaultRouter()
+router.register(r"user", UserViewSet)
+
 urlpatterns = [
-    path("", UserList.as_view(), name="listcreate"),
+    path("api/", include(router.urls)),
 ]

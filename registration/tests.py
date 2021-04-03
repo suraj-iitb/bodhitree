@@ -28,7 +28,9 @@ class UserViewSetTests(APITestCase):
         """
         Ensure we can get one User object.
         """
-        url = reverse("registration:user-detail", kwargs={"pk": 1})
+        url = reverse(
+            "registration:user-detail", kwargs={"pk": UserViewSetTests.user1.id}
+        )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

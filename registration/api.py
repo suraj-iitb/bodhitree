@@ -10,6 +10,16 @@ from .serializers import UserSerializer
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    filterset_fields = (
+        "email",
+        "full_name",
+        "is_active",
+    )
+    search_fields = (
+        "email",
+        "full_name",
+    )
+    ordering_fields = ("id",)
 
     @action(
         methods=["post"],

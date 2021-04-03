@@ -74,6 +74,9 @@ class User(AbstractBaseUser):
 
     objects = UserManager()
 
+    class Meta:
+        ordering = ["-id"]
+
     def get_full_name(self):
         # The user is identified by their email address
         return self.full_name

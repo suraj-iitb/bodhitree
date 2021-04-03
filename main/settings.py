@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third party apps
     "rest_framework",
+    "django_filters",
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",
     # Our apps
@@ -127,6 +128,15 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+    "DEFAULT_PAGINATION_CLASS": "utils.drf_utils.StandardResultsSetPagination",
+    "DEFAULT_FILTER_BACKENDS": (
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "user": "200/min",
+    },
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
 

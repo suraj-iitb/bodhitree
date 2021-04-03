@@ -40,37 +40,3 @@ class UserViewSetTests(APITestCase):
         url = reverse("registration:user-list")
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-    def test_update_user(self):
-        """
-        Ensure we can update an existing User object.
-        """
-        user = User.objects.create_user("test4@test.com", "Test@1004")
-        data = {
-            "email": "test5@gmail.com",
-            "password": "Test@1005",
-        }
-        url = reverse(("registration:user-detail"), kwargs={"pk": user.id})
-        response = self.client.put(url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_partial_update_user(self):
-        """
-        Ensure we can partially update an existing User object.
-        """
-        user = User.objects.create_user("test6@test.com", "Test@1006")
-        data = {
-            "email": "test7@gmail.com",
-        }
-        url = reverse(("registration:user-detail"), kwargs={"pk": user.id})
-        response = self.client.patch(url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_delete_user(self):
-        """
-        Ensure we can delete an existing User object.
-        """
-        user = User.objects.create_user("test8@test.com", "Test@1008")
-        url = reverse(("registration:user-detail"), kwargs={"pk": user.id})
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

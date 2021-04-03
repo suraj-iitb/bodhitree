@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     # Third party apps
     "rest_framework",
     "corsheaders",
+    "rest_framework_simplejwt.token_blacklist",
     # Our apps
     "discussion_forum",
     "cribs",
@@ -125,11 +126,18 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
 }
 
 # CORS hosts
-CORS_ALLOWED_ORIGINS = ["http://127.0.0.1:7654"]
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:7654",
+]
+
+# Simple JWT
+SIMPLE_JWT = {
+    "AUTH_HEADER_TYPES": ("JWT",),
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/

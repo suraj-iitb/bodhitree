@@ -8,7 +8,7 @@ app_name = "registration"
 
 
 router = routers.DefaultRouter()
-router.register(r"user", UserViewSet)
+router.register(r"users", UserViewSet)
 
 urlpatterns = [
     path("api/", include(router.urls)),

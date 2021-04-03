@@ -127,6 +127,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+    "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
 
 # CORS hosts

@@ -46,6 +46,7 @@ class Course(models.Model):
                 fields=["owner", "code", "title"], name="unique_course"
             )
         ]
+        ordering = ["-id"]
 
     def __str__(self):
         return "{}: {}".format(self.code, self.title) if self.code else self.title

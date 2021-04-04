@@ -25,7 +25,6 @@ class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
         """
         Returns whether user has permission on this model or not
         """
-
         if request.method in permissions.SAFE_METHODS:
             return True
 

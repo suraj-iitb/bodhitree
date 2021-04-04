@@ -6,7 +6,6 @@ from .api import CourseViewSet
 
 app_name = "course"
 
-
 router = routers.DefaultRouter()
 router.register(r"courses", CourseViewSet)
 

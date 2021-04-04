@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
-from course.models import Course
+from course.models import Course, CourseHistory
 from registration.models import User
 
 
@@ -41,6 +41,7 @@ class CourseViewSetTest(APITestCase):
         """
         Ensure we can create a new Course object.
         """
+        self.client.login(email="test1@test.com", password="Test@1001")
         data = {
             "owner": CourseViewSetTest.user.id,
             "title": "Course3",
@@ -54,13 +55,20 @@ class CourseViewSetTest(APITestCase):
         """
         Ensure we can update an existing Course object.
         """
+        self.client.login(email="test1@test.com", password="Test@1001")
         course = Course(
             owner_id=CourseViewSetTest.user.id, title="Course4", course_type="O"
         )
         course.save()
-        user = User.objects.create_user("test2@test.com", "Test@1002")
-        user.save()
-        data = {"owner": user.id, "title": "Course5", "course_type": "M"}
+        course_history = CourseHistory(
+            user_id=CourseViewSetTest.user.id, course_id=course.id, role="I", status="E"
+        )
+        course_history.save()
+        data = {
+            "owner": CourseViewSetTest.user.id,
+            "title": "Course5",
+            "course_type": "M",
+        }
         url = reverse(("course:course-detail"), kwargs={"pk": course.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -69,10 +77,15 @@ class CourseViewSetTest(APITestCase):
         """
         Ensure we can partially update an existing Course object.
         """
+        self.client.login(email="test1@test.com", password="Test@1001")
         course = Course(
             owner_id=CourseViewSetTest.user.id, title="Course6", course_type="O"
         )
         course.save()
+        course_history = CourseHistory(
+            user_id=CourseViewSetTest.user.id, course_id=course.id, role="I", status="E"
+        )
+        course_history.save()
         data = {
             "title": "Course7",
         }
@@ -84,10 +97,15 @@ class CourseViewSetTest(APITestCase):
         """
         Ensure we can delete an existing Course object.
         """
+        self.client.login(email="test1@test.com", password="Test@1001")
         course = Course(
             owner_id=CourseViewSetTest.user.id, title="Course8", course_type="O"
         )
         course.save()
+        course_history = CourseHistory(
+            user_id=CourseViewSetTest.user.id, course_id=course.id, role="I", status="E"
+        )
+        course_history.save()
         url = reverse(("course:course-detail"), kwargs={"pk": course.id})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

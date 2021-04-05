@@ -109,3 +109,122 @@ class CourseViewSetTest(APITestCase):
         url = reverse(("course:course-detail"), kwargs={"pk": course.id})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+
+class CourseHistoryViewSetTest(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Set up data for the whole TestCase.
+        """
+        cls.user = User.objects.create_user("test1@test.com", "Test@1001")
+        cls.user.save()
+        cls.course1 = Course(owner_id=cls.user.id, title="Course1", course_type="O")
+        cls.course1.save()
+        cls.course_history1 = CourseHistory(
+            user_id=cls.user.id, course_id=cls.course1.id, role="I", status="E"
+        )
+        cls.course_history1.save()
+
+    def test_get_coursehistories(self):
+        """
+        Ensure we can get all Course objects.
+        """
+        url = reverse("course:coursehistory-list")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_coursehistory(self):
+        """
+        Ensure we can get one Course object.
+        """
+        url = reverse(
+            "course:coursehistory-detail",
+            kwargs={"pk": CourseHistoryViewSetTest.course_history1.id},
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_create_coursehistory(self):
+        """
+        Ensure we can create a new Course object.
+        """
+        user = User.objects.create_user("test2@test.com", "Test@1002")
+        user.save()
+        course1 = Course(owner_id=user.id, title="Course2", course_type="O")
+        course1.save()
+        self.client.login(email="test2@test.com", password="Test@1002")
+        data = {
+            "user": user.id,
+            "course": course1.id,
+            "role": "T",
+            "status": "E",
+        }
+        url = reverse("course:coursehistory-list")
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_update_coursehistories(self):
+        """
+        Ensure we can update an existing Course object.
+        """
+        user = User.objects.create_user("test3@test.com", "Test@1003")
+        user.save()
+        course1 = Course(owner_id=user.id, title="Course1", course_type="O")
+        course1.save()
+        user2 = User.objects.create_user("test4@test.com", "Test@1004")
+        user2.save()
+        course2 = Course(owner_id=user2.id, title="Course1", course_type="O")
+        course2.save()
+        self.client.login(email="test3@test.com", password="Test@1003")
+        course_history = CourseHistory(
+            user_id=user.id, course_id=course1.id, role="T", status="E"
+        )
+        course_history.save()
+        data = {
+            "user": user2.id,
+            "course": course2.id,
+            "role": "T",
+            "status": "E",
+        }
+        url = reverse(("course:coursehistory-detail"), kwargs={"pk": course_history.id})
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_partial_update_coursehistory(self):
+        """
+        Ensure we can partially update an existing Course object.
+        """
+        user = User.objects.create_user("test5@test.com", "Test@1005")
+        user.save()
+        course1 = Course(owner_id=user.id, title="Course1", course_type="O")
+        course1.save()
+        self.client.login(email="test5@test.com", password="Test@1005")
+        course_history = CourseHistory(
+            user_id=user.id, course_id=course1.id, role="T", status="E"
+        )
+        course_history.save()
+        data = {
+            "role": "I",
+            "status": "E",
+        }
+        url = reverse(("course:coursehistory-detail"), kwargs={"pk": course_history.id})
+        response = self.client.patch(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_coursehistory(self):
+        """
+        Ensure we can delete an existing Course object.
+        """
+        user = User.objects.create_user("test6@test.com", "Test@1006")
+        user.save()
+        course1 = Course(owner_id=user.id, title="Course1", course_type="O")
+        course1.save()
+        self.client.login(email="test6@test.com", password="Test@1006")
+        course_history = CourseHistory(
+            user_id=user.id, course_id=course1.id, role="T", status="E"
+        )
+        course_history.save()
+        url = reverse(("course:coursehistory-detail"), kwargs={"pk": course_history.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

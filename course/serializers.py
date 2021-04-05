@@ -16,3 +16,9 @@ class CourseSerializer(serializers.ModelSerializer):
         )
         course_history.save()
         return instance
+
+
+class CourseHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseHistory
+        fields = "__all__"

@@ -66,6 +66,7 @@ class CourseHistory(models.Model):
                 fields=["course", "user"], name="unique_course_history"
             )
         ]
+        ordering = ["-id"]
 
     def __str__(self):
         return "{}: {}".format(self.user, self.course)

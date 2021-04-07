@@ -20,6 +20,7 @@ class UserViewSetTests(APITestCase):
         """
         Ensure we can get all User objects.
         """
+        self.client.login(email="test1@test.com", password="Test@1001")
         url = reverse("registration:user-list")
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -28,6 +29,7 @@ class UserViewSetTests(APITestCase):
         """
         Ensure we can get one User object.
         """
+        self.client.login(email="test1@test.com", password="Test@1001")
         url = reverse(
             "registration:user-detail", kwargs={"pk": UserViewSetTests.user1.id}
         )
@@ -42,3 +44,40 @@ class UserViewSetTests(APITestCase):
         url = reverse("registration:user-list")
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_update_user(self):
+        """
+        Ensure we can update a User object.
+        """
+        user = User.objects.create_user("test3@test.com", "Test@1003")
+        user.save()
+        self.client.login(email="test3@test.com", password="Test@1003")
+        data = {"email": "test4@test.com", "password": "Test@1004"}
+        url = reverse(("registration:user-detail"), kwargs={"pk": user.id})
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_partial_update_user(self):
+        """
+        Ensure we can partial update a User object.
+        """
+        user = User.objects.create_user("test5@test.com", "Test@1005")
+        user.save()
+        self.client.login(email="test5@test.com", password="Test@1005")
+        data = {
+            "email": "test6@test.com",
+        }
+        url = reverse(("registration:user-detail"), kwargs={"pk": user.id})
+        response = self.client.patch(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_user(self):
+        """
+        Ensure we can delete a User object.
+        """
+        user = User.objects.create_user("test7@test.com", "Test@1007")
+        user.save()
+        self.client.login(email="test7@test.com", password="Test@1007")
+        url = reverse(("registration:user-detail"), kwargs={"pk": user.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

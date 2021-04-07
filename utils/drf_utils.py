@@ -48,3 +48,32 @@ class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
                 if course_history.user == request.user:
                     return True
             return False
+
+
+class UserPermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+
+        """
+        Returns whether user has permission on this model or not
+        """
+        if request.method in permissions.SAFE_METHODS:
+            if request.user.is_authenticated:
+                return True
+        elif request.method == "POST":
+            return True
+        else:
+            if request.user.is_authenticated:
+                return True
+            return False
+
+    def has_object_permission(self, request, view, obj):
+        """
+        Returns whether user has permission on this object or not
+        """
+        if request.method in permissions.SAFE_METHODS:
+            if request.user.is_authenticated:
+                return True
+        else:
+            if request.user.is_authenticated and obj.email == request.user.email:
+                return True
+            return False

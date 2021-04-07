@@ -3,5 +3,8 @@
 # Data
 main/data/
 
+#Logs
+*.log
+
 # Venv
 pre_commit_env

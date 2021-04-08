@@ -12,7 +12,23 @@ from course.models import (
     Section,
 )
 from cribs.models import Crib
+from discussion_forum.models import (
+    DiscussionComment,
+    DiscussionForum,
+    DiscussionReply,
+    DiscussionThread,
+)
 from document.models import Document
+from email_notices.models import Email
+from programming_assignments.models import (
+    AdvancedProgrammingAssignment,
+    AdvancedProgrammingAssignmentHistory,
+    AssignmentSection,
+    Exam,
+    SimpleProgrammingAssignment,
+    SimpleProgrammingAssignmentHistory,
+    Testcase,
+)
 from quiz.models import (
     DescriptiveQuestion,
     FixedAnswerQuestion,
@@ -20,6 +36,10 @@ from quiz.models import (
     QuestionModule,
     Quiz,
     SingleCorrectQuestion,
+)
+from subjective_assignments.models import (
+    SubjectiveAssignment,
+    SubjectiveAssignmentHistory,
 )
 from video.models import QuizMarker, SectionMarker, Video
 
@@ -44,8 +64,68 @@ class IsInstructorOrTA(permissions.BasePermission):
                     QuestionModule, SingleCorrectQuestion, MultipleCorrectQuestion,
                     FixedAnswerQuestion, DescriptiveQuestion,
                     Chapter, Schedule, Page, Announcement,
-                    Section, Notification
+                    Section, Notification, DiscussionForum,
+                    SimpleProgrammingAssignment, AdvancedProgrammingAssignment,
+                    AssignmentSection, Testcase, Exam, SubjectiveAssignment
     """
+
+    def get_course_from_object(self, obj):
+        """
+        get course using obj instance
+        """
+        if type(obj) in (Video, Document, Quiz):
+            course = obj.chapter.course if obj.chapter else obj.section.chapter.course
+        elif type(obj) in (SectionMarker, QuizMarker):
+            course = (
+                obj.video.chapter.course
+                if obj.video.chapter
+                else obj.video.section.chapter.course
+            )
+        elif type(obj) == QuestionModule:
+            course = (
+                obj.quiz.chapter.course
+                if obj.quiz.chapter
+                else obj.quiz.section.chapter.course
+            )
+        elif type(obj) in (
+            SingleCorrectQuestion,
+            MultipleCorrectQuestion,
+            FixedAnswerQuestion,
+            DescriptiveQuestion,
+        ):
+            course = (
+                obj.question_module.quiz.chapter.course
+                if obj.question_module.quiz.chapter
+                else obj.question_module.quiz.section.chapter.course
+            )
+        elif type(obj) in (
+            Chapter,
+            Schedule,
+            Announcement,
+            Page,
+            Notification,
+            DiscussionForum,
+            Email,
+        ):
+            course = obj.course
+        elif type(obj) == Section:
+            course = obj.chapter.course
+        elif type(obj) in (
+            SimpleProgrammingAssignment,
+            AssignmentSection,
+            Exam,
+            SubjectiveAssignment,
+        ):
+            course = obj.assignment.course
+        elif type(obj) == AdvancedProgrammingAssignment:
+            course = obj.simple_programming_assignment.assignment.course
+        elif type(obj) == Testcase:
+            course = (
+                obj.assignment.course
+                if obj.assignment
+                else obj.assignment_section.assignment.course
+            )
+        return course
 
     def has_permission(self, request, view):
         """
@@ -63,42 +143,9 @@ class IsInstructorOrTA(permissions.BasePermission):
         if request.user.is_authenticated:
             if request.method in permissions.SAFE_METHODS:
                 return True
-
-            # find course using obj instance
-            if type(obj) in (Video, Document, Quiz):
-                course = (
-                    obj.chapter.course if obj.chapter else obj.section.chapter.course
-                )
-            elif type(obj) in (SectionMarker, QuizMarker):
-                course = (
-                    obj.video.chapter.course
-                    if obj.video.chapter
-                    else obj.video.section.chapter.course
-                )
-            elif type(obj) == QuestionModule:
-                course = (
-                    obj.quiz.chapter.course
-                    if obj.quiz.chapter
-                    else obj.quiz.section.chapter.course
-                )
-            elif type(obj) in (
-                SingleCorrectQuestion,
-                MultipleCorrectQuestion,
-                FixedAnswerQuestion,
-                DescriptiveQuestion,
-            ):
-                course = (
-                    obj.question_module.quiz.chapter.course
-                    if obj.question_module.quiz.chapter
-                    else obj.question_module.quiz.section.chapter.course
-                )
-            elif type(obj) in (Chapter, Schedule, Announcement, Page, Notification):
-                course = obj.course
-            elif type(obj) == Section:
-                course = obj.chapter.course
-
             course_histories = CourseHistory.objects.filter(
-                Q(course=course) & (Q(role="I") | Q(role="T") & Q(user=request.user))
+                Q(course=self.get_course_from_object(obj))
+                & (Q(role="I") | Q(role="T") & Q(user=request.user))
             )
             if course_histories is not None:
                 return True
@@ -185,7 +232,31 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
     Applicable for: VideoHistory, SingleCorrectQuestionHistory,
                     MultipleCorrectQuestionHistory, FixedAnswerQuestionHistory,
                     DescriptiveQuestionhistory, CourseHistory, Crib, CribReply,
+                    DiscussionThread, DiscussionComment, DiscussionReply,
+                    SimpleProgrammingAssignmentHistory,
+                    AdvancedProgrammingAssignmentHistory, TestcaseHistory,
+                    ExamHistory, SubjectiveAssignmentHistory,
+                    StudentProfile, InstructorProfile, Registration
     """
+
+    def get_user_from_object(self, obj):
+        """
+        get user from object instance
+        """
+        if type(obj) == Crib:
+            user = obj.created_by
+        if type(obj) in (DiscussionComment, DiscussionThread, DiscussionReply):
+            user = obj.author
+        if type(obj) in (
+            SimpleProgrammingAssignmentHistory,
+            SubjectiveAssignmentHistory,
+        ):
+            user = obj.assignment_history.user
+        if type(obj) == AdvancedProgrammingAssignmentHistory:
+            user = obj.simple_programming_assignment_history.assignment_history.user
+        else:
+            user = obj.user
+        return user
 
     def has_permission(self, request, view):
         """
@@ -204,12 +275,28 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
             if request.method in permissions.SAFE_METHODS:
                 return True
 
-            # find user using obj instance
-            if type(obj) == Crib:
-                user = obj.created_by
-            else:
-                user = obj.user
-
-            if user.email == request.user.email:
+            if self.get_user_from_object(obj).email == request.user.email:
                 return True
             return False
+
+
+class IsAdminOrReadOnly(permissions.BasePermission):
+    """
+    Allows:
+        1. all permission to admin users
+        2. list/retrieve to authenticated users
+
+    Applicable for: SubscriptionHistory
+    """
+
+    def has_permission(self, request, view):
+        """
+        Applicable at model level (list, create, retrieve, update,
+                                   partial_update, destroy)
+        """
+        if request.user.is_authenticated:
+            if request.method in permissions.SAFE_METHODS:
+                return True
+            elif request.user.is_admin:
+                return True
+        return False

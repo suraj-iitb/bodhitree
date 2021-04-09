@@ -86,6 +86,7 @@ class Chapter(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["course", "title"], name="unique_chapter")
         ]
+        ordering = ["-id"]
 
     def __str__(self):
         return self.title

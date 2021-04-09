@@ -1,10 +1,10 @@
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
 
-from utils.drf_utils import IsInstructorOrTAOrReadOnly
+from utils.drf_utils import IsInstructorOrTA, IsInstructorOrTAOrReadOnly
 
-from .models import Course, CourseHistory
-from .serializers import CourseHistorySerializer, CourseSerializer
+from .models import Chapter, Course, CourseHistory
+from .serializers import ChapterSerializer, CourseHistorySerializer, CourseSerializer
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -41,5 +41,20 @@ class CourseHistoryViewSet(viewsets.ModelViewSet):
         "course__title",
         "role",
         "status",
+    )
+    ordering_fields = ("id",)
+
+
+class ChapterViewSet(viewsets.ModelViewSet):
+    queryset = Chapter.objects.all()
+    serializer_class = ChapterSerializer
+    permission_classes = (IsInstructorOrTA,)
+    filterset_fields = (
+        "course__title",
+        "title",
+    )
+    search_fields = (
+        "course__title",
+        "title",
     )
     ordering_fields = ("id",)

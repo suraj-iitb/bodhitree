@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Chapter, Course, CourseHistory
+from .models import Chapter, Course, CourseHistory, Page
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -27,4 +27,10 @@ class CourseHistorySerializer(serializers.ModelSerializer):
 class ChapterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chapter
+        fields = "__all__"
+
+
+class PageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Page
         fields = "__all__"

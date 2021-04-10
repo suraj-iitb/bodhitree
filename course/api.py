@@ -1,4 +1,4 @@
-from rest_framework import mixins, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -34,146 +34,98 @@ class CourseViewSet(viewsets.ModelViewSet):
     ordering_fields = ("id",)
 
 
-class PageViewSet(
-    viewsets.GenericViewSet,
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin,
-    mixins.DestroyModelMixin,
-):
+class PageViewSet(viewsets.GenericViewSet):
     queryset = Page.objects.all()
     serializer_class = PageSerializer
     permission_classes = (IsInstructorOrTA,)
     pagination_class = None
 
+    def _checks(self, course_id, user):
+        """To check if the user is registered in a given course"""
+        try:
+            Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            data = {
+                "error": "Course with id: {} does not exist".format(course_id),
+            }
+            return Response(data, status.HTTP_400_BAD_REQUEST)
+
+        if check_course_registration(course_id, user) is False:
+            data = {
+                "error": "User: {} not registered in course with id: {}".format(
+                    user, course_id
+                ),
+            }
+            return Response(data, status.HTTP_400_BAD_REQUEST)
+        return True
+
+    def _get_page(self, page_id):
+        """Get page if it exists"""
+        try:
+            page = Page.objects.get(id=page_id)
+            return page
+        except Page.DoesNotExist:
+            data = {"error": "Page with id: {} does not exist".format(page_id)}
+            return Response(data, status.HTTP_400_BAD_REQUEST)
+
     @action(detail=True, methods=["POST"])
     def add_page(self, request, pk):
         """Add a page to a course with primary key as pk"""
-        if check_course_registration(pk, request.user) is False:
-            data = {
-                "error": "User: {} not registered in Course with id: {}".format(
-                    request.user, pk
-                )
-            }
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        try:
-            Course.objects.get(id=pk)
-        except Course.DoesNotExist:
-            data = {"error": "Course with id: {} does not exist".format(pk)}
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        serializer = PageSerializer(data=request.data)
-        if serializer.is_valid():
-            page = serializer.save()
-            return Response(PageSerializer(page).data)
-        return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
+        check = self._checks(pk, request.user)
+        if check is True:
+            serializer = self.get_serializer(data=request.data)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return check
 
     @action(detail=True, methods=["GET"])
     def list_pages(self, request, pk):
         """Get all pages of a course with primary key as pk"""
-        if check_course_registration(pk, request.user) is False:
-            data = {
-                "error": "User: {} not registered in Course with id: {}".format(
-                    request.user, pk
-                )
-            }
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        try:
-            Course.objects.get(id=pk)
-        except Course.DoesNotExist:
-            data = {"error": "Course with id: {} does not exist".format(pk)}
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        pages = Page.objects.filter(course_id=pk)
-        serializer = PageSerializer(pages, many=True)
-        return Response(serializer.data)
+        check = self._checks(pk, request.user)
+        if check is True:
+            pages = Page.objects.filter(course_id=pk)
+            serializer = self.get_serializer(pages, many=True)
+            return Response(serializer.data)
+        return check
 
     @action(detail=True, methods=["GET"])
-    def page_retrieve(self, request, pk):
-        """Get 1 page of a course with primary key as pk"""
-        if check_course_registration(pk, request.user) is False:
-            data = {
-                "error": "User: {} not registered in Course with id: {}".format(
-                    request.user, pk
-                )
-            }
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        try:
-            Course.objects.get(id=pk)
-        except Course.DoesNotExist:
-            data = {"error": "Course with id: {} does not exist".format(pk)}
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        pages = Page.objects.filter(course_id=pk)
-        serializer = PageSerializer(pages)
-        return Response(serializer.data)
+    def retrieve_page(self, request, pk):
+        """Get a page with primary key as pk"""
+        page = self._get_page(pk)
+        if type(page) != Page:
+            return page
+        check = self._checks(page.course.id, request.user)
+        if check is True:
+            serializer = self.get_serializer(page)
+            return Response(serializer.data)
+        return check
 
-    @action(detail=True, methods=["PUT"])
+    @action(detail=True, methods=["PUT", "PATCH"])
     def update_page(self, request, pk):
-        """Update page of a course with page primary key as pk"""
-        page = Page.objects.get(id=pk)
-        course_id = page.course.id
-        if check_course_registration(course_id, request.user) is False:
-            data = {
-                "error": "User: {} not registered in Course with id: {}".format(
-                    request.user, course_id
-                )
-            }
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        try:
-            Course.objects.get(id=course_id)
-        except Course.DoesNotExist:
-            data = {"error": "Course with id: {} does not exist".format(course_id)}
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        serializer = PageSerializer(page, data=request.data)
-        if serializer.is_valid():
-            page = serializer.save()
-            return Response(PageSerializer(page).data)
-        return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=["PATCH"])
-    def partial_update_page(self, request, pk):
-        """Partial update page of a course with page primary key as pk"""
-        page = Page.objects.get(id=pk)
-        course_id = page.course.id
-        if check_course_registration(course_id, request.user) is False:
-            data = {
-                "error": "User: {} not registered in Course with id: {}".format(
-                    request.user, course_id
-                )
-            }
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        try:
-            Course.objects.get(id=course_id)
-        except Course.DoesNotExist:
-            data = {"error": "Course with id: {} does not exist".format(course_id)}
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        serializer = PageSerializer(page, data=request.data, partial=True)
-        if serializer.is_valid():
-            page = serializer.save()
-            return Response(PageSerializer(page).data)
-        return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
+        """Update page with primary key as pk"""
+        page = self._get_page(pk)
+        if type(page) != Page:
+            return page
+        check = self._checks(page.course.id, request.user)
+        if check is True:
+            serializer = self.get_serializer(page, data=request.data, partial=True)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(serializer.data)
+        return check
 
     @action(detail=True, methods=["DELETE"])
-    def destroy_page(self, request, pk):
-        """Delete page of a course with page primary key as pk"""
-        try:
-            page = Page.objects.get(id=pk)
-        except Page.DoesNotExist:
-            data = {"error": "Page with id: {} does not exist".format(pk)}
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        course_id = page.course.id
-        if check_course_registration(course_id, request.user) is False:
-            data = {
-                "error": "User: {} not registered in Course with id: {}".format(
-                    request.user, course_id
-                )
-            }
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        try:
-            Course.objects.get(id=course_id)
-        except Course.DoesNotExist:
-            data = {"error": "Course with id: {} does not exist".format(course_id)}
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        page.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    def delete_page(self, request, pk):
+        """Delete page with primary key as pk"""
+        page = self._get_page(pk)
+        if type(page) != Page:
+            return page
+        check = self._checks(page.course.id, request.user)
+        if check is True:
+            page.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return check
 
 
 class CourseHistoryViewSet(viewsets.ModelViewSet):

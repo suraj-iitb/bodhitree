@@ -1,5 +1,7 @@
 import os
 
+from course.models import CourseHistory
+
 
 def get_course_folder(course):
     course_id = course.id
@@ -24,3 +26,11 @@ def get_assignment_file_upload_path(assignment, assignment_type, sub_folder, fil
     course_folder = get_course_folder(assignment.course)
     assignment_folder = get_assignment_folder(assignment, assignment_type)
     return os.path.join(course_folder, assignment_folder, sub_folder, filename)
+
+
+def check_course_registration(course, user):
+    course_history = CourseHistory.objects.filter(course=course, user=user)
+    if course_history:
+        return True
+    else:
+        return False

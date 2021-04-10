@@ -346,6 +346,8 @@ class PageViewSetTest(APITestCase):
         cls.user.save()
         cls.course = Course(owner_id=cls.user.id, title="Course", course_type="O")
         cls.course.save()
+        cls.course_history = CourseHistory(user=cls.user, course=cls.course)
+        cls.course_history.save()
         cls.page = Page(course=cls.course, title="Page 3")
         cls.page.save()
 
@@ -360,36 +362,21 @@ class PageViewSetTest(APITestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_page_destroy(self):
-        self.client.login(email="test1@test.com", password="Test@1001")
-        page = Page(course=PageViewSetTest.course, title="Page 2")
-        page.save()
-        url = reverse(("course:page-detail"), kwargs={"pk": page.id})
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
     def test_page_retrieve(self):
         self.client.login(email="test1@test.com", password="Test@1001")
-        url = reverse(("course:page-detail"), kwargs={"pk": PageViewSetTest.page.id})
+        url = reverse(
+            ("course:page-list-pages"), kwargs={"pk": PageViewSetTest.course.id}
+        )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_page_list(self):
+    def test_list_pages(self):
         self.client.login(email="test1@test.com", password="Test@1001")
-        url = reverse(("course:page-list"))
+        url = reverse("course:page-list-pages", args=[PageViewSetTest.course.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_page_partial_update(self):
-        self.client.login(email="test1@test.com", password="Test@1001")
-        page = Page(course=PageViewSetTest.course, title="Page 4")
-        page.save()
-        data = {"title": "Page 5"}
-        url = reverse(("course:page-detail"), kwargs={"pk": page.id})
-        response = self.client.patch(url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_page_update(self):
+    def test_update_page(self):
         self.client.login(email="test1@test.com", password="Test@1001")
         page = Page(course=PageViewSetTest.course, title="Page 6")
         page.save()
@@ -398,6 +385,23 @@ class PageViewSetTest(APITestCase):
             "title": "Page 7",
             "description": "Description of page",
         }
-        url = reverse(("course:page-detail"), kwargs={"pk": page.id})
+        url = reverse("course:page-update-page", kwargs={"pk": page.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_partial_update_page(self):
+        self.client.login(email="test1@test.com", password="Test@1001")
+        page = Page(course=PageViewSetTest.course, title="Page 4")
+        page.save()
+        data = {"title": "Page 5"}
+        url = reverse(("course:page-partial-update-page"), kwargs={"pk": page.id})
+        response = self.client.patch(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_page_destroy(self):
+        self.client.login(email="test1@test.com", password="Test@1001")
+        page = Page(course=PageViewSetTest.course, title="Page 2")
+        page.save()
+        url = reverse(("course:page-destroy-page"), kwargs={"pk": page.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

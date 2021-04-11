@@ -3,8 +3,14 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.db import IntegrityError
+
+from discussion_forum.models import DiscussionForum
 from utils.drf_utils import IsInstructorOrTA, IsInstructorOrTAOrReadOnly
-from utils.utils import check_course_registration, is_instructor_or_ta
+from utils.utils import (
+    check_course_registration,
+    has_valid_subscription,
+    is_instructor_or_ta,
+)
 
 from .models import Chapter, Course, CourseHistory, Page
 from .serializers import (
@@ -32,6 +38,32 @@ class CourseViewSet(viewsets.ModelViewSet):
         "course_type",
     )
     ordering_fields = ("id",)
+
+    def create(self, request):
+        user = request.user
+        data = request.data.copy()
+        anonymous_to_instructor = data.pop("anonymous_to_instructor", True)
+        send_email_to_all = data.pop("send_email_to_all", False)
+        if not has_valid_subscription(user):
+            data = {
+                "error": "User: {} does not have a valid subscription or the"
+                "limit of number of courses in subscription exceeded".format(user),
+            }
+            return Response(data, status.HTTP_401_UNAUTHORIZED)
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            course_history = CourseHistory(
+                user=user, course=serializer.instance, role="I", status="E"
+            )
+            course_history.save()
+            discussion_forum = DiscussionForum(
+                course=serializer.instance,
+                anonymous_to_instructor=anonymous_to_instructor,
+                send_email_to_all=send_email_to_all,
+            )
+            discussion_forum.save()
+            return Response({}, status=status.HTTP_201_CREATED)
 
 
 class PageViewSet(viewsets.GenericViewSet):

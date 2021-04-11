@@ -2,6 +2,8 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
+from registration.models import College, Department
+
 
 COURSE_TYPES = (
     ("O", "Open"),
@@ -39,6 +41,12 @@ class Course(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
     chapters_sequence = ArrayField(models.IntegerField(), null=True, blank=True)
+    institute = models.ForeignKey(
+        College, on_delete=models.CASCADE, null=True, blank=True
+    )
+    department = models.ForeignKey(
+        Department, on_delete=models.CASCADE, null=True, blank=True
+    )
 
     class Meta:
         constraints = [

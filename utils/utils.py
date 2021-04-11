@@ -2,7 +2,8 @@ import os
 
 from django.db.models import Q
 
-from course.models import CourseHistory
+from course.models import Course, CourseHistory
+from registration.models import SubscriptionHistory
 
 
 def get_course_folder(course):
@@ -42,5 +43,16 @@ def is_instructor_or_ta(course_id, user):
         Q(course_id=course_id) & (Q(role="I") | Q(role="T")) & Q(user=user)
     )
     if course_history:
+        return True
+    return False
+
+
+def has_valid_subscription(user):
+    no_of_courses = Course.objects.filter(owner=user)
+    subscription_history = SubscriptionHistory.objects.filter(user=user)
+    if (
+        subscription_history
+        and len(no_of_courses) < subscription_history[0].subscription.no_of_courses
+    ):
         return True
     return False

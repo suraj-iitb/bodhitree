@@ -1,9 +1,11 @@
+import datetime
+
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
 from course.models import Course, CourseHistory, Page
-from registration.models import User
+from registration.models import PlanType, Subscription, SubscriptionHistory, User
 
 
 class CourseViewSetTest(APITestCase):
@@ -18,6 +20,29 @@ class CourseViewSetTest(APITestCase):
         cls.course1.save()
         cls.course2 = Course(owner_id=cls.user.id, title="Course2", course_type="M")
         cls.course2.save()
+        cls.plan_type = PlanType(name="unlimited")
+        cls.plan_type.save()
+        cls.subscription = Subscription(
+            plan_type=cls.plan_type,
+            no_of_courses=10,
+            no_of_students_per_course=25,
+            prog_assign_enabled=True,
+            subjective_assign_enabled=True,
+            email_enabled=True,
+            per_video_limit=10000,
+            per_video_limit_unit="MB",
+            total_video_limit=10000,
+            total_video_limit_unit="MB",
+            subjective_assign_submission_size_per_student=10000,
+            subjective_assign_submission_size_per_student_unit="MB",
+        )
+        cls.subscription.save()
+        cls.subscription_history = SubscriptionHistory(
+            user=cls.user,
+            subscription=cls.subscription,
+            duration=datetime.timedelta(days=3),
+        )
+        cls.subscription_history.save()
 
     def test_get_courses(self):
         """
@@ -46,6 +71,8 @@ class CourseViewSetTest(APITestCase):
             "owner": CourseViewSetTest.user.id,
             "title": "Course3",
             "course_type": "O",
+            "anonymous_to_instructor": True,
+            "send_email_to_all": True,
         }
         url = reverse("course:course-list")
         response = self.client.post(url, data)

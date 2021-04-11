@@ -5,7 +5,9 @@ from course.models import CONTENT_TYPES, USER_ROLES, Course
 
 
 class DiscussionForum(models.Model):
-    course = models.OneToOneField(Course, on_delete=models.CASCADE)
+    course = models.OneToOneField(
+        Course, on_delete=models.CASCADE, related_name="df_settings"
+    )
     anonymous_to_instructor = models.BooleanField(default=True)
     send_email_to_all = models.BooleanField(default=False)
 

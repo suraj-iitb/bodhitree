@@ -4,7 +4,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from utils.drf_utils import IsInstructorOrTA, IsInstructorOrTAOrReadOnly
-from utils.utils import check_course_registration
+from utils.utils import check_course_registration, is_instructor_or_ta
 
 from .models import Chapter, Course, CourseHistory, Page
 from .serializers import (
@@ -50,7 +50,7 @@ class PageViewSet(viewsets.GenericViewSet):
             }
             return Response(data, status.HTTP_400_BAD_REQUEST)
 
-        if check_course_registration(course_id, user) is False:
+        if not check_course_registration(course_id, user):
             data = {
                 "error": "User: {} not registered in course with id: {}".format(
                     user, course_id
@@ -59,19 +59,19 @@ class PageViewSet(viewsets.GenericViewSet):
             return Response(data, status.HTTP_400_BAD_REQUEST)
         return True
 
-    def _get_page(self, page_id):
-        """Get page if it exists"""
-        try:
-            page = Page.objects.get(id=page_id)
-            return page
-        except Page.DoesNotExist:
-            data = {"error": "Page with id: {} does not exist".format(page_id)}
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-
     @action(detail=True, methods=["POST"])
     def add_page(self, request, pk):
         """Add a page to a course with primary key as pk"""
-        check = self._checks(pk, request.user)
+        user = request.user
+        instructor_or_ta = is_instructor_or_ta(pk, user)
+        if not instructor_or_ta:
+            data = {
+                "error": "User: {} is not instructor/ta of course with id: {}".format(
+                    user, pk
+                ),
+            }
+            return Response(data, status.HTTP_401_UNAUTHORIZED)
+        check = self._checks(pk, user)
         if check is True:
             serializer = self.get_serializer(data=request.data)
             if serializer.is_valid(raise_exception=True):
@@ -92,9 +92,7 @@ class PageViewSet(viewsets.GenericViewSet):
     @action(detail=True, methods=["GET"])
     def retrieve_page(self, request, pk):
         """Get a page with primary key as pk"""
-        page = self._get_page(pk)
-        if type(page) != Page:
-            return page
+        page = self.get_object()
         check = self._checks(page.course.id, request.user)
         if check is True:
             serializer = self.get_serializer(page)
@@ -104,9 +102,7 @@ class PageViewSet(viewsets.GenericViewSet):
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_page(self, request, pk):
         """Update page with primary key as pk"""
-        page = self._get_page(pk)
-        if type(page) != Page:
-            return page
+        page = self.get_object()
         check = self._checks(page.course.id, request.user)
         if check is True:
             serializer = self.get_serializer(page, data=request.data, partial=True)
@@ -118,9 +114,7 @@ class PageViewSet(viewsets.GenericViewSet):
     @action(detail=True, methods=["DELETE"])
     def delete_page(self, request, pk):
         """Delete page with primary key as pk"""
-        page = self._get_page(pk)
-        if type(page) != Page:
-            return page
+        page = self.get_object()
         check = self._checks(page.course.id, request.user)
         if check is True:
             page.delete()

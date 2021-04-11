@@ -1,5 +1,7 @@
 import os
 
+from django.db.models import Q
+
 from course.models import CourseHistory
 
 
@@ -28,9 +30,17 @@ def get_assignment_file_upload_path(assignment, assignment_type, sub_folder, fil
     return os.path.join(course_folder, assignment_folder, sub_folder, filename)
 
 
-def check_course_registration(course, user):
-    course_history = CourseHistory.objects.filter(course=course, user=user)
+def check_course_registration(course_id, user):
+    course_history = CourseHistory.objects.filter(course_id=course_id, user=user)
     if course_history:
         return True
-    else:
-        return False
+    return False
+
+
+def is_instructor_or_ta(course_id, user):
+    course_history = CourseHistory.objects.filter(
+        Q(course_id=course_id) & (Q(role="I") | Q(role="T")) & Q(user=user)
+    )
+    if course_history:
+        return True
+    return False

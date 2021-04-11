@@ -6,4 +6,4 @@ from .models import DiscussionForum
 class DiscussionForumSerializer(serializers.ModelSerializer):
     class Meta:
         model = DiscussionForum
-        fields = "__all__"
+        fields = ["anonymous_to_instructor", "send_email_to_all"]

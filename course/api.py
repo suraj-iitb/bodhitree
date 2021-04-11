@@ -4,7 +4,6 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.db import IntegrityError
 
-from discussion_forum.models import DiscussionForum
 from utils.drf_utils import IsInstructorOrTA, IsInstructorOrTAOrReadOnly
 from utils.utils import (
     check_course_registration,
@@ -42,8 +41,6 @@ class CourseViewSet(viewsets.ModelViewSet):
     def create(self, request):
         user = request.user
         data = request.data.copy()
-        anonymous_to_instructor = data.pop("anonymous_to_instructor", True)
-        send_email_to_all = data.pop("send_email_to_all", False)
         if not has_valid_subscription(user):
             data = {
                 "error": "User: {} does not have a valid subscription or the"
@@ -57,12 +54,6 @@ class CourseViewSet(viewsets.ModelViewSet):
                 user=user, course=serializer.instance, role="I", status="E"
             )
             course_history.save()
-            discussion_forum = DiscussionForum(
-                course=serializer.instance,
-                anonymous_to_instructor=anonymous_to_instructor,
-                send_email_to_all=send_email_to_all,
-            )
-            discussion_forum.save()
             return Response({}, status=status.HTTP_201_CREATED)
 
 

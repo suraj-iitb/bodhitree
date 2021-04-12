@@ -39,7 +39,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def create(self, request):
         user = request.user
-        data = request.data.copy()
+        data = request.data
         if not has_valid_subscription(user):
             data = {
                 "error": "User: {} does not have a valid subscription or the"
@@ -54,6 +54,21 @@ class CourseViewSet(viewsets.ModelViewSet):
             )
             course_history.save()
             return Response({}, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["PUT", "PATCH"])
+    def update_course(self, request, pk):
+        user = request.user
+        data = request.data
+        if not has_valid_subscription(user):
+            data = {
+                "error": "User: {} does not have a valid subscription or the"
+                "limit of number of courses in subscription exceeded".format(user),
+            }
+            return Response(data, status.HTTP_401_UNAUTHORIZED)
+        serializer = self.get_serializer(self.get_object(), data=data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data)
 
 
 class PageViewSet(viewsets.GenericViewSet):

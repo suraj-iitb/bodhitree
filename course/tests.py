@@ -5,6 +5,7 @@ from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
 from course.models import Course, CourseHistory, Page
+from discussion_forum.models import DiscussionForum
 from registration.models import PlanType, Subscription, SubscriptionHistory, User
 
 
@@ -71,8 +72,10 @@ class CourseViewSetTest(APITestCase):
             "owner": CourseViewSetTest.user.id,
             "title": "Course3",
             "course_type": "O",
-            "anonymous_to_instructor": True,
-            "send_email_to_all": True,
+            "df_settings": {
+                "anonymous_to_instructor": True,
+                "send_email_to_all": True,
+            },
         }
         url = reverse("course:course-list")
         response = self.client.post(url, data)
@@ -84,19 +87,27 @@ class CourseViewSetTest(APITestCase):
         """
         self.client.login(email="test1@test.com", password="Test@1001")
         course = Course(
-            owner_id=CourseViewSetTest.user.id, title="Course4", course_type="O"
+            owner=CourseViewSetTest.user,
+            title="Course4",
+            course_type="O",
         )
         course.save()
-        course_history = CourseHistory(
-            user_id=CourseViewSetTest.user.id, course_id=course.id, role="I", status="E"
+        discussion_forum = DiscussionForum(
+            course=course,
+            anonymous_to_instructor="True",
+            send_email_to_all="True",
         )
-        course_history.save()
+        discussion_forum.save()
         data = {
             "owner": CourseViewSetTest.user.id,
             "title": "Course5",
             "course_type": "M",
+            "df_settings": {
+                "anonymous_to_instructor": True,
+                "send_email_to_all": False,
+            },
         }
-        url = reverse(("course:course-detail"), kwargs={"pk": course.id})
+        url = reverse("course:course-update-course", kwargs={"pk": course.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -109,14 +120,19 @@ class CourseViewSetTest(APITestCase):
             owner_id=CourseViewSetTest.user.id, title="Course6", course_type="O"
         )
         course.save()
-        course_history = CourseHistory(
-            user_id=CourseViewSetTest.user.id, course_id=course.id, role="I", status="E"
+        discussion_forum = DiscussionForum(
+            course=course,
+            anonymous_to_instructor="True",
+            send_email_to_all="True",
         )
-        course_history.save()
+        discussion_forum.save()
         data = {
-            "title": "Course7",
+            "title": "Course6",
+            "df_settings": {
+                "anonymous_to_instructor": True,
+            },
         }
-        url = reverse(("course:course-detail"), kwargs={"pk": course.id})
+        url = reverse(("course:course-update-course"), kwargs={"pk": course.id})
         response = self.client.patch(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

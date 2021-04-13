@@ -2,7 +2,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-
+from django.db import IntegrityError
 from utils.drf_utils import IsInstructorOrTA, IsInstructorOrTAOrReadOnly
 from utils.utils import check_course_registration, is_instructor_or_ta
 
@@ -154,3 +154,15 @@ class ChapterViewSet(viewsets.ModelViewSet):
         "title",
     )
     ordering_fields = ("id",)
+
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.save()
+        except IntegrityError as e:
+            error = {
+                "error": "Chapter with title '{}' already exists".format(serializer.initial_data["title"])
+            }
+            return Response(error, status=status.HTTP_403_FORBIDDEN)    
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

@@ -1,0 +1,33 @@
+- model: registration.user
+  pk: 1
+  fields:
+    password: pbkdf2_sha256$216000$bzpup20m98Nu$UY5+kx6XXznsDK6QhaDbxO1mTgncjo1D7wbMZbm2vvY=
+    email: instructor@bodhitree.com
+    full_name: Instructor
+    is_active: true
+    is_staff: false
+    is_admin: false
+    date_joined: 2021-04-13 16:53:30.923296+00:00
+    last_login: 2021-04-13 16:53:30.929793+00:00
+- model: registration.user
+  pk: 2
+  fields:
+    password: pbkdf2_sha256$216000$UWIAOISyEoUc$SPfMdb2ghodeCVAHwYf8DKgwYOy7sR98pJO8dyUlKkw=
+    email: ta@bodhitree.com
+    full_name: TA
+    is_active: true
+    is_staff: false
+    is_admin: false
+    date_joined: 2021-04-13 16:54:18.188574+00:00
+    last_login: 2021-04-13 16:54:18.195991+00:00
+- model: registration.user
+  pk: 3
+  fields:
+    password: pbkdf2_sha256$216000$aBhdoe6AKaDo$IBsUZlbM+biO2ZRt8FCVs7xyOX7SGlCnD/fiZm6qLIo=
+    email: student@bodhitree.com
+    full_name: Student
+    is_active: true
+    is_staff: false
+    is_admin: false
+    date_joined: 2021-04-13 16:54:37.818534+00:00
+    last_login: 2021-04-13 16:54:37.826134+00:00

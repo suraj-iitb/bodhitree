@@ -151,49 +151,49 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("JWT",),
 }
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "filters": {
-        "require_debug_true": {
-            "()": "django.utils.log.RequireDebugFalse",
-        },
-    },
-    "formatters": {
-        "verbose": {
-            "format": "%(levelname)s [%(asctime)s] [%(name)s] [%(module)s]"
-            "[Process:%(process)d] [Thread:%(thread)d] %(message)s",
-        },
-        "simple": {
-            "format": "%(levelname)s %(message)s",
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "simple",
-            "filters": ["require_debug_true"],
-        },
-        "file_django": {
-            "class": "logging.FileHandler",
-            "formatter": "verbose",
-            "filename": os.path.join(BASE_DIR, "main/logs/django.log"),
-        },
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": "WARNING",
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["file_django"],
-            "level": "WARNING",
-            "propagate": True,
-        },
-    },
-}
-LOGGING_CONFIG = None
-logging.config.dictConfig(LOGGING)
+# LOGGING = {
+#     "version": 1,
+#     "disable_existing_loggers": False,
+#     "filters": {
+#         "require_debug_true": {
+#             "()": "django.utils.log.RequireDebugFalse",
+#         },
+#     },
+#     "formatters": {
+#         "verbose": {
+#             "format": "%(levelname)s [%(asctime)s] [%(name)s] [%(module)s]"
+#             "[Process:%(process)d] [Thread:%(thread)d] %(message)s",
+#         },
+#         "simple": {
+#             "format": "%(levelname)s %(message)s",
+#         },
+#     },
+#     "handlers": {
+#         "console": {
+#             "class": "logging.StreamHandler",
+#             "formatter": "simple",
+#             "filters": ["require_debug_true"],
+#         },
+#         "file_django": {
+#             "class": "logging.FileHandler",
+#             "formatter": "verbose",
+#             "filename": os.path.join(BASE_DIR, "main/logs/django.log"),
+#         },
+#     },
+#     "root": {
+#         "handlers": ["console"],
+#         "level": "WARNING",
+#     },
+#     "loggers": {
+#         "django": {
+#             "handlers": ["file_django"],
+#             "level": "WARNING",
+#             "propagate": True,
+#         },
+#     },
+# }
+# LOGGING_CONFIG = None
+# logging.config.dictConfig(LOGGING)
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
@@ -221,3 +221,6 @@ AUTH_USER_MODEL = "registration.User"
 
 # Max CharField limit
 MAX_CHARFIELD_LENGTH = 100
+
+# Additional Fixtures Path
+FIXTURE_DIRS = ["main/fixtures/"]

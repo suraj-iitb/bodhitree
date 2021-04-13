@@ -13,3 +13,5 @@ django-filter==2.4.0
 django-cors-headers==3.7.0
 # DRF authentication
 djangorestframework-simplejwt==4.6.0
+# Python YAML
+PyYAML==5.4.1

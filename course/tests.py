@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
-from course.models import Course, CourseHistory, Page
+from course.models import Course, CourseHistory, Page, Chapter
 from registration.models import User
 
 
@@ -126,6 +126,9 @@ class CourseHistoryViewSetTest(APITestCase):
         )
         cls.course_history1.save()
 
+    def login(self, email, password):
+        self.client.login(email=email, password=password)
+
     def test_get_coursehistories(self):
         """
         Ensure we can get all Course objects.
@@ -230,18 +233,17 @@ class CourseHistoryViewSetTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
 
-# class ChapterViewSetTest(APITestCase):
-#     @classmethod
-#     def setUpTestData(cls):
-#         """
-#         Set up data for the whole TestCase.
-#         """
-#         cls.user = User.objects.create_user("test1@test.com", "Test@1001")
-#         cls.user.save()
-#         cls.course1 = Course(owner_id=cls.user.id, title="Course1", course_type="O")
-#         cls.course1.save()
-#         cls.chapter1 = Chapter(title="Chapter1", course_id=cls.course1.id)
-#         cls.chapter1.save()
+class ChapterViewSetTest(APITestCase):
+    fixtures = ["users.test.yaml", "courses.test.yaml", "coursehistories.test.yaml", "chapters.test.yaml"]
+
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Set up data for the whole TestCase.
+        """
+        cls.ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
+        cls.ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
+        cls.stu_cred = {"email": "student@bodhitree.com", "password": "student"}
 
 #     def test_get_chapters(self):
 #         """
@@ -264,22 +266,29 @@ class CourseHistoryViewSetTest(APITestCase):
 #         response = self.client.get(url)
 #         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-#     def test_create_chapter(self):
-#         """
-#         Ensure we can create a new Chapter object.
-#         """
-#         user = User.objects.create_user("test2@test.com", "Test@1002")
-#         user.save()
-#         course1 = Course(owner_id=user.id, title="Course2", course_type="O")
-#         course1.save()
-#         self.client.login(email="test2@test.com", password="Test@1002")
-#         data = {
-#             "title": "Chapter1",
-#             "course": course1.id,
-#         }
-#         url = reverse("course:chapter-list")
-#         response = self.client.post(url, data)
-#         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    def create_helper(self, title, status_code):
+        data = {
+            "title": title,
+            "course": 1,
+        }
+        url = reverse("course:chapter-list")
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status_code)
+
+    def test_create_chapter(self):
+        """
+        Ensure we can create a new 'Chapter' object
+        """
+        self.client.login(**self.ins_cred)
+        self.create_helper("Chapter3", status.HTTP_201_CREATED)
+        self.client.logout()
+        self.client.login(**self.ta_cred)
+        self.create_helper("Chapter4", status.HTTP_201_CREATED)
+        self.client.logout()
+        self.client.login(**self.stu_cred)
+        self.create_helper("Chapter5", status.HTTP_201_CREATED)
+        self.client.logout()
+        
 
 #     def test_update_chapters(self):
 #         """

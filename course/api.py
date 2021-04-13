@@ -1,9 +1,10 @@
+from django.db.models import Q
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from utils.drf_utils import IsInstructorOrTA, IsInstructorOrTAOrReadOnly
+from utils.drf_utils import IsInstructorOrTA, IsInstructorOrTAOrReadOnly, Isowner
 from utils.utils import (
     check_course_registration,
     has_valid_subscription,
@@ -37,6 +38,34 @@ class CourseViewSet(viewsets.ModelViewSet):
     )
     ordering_fields = ("id",)
 
+    def _checks(self, course_id, user):
+        try:
+            CourseHistory.objects.filter(course_id=course_id, user=user)
+        except CourseHistory.DoesNotExist:
+            data = {
+                "error": "Course history of user with id: {} does not exist".format(
+                    user
+                ),
+            }
+            return Response(data, status.HTTP_400_BAD_REQUEST)
+        if Course.objects.filter(
+            id=course_id, owner=user
+        ) and not has_valid_subscription(user):
+            data = {
+                "error": "User: {} does not have a valid subscription or the"
+                "limit of number of courses in subscription exceeded".format(user),
+            }
+            return Response(data, status.HTTP_401_UNAUTHORIZED)
+        elif CourseHistory.objects.filter(Q(role="I") | Q(role="T")):
+            if not check_course_registration(course_id, user):
+                data = {
+                    "error": "User: {} not registered in course with id: {}".format(
+                        user, course_id
+                    ),
+                }
+                return Response(data, status.HTTP_400_BAD_REQUEST)
+        return True
+
     def create(self, request):
         user = request.user
         data = request.data
@@ -59,16 +88,24 @@ class CourseViewSet(viewsets.ModelViewSet):
     def update_course(self, request, pk):
         user = request.user
         data = request.data
-        if not has_valid_subscription(user):
-            data = {
-                "error": "User: {} does not have a valid subscription or the"
-                "limit of number of courses in subscription exceeded".format(user),
-            }
-            return Response(data, status.HTTP_401_UNAUTHORIZED)
-        serializer = self.get_serializer(self.get_object(), data=data, partial=True)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(serializer.data)
+        check = self._checks(pk, user)
+        if check:
+            serializer = self.get_serializer(self.get_object(), data=data, partial=True)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                print("student")
+                return Response(serializer.data)
+        return check
+
+    @action(detail=True, methods=["DELETE"], permission_classes=[Isowner])
+    def delete_course(self, request, pk):
+        instance = self.get_object()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+        data = {
+            "error": "Only course owner can delete the course",
+        }
+        return Response(data, status.HTTP_403_FORBIDDEN)
 
 
 class PageViewSet(viewsets.GenericViewSet):

@@ -56,3 +56,10 @@ def has_valid_subscription(user):
     ):
         return True
     return False
+
+
+def is_owner(course_id, user):
+    course = Course.objects.filter(id=course_id, owner=user)
+    if course:
+        return True
+    return False

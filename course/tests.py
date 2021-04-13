@@ -15,12 +15,17 @@ class CourseViewSetTest(APITestCase):
         """
         Set up data for the whole TestCase.
         """
-        cls.user = User.objects.create_user("test1@test.com", "Test@1001")
-        cls.user.save()
-        cls.course1 = Course(owner_id=cls.user.id, title="Course1", course_type="O")
-        cls.course1.save()
-        cls.course2 = Course(owner_id=cls.user.id, title="Course2", course_type="M")
-        cls.course2.save()
+        cls.ins_cred = {"email": "ins@ins.com", "password": "ins"}
+        cls.ta_cred = {"email": "ta@ta.com", "password": "ta"}
+        cls.stu_cred = {"email": "stu@stu.com", "password": "stu"}
+        cls.ins = User.objects.create_user(**cls.ins_cred)
+        cls.ins.save()
+        cls.ta = User.objects.create_user(**cls.ta_cred)
+        cls.ta.save()
+        cls.stu = User.objects.create_user(**cls.stu_cred)
+        cls.stu.save()
+        cls.course = Course(owner=cls.ins, title="Course", course_type="O")
+        cls.course.save()
         cls.plan_type = PlanType(name="unlimited")
         cls.plan_type.save()
         cls.subscription = Subscription(
@@ -38,12 +43,18 @@ class CourseViewSetTest(APITestCase):
             subjective_assign_submission_size_per_student_unit="MB",
         )
         cls.subscription.save()
-        cls.subscription_history = SubscriptionHistory(
-            user=cls.user,
+        cls.subscription_history_ins = SubscriptionHistory(
+            user=cls.ins,
             subscription=cls.subscription,
             duration=datetime.timedelta(days=3),
         )
-        cls.subscription_history.save()
+        cls.subscription_history_ins.save()
+
+    def login(self, email, password):
+        self.client.login(email=email, password=password)
+
+    def logout(self):
+        self.client.logout()
 
     def test_get_courses(self):
         """
@@ -58,19 +69,15 @@ class CourseViewSetTest(APITestCase):
         Ensure we can get one Course object.
         """
         url = reverse(
-            "course:course-detail", kwargs={"pk": CourseViewSetTest.course1.id}
+            "course:course-detail", kwargs={"pk": CourseViewSetTest.course.id}
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_create_course(self):
-        """
-        Ensure we can create a new Course object.
-        """
-        self.client.login(email="test1@test.com", password="Test@1001")
+    def create_course_helper(self, status_code, title):
         data = {
-            "owner": CourseViewSetTest.user.id,
-            "title": "Course3",
+            "owner": CourseViewSetTest.ins.id,
+            "title": title,
             "course_type": "O",
             "df_settings": {
                 "anonymous_to_instructor": True,
@@ -79,16 +86,45 @@ class CourseViewSetTest(APITestCase):
         }
         url = reverse("course:course-list")
         response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status_code)
+
+    def test_create_course(self):
+        """
+        Ensure we can create a new Course object.
+        """
+        self.login(**CourseViewSetTest.ins_cred)
+        self.create_course_helper(status.HTTP_201_CREATED, "Course 1")
+        self.logout()
+        self.login(**CourseViewSetTest.ta_cred)
+        self.create_course_helper(status.HTTP_401_UNAUTHORIZED, "Course 2")
+        self.logout()
+        self.login(**CourseViewSetTest.stu_cred)
+        self.create_course_helper(status.HTTP_401_UNAUTHORIZED, "Course 3")
+        self.logout()
+
+    def update_course_helper(self, course, status_code, title, user, role):
+        course_history = CourseHistory(user=user, course=course, role=role, status="E")
+        course_history.save()
+        data = {
+            "owner": CourseViewSetTest.ins.id,
+            "title": title,
+            "course_type": "M",
+            "df_settings": {
+                "anonymous_to_instructor": True,
+                "send_email_to_all": False,
+            },
+        }
+        url = reverse("course:course-update-course", kwargs={"pk": course.id})
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status_code)
 
     def test_update_course(self):
         """
         Ensure we can update an existing Course object.
         """
-        self.client.login(email="test1@test.com", password="Test@1001")
         course = Course(
-            owner=CourseViewSetTest.user,
-            title="Course4",
+            owner=CourseViewSetTest.ins,
+            title="Course 4",
             course_type="O",
         )
         course.save()
@@ -98,27 +134,41 @@ class CourseViewSetTest(APITestCase):
             send_email_to_all="True",
         )
         discussion_forum.save()
+        self.login(**CourseViewSetTest.ins_cred)
+        self.update_course_helper(
+            course, status.HTTP_200_OK, "Course 5", CourseViewSetTest.ins, "I"
+        )
+        self.logout()
+        self.login(**CourseViewSetTest.ta_cred)
+        self.update_course_helper(
+            course, status.HTTP_200_OK, "Course 6", CourseViewSetTest.ta, "T"
+        )
+        self.logout()
+        self.login(**CourseViewSetTest.stu_cred)
+        self.update_course_helper(
+            course, status.HTTP_403_FORBIDDEN, "Course 7", CourseViewSetTest.stu, "S"
+        )
+        self.logout()
+
+    def partial_update_course_helper(self, course, status_code, title, user, role):
+        course_history = CourseHistory(user=user, course=course, role=role, status="E")
+        course_history.save()
         data = {
-            "owner": CourseViewSetTest.user.id,
-            "title": "Course5",
+            "title": title,
             "course_type": "M",
             "df_settings": {
-                "anonymous_to_instructor": True,
                 "send_email_to_all": False,
             },
         }
         url = reverse("course:course-update-course", kwargs={"pk": course.id})
         response = self.client.put(url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status_code)
 
     def test_partial_update_course(self):
         """
         Ensure we can partially update an existing Course object.
         """
-        self.client.login(email="test1@test.com", password="Test@1001")
-        course = Course(
-            owner_id=CourseViewSetTest.user.id, title="Course6", course_type="O"
-        )
+        course = Course(owner=CourseViewSetTest.ins, title="Course6", course_type="O")
         course.save()
         discussion_forum = DiscussionForum(
             course=course,
@@ -126,32 +176,59 @@ class CourseViewSetTest(APITestCase):
             send_email_to_all="True",
         )
         discussion_forum.save()
-        data = {
-            "title": "Course6",
-            "df_settings": {
-                "anonymous_to_instructor": True,
-            },
-        }
-        url = reverse(("course:course-update-course"), kwargs={"pk": course.id})
-        response = self.client.patch(url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.login(**CourseViewSetTest.ins_cred)
+        self.partial_update_course_helper(
+            course, status.HTTP_200_OK, "Course 5", CourseViewSetTest.ins, "I"
+        )
+        self.logout()
+        self.login(**CourseViewSetTest.ta_cred)
+        self.partial_update_course_helper(
+            course, status.HTTP_200_OK, "Course 6", CourseViewSetTest.ta, "T"
+        )
+        self.logout()
+        self.login(**CourseViewSetTest.stu_cred)
+        self.partial_update_course_helper(
+            course, status.HTTP_403_FORBIDDEN, "Course 7", CourseViewSetTest.stu, "S"
+        )
+        self.logout()
+
+    def delete_course_helper(self, title, status_code, user, role):
+        course = Course(owner=CourseViewSetTest.ins, title=title, course_type="O")
+        course.save()
+        discussion_forum = DiscussionForum(
+            course=course,
+            anonymous_to_instructor="True",
+            send_email_to_all="True",
+        )
+        discussion_forum.save()
+        course_history = CourseHistory(
+            user=user, course_id=course.id, role=role, status="E"
+        )
+        course_history.save()
+        url = reverse(("course:course-delete-course"), kwargs={"pk": course.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status_code)
 
     def test_delete_course(self):
         """
         Ensure we can delete an existing Course object.
         """
-        self.client.login(email="test1@test.com", password="Test@1001")
-        course = Course(
-            owner_id=CourseViewSetTest.user.id, title="Course8", course_type="O"
+
+        self.login(**CourseViewSetTest.ins_cred)
+        self.delete_course_helper(
+            "Course 8", status.HTTP_204_NO_CONTENT, CourseViewSetTest.ins, "I"
         )
-        course.save()
-        course_history = CourseHistory(
-            user_id=CourseViewSetTest.user.id, course_id=course.id, role="I", status="E"
+        self.logout()
+        self.login(**CourseViewSetTest.ta_cred)
+        self.delete_course_helper(
+            "Course 9", status.HTTP_403_FORBIDDEN, CourseViewSetTest.ta, "T"
         )
-        course_history.save()
-        url = reverse(("course:course-detail"), kwargs={"pk": course.id})
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.logout()
+        self.login(**CourseViewSetTest.stu_cred)
+        self.delete_course_helper(
+            "Course 10", status.HTTP_403_FORBIDDEN, CourseViewSetTest.stu, "S"
+        )
+        self.logout()
 
 
 class CourseHistoryViewSetTest(APITestCase):

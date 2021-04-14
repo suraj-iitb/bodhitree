@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -39,24 +40,22 @@ class CourseViewSet(viewsets.ModelViewSet):
     )
     ordering_fields = ("id",)
 
-    def _checks(self, course_id, user):
-        try:
-            CourseHistory.objects.filter(course_id=course_id, user=user)
-        except CourseHistory.DoesNotExist:
+    def valid_subscription(self, user):
+        if has_valid_subscription(user):
+            return True
+        else:
             data = {
-                "error": "Course history of user with id: {} does not exist".format(
+                "error": """User: {} does not have a valid subscription or the
+                limit of number of courses in subscription exceeded""".format(
                     user
                 ),
             }
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        if Course.objects.filter(
-            id=course_id, owner=user
-        ) and not has_valid_subscription(user):
-            data = {
-                "error": "User: {} does not have a valid subscription or the"
-                "limit of number of courses in subscription exceeded".format(user),
-            }
-            return Response(data, status.HTTP_401_UNAUTHORIZED)
+            return Response(data, status.HTTP_403_FORBIDDEN)
+
+    def _checks(self, course_id, user):
+        course = get_object_or_404(Course, id=course_id)
+        if self.valid_subscription(course.owner):
+            return True
         elif CourseHistory.objects.filter(Q(role="I") | Q(role="T")):
             if not check_course_registration(course_id, user):
                 data = {
@@ -64,26 +63,23 @@ class CourseViewSet(viewsets.ModelViewSet):
                         user, course_id
                     ),
                 }
-                return Response(data, status.HTTP_400_BAD_REQUEST)
+                return Response(data, status.HTTP_401_UNAUTHORIZED)
         return True
 
     def create(self, request):
         user = request.user
         data = request.data
-        if not has_valid_subscription(user):
-            data = {
-                "error": "User: {} does not have a valid subscription or the"
-                "limit of number of courses in subscription exceeded".format(user),
-            }
-            return Response(data, status.HTTP_401_UNAUTHORIZED)
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            course_history = CourseHistory(
-                user=user, course=serializer.instance, role="I", status="E"
-            )
-            course_history.save()
-            return Response({}, status=status.HTTP_201_CREATED)
+        _check = self.valid_subscription(user)
+        if _check is True:
+            serializer = self.get_serializer(data=data)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                course_history = CourseHistory(
+                    user=user, course=serializer.instance, role="I", status="E"
+                )
+                course_history.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return _check
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_course(self, request, pk):
@@ -94,7 +90,6 @@ class CourseViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(self.get_object(), data=data, partial=True)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
-                print("student")
                 return Response(serializer.data)
         return check
 
@@ -103,10 +98,6 @@ class CourseViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-        data = {
-            "error": "Only course owner can delete the course",
-        }
-        return Response(data, status.HTTP_403_FORBIDDEN)
 
 
 class PageViewSet(viewsets.GenericViewSet):

@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from discussion_forum.models import DiscussionForum
@@ -16,7 +17,6 @@ class CourseSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         df_settings_data = validated_data.pop("df_settings")
         course = Course.objects.create(**validated_data)
-        # for df_setting_data in df_settings_data:
         DiscussionForum.objects.create(course=course, **df_settings_data)
         return course
 
@@ -35,11 +35,10 @@ class CourseSerializer(serializers.ModelSerializer):
         #     if course_boolean_field not in validated_data_keys:
         #         validated_data[course_boolean_field]=False
         # ends here
-        # info = model_meta.get_field_info(instance)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        discussion_forum = DiscussionForum.objects.get(course=instance)
+        discussion_forum = get_object_or_404(DiscussionForum, course=instance)
         if df_settings_data:
             for attr, value in df_settings_data.items():
                 setattr(discussion_forum, attr, value)

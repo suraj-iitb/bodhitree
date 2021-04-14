@@ -5,7 +5,6 @@ from rest_framework.pagination import PageNumberPagination
 from course.models import (
     Announcement,
     Chapter,
-    Course,
     CourseHistory,
     Notification,
     Page,
@@ -184,7 +183,6 @@ class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
             course_histories = CourseHistory.objects.filter(
                 Q(course=obj) & (Q(role="I") | Q(role="T")) & Q(user=request.user)
             )
-            print(course_histories)
             if course_histories:
                 return True
             return False
@@ -328,7 +326,7 @@ class Isowner(permissions.BasePermission):
         if request.user.is_authenticated:
             if request.method in permissions.SAFE_METHODS:
                 return True
-            course = Course.objects.filter(Q(id=obj.id) & Q(owner=request.user))
-            if course:
+
+            if obj.owner == request.user:
                 return True
             return False

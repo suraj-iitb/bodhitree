@@ -96,10 +96,10 @@ class CourseViewSetTest(APITestCase):
         self.create_course_helper(status.HTTP_201_CREATED, "Course 1")
         self.logout()
         self.login(**CourseViewSetTest.ta_cred)
-        self.create_course_helper(status.HTTP_401_UNAUTHORIZED, "Course 2")
+        self.create_course_helper(status.HTTP_403_FORBIDDEN, "Course 2")
         self.logout()
         self.login(**CourseViewSetTest.stu_cred)
-        self.create_course_helper(status.HTTP_401_UNAUTHORIZED, "Course 3")
+        self.create_course_helper(status.HTTP_403_FORBIDDEN, "Course 3")
         self.logout()
 
     def update_course_helper(self, course, status_code, title, user, role):

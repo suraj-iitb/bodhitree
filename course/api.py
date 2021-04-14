@@ -1,10 +1,10 @@
+from django.db import IntegrityError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from django.db import IntegrityError
 
 from utils.drf_utils import IsInstructorOrTA, IsInstructorOrTAOrReadOnly, Isowner
 from utils.utils import (
@@ -226,9 +226,11 @@ class ChapterViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         try:
             serializer.save()
-        except IntegrityError as e:
+        except IntegrityError:
             error = {
-                "error": "Chapter with title '{}' already exists".format(serializer.initial_data["title"])
+                "error": "Chapter with title '{}' already exists".format(
+                    serializer.initial_data["title"]
+                )
             }
-            return Response(error, status=status.HTTP_403_FORBIDDEN)    
+            return Response(error, status=status.HTTP_403_FORBIDDEN)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

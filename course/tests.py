@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
-from course.models import Course, CourseHistory, Page, Chapter
+from course.models import Course, CourseHistory, Page
 from discussion_forum.models import DiscussionForum
 from registration.models import PlanType, Subscription, SubscriptionHistory, User
 
@@ -354,7 +354,12 @@ class CourseHistoryViewSetTest(APITestCase):
 
 
 class ChapterViewSetTest(APITestCase):
-    fixtures = ["users.test.yaml", "courses.test.yaml", "coursehistories.test.yaml", "chapters.test.yaml"]
+    fixtures = [
+        "users.test.yaml",
+        "courses.test.yaml",
+        "coursehistories.test.yaml",
+        "chapters.test.yaml",
+    ]
 
     @classmethod
     def setUpTestData(cls):
@@ -365,26 +370,26 @@ class ChapterViewSetTest(APITestCase):
         cls.ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
         cls.stu_cred = {"email": "student@bodhitree.com", "password": "student"}
 
-#     def test_get_chapters(self):
-#         """
-#         Ensure we can get all Chapter objects.
-#         """
-#         self.client.login(email="test1@test.com", password="Test@1001")
-#         url = reverse("course:chapter-list")
-#         response = self.client.get(url)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     def test_get_chapters(self):
+    #         """
+    #         Ensure we can get all Chapter objects.
+    #         """
+    #         self.client.login(email="test1@test.com", password="Test@1001")
+    #         url = reverse("course:chapter-list")
+    #         response = self.client.get(url)
+    #         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-#     def test_get_chapter(self):
-#         """
-#         Ensure we can get one chapter object.
-#         """
-#         self.client.login(email="test1@test.com", password="Test@1001")
-#         url = reverse(
-#             "course:chapter-detail",
-#             kwargs={"pk": ChapterViewSetTest.chapter1.id},
-#         )
-#         response = self.client.get(url)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     def test_get_chapter(self):
+    #         """
+    #         Ensure we can get one chapter object.
+    #         """
+    #         self.client.login(email="test1@test.com", password="Test@1001")
+    #         url = reverse(
+    #             "course:chapter-detail",
+    #             kwargs={"pk": ChapterViewSetTest.chapter1.id},
+    #         )
+    #         response = self.client.get(url)
+    #         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def create_helper(self, title, status_code):
         data = {
@@ -408,7 +413,7 @@ class ChapterViewSetTest(APITestCase):
         self.client.login(**self.stu_cred)
         self.create_helper("Chapter5", status.HTTP_201_CREATED)
         self.client.logout()
-        
+
 
 #     def test_update_chapters(self):
 #         """

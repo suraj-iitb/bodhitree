@@ -1,20 +1,48 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+
+from discussion_forum.models import DiscussionForum
+from discussion_forum.serializers import DiscussionForumSerializer
 
 from .models import Chapter, Course, CourseHistory, Page
 
 
 class CourseSerializer(serializers.ModelSerializer):
+    df_settings = DiscussionForumSerializer()
+
     class Meta:
         model = Course
         fields = "__all__"
 
     def create(self, validated_data):
-        instance = self.Meta.model(**validated_data)
+        df_settings_data = validated_data.pop("df_settings")
+        course = Course.objects.create(**validated_data)
+        DiscussionForum.objects.create(course=course, **df_settings_data)
+        return course
+
+    def update(self, instance, validated_data):
+        df_settings_data = validated_data.pop("df_settings", {})
+        # HTML checkboxes (For DRF Browsable API) do not send any value,
+        # but should be treated as `False` by BooleanField
+        # df_settings_data_keys = df_settings_data.keys() if df_settings_data else []
+        # df_boolean_fields = ["anonymous_to_instructor", "send_email_to_all"]
+        # for df_boolean_field in df_boolean_fields:
+        #     if df_boolean_field not in df_settings_data_keys:
+        #         df_settings_data[df_boolean_field]=False
+        # validated_data_keys = validated_data.keys() if validated_data else []
+        # course_boolean_fields = ["is_published"]
+        # for course_boolean_field in course_boolean_fields:
+        #     if course_boolean_field not in validated_data_keys:
+        #         validated_data[course_boolean_field]=False
+        # ends here
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
         instance.save()
-        course_history = CourseHistory(
-            user=validated_data["owner"], course=instance, role="I", status="E"
-        )
-        course_history.save()
+        discussion_forum = get_object_or_404(DiscussionForum, course=instance)
+        if df_settings_data:
+            for attr, value in df_settings_data.items():
+                setattr(discussion_forum, attr, value)
+            discussion_forum.save()
         return instance
 
 

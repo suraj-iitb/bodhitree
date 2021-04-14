@@ -183,7 +183,7 @@ class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
             course_histories = CourseHistory.objects.filter(
                 Q(course=obj) & (Q(role="I") | Q(role="T")) & Q(user=request.user)
             )
-            if course_histories is not None:
+            if course_histories:
                 return True
             return False
 
@@ -300,3 +300,33 @@ class IsAdminOrReadOnly(permissions.BasePermission):
             elif request.user.is_admin:
                 return True
         return False
+
+
+class Isowner(permissions.BasePermission):
+    """
+    Allows:
+        1. complete permissions to instructor/ta
+
+    Applicable for:
+    """
+
+    def has_permission(self, request, view):
+        """
+        Applicable at model level (list, create, retrieve, update,
+                                   partial_update, destroy)
+        """
+        if request.user.is_authenticated:
+            return True
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        """
+        Applicable at model instance level (retrieve, update, partial_update, destroy)
+        """
+        if request.user.is_authenticated:
+            if request.method in permissions.SAFE_METHODS:
+                return True
+
+            if obj.owner == request.user:
+                return True
+            return False

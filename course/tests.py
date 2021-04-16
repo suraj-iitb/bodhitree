@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
-from course.models import Course, CourseHistory, Page
+from course.models import Chapter, Course, CourseHistory, Page
 from discussion_forum.models import DiscussionForum
 from registration.models import PlanType, Subscription, SubscriptionHistory, User
 
@@ -370,33 +370,54 @@ class ChapterViewSetTest(APITestCase):
         cls.ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
         cls.stu_cred = {"email": "student@bodhitree.com", "password": "student"}
 
-    #     def test_get_chapters(self):
-    #         """
-    #         Ensure we can get all Chapter objects.
-    #         """
-    #         self.client.login(email="test1@test.com", password="Test@1001")
-    #         url = reverse("course:chapter-list")
-    #         response = self.client.get(url)
-    #         self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def get_chapters_helper(self):
+        url = reverse("course:chapter-list")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    #     def test_get_chapter(self):
-    #         """
-    #         Ensure we can get one chapter object.
-    #         """
-    #         self.client.login(email="test1@test.com", password="Test@1001")
-    #         url = reverse(
-    #             "course:chapter-detail",
-    #             kwargs={"pk": ChapterViewSetTest.chapter1.id},
-    #         )
-    #         response = self.client.get(url)
-    #         self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def test_get_chapters(self):
+        """
+        Ensure we can get all Chapter objects.
+        """
+        self.client.login(**self.ins_cred)
+        self.get_chapters_helper()
+        self.client.logout()
+        self.client.login(**self.ta_cred)
+        self.get_chapters_helper()
+        self.client.logout()
+        self.client.login(**self.stu_cred)
+        self.get_chapters_helper()
+        self.client.logout()
 
-    def create_helper(self, title, status_code):
+    def get_chapter_helper(self, chapter_id):
+        url = reverse(
+            "course:chapter-detail",
+            kwargs={"pk": chapter_id},
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_chapter(self):
+        """
+        Ensure we can get one chapter object.
+        """
+        chapter_id = 1
+        self.client.login(**self.ins_cred)
+        self.get_chapter_helper(chapter_id)
+        self.client.logout()
+        self.client.login(**self.ta_cred)
+        self.get_chapter_helper(chapter_id)
+        self.client.logout()
+        self.client.login(**self.stu_cred)
+        self.get_chapter_helper(chapter_id)
+        self.client.logout()
+
+    def create_chapter_helper(self, title, status_code):
         data = {
             "title": title,
             "course": 1,
         }
-        url = reverse("course:chapter-list")
+        url = reverse("course:chapter-create-chapter", args=[1])
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status_code)
 
@@ -405,69 +426,84 @@ class ChapterViewSetTest(APITestCase):
         Ensure we can create a new 'Chapter' object
         """
         self.client.login(**self.ins_cred)
-        self.create_helper("Chapter3", status.HTTP_201_CREATED)
+        self.create_chapter_helper("Chapter3", status.HTTP_201_CREATED)
         self.client.logout()
         self.client.login(**self.ta_cred)
-        self.create_helper("Chapter4", status.HTTP_201_CREATED)
+        self.create_chapter_helper("Chapter4", status.HTTP_201_CREATED)
         self.client.logout()
         self.client.login(**self.stu_cred)
-        self.create_helper("Chapter5", status.HTTP_201_CREATED)
+        self.create_chapter_helper("Chapter5", status.HTTP_403_FORBIDDEN)
         self.client.logout()
 
+    def update_chapters_helper(self, title, status_code):
+        chapter1 = Chapter(title="Chapter77", course_id=1)
+        chapter1.save()
+        data = {
+            "title": title,
+            "course": 1,
+        }
+        url = reverse(("course:chapter-detail"), kwargs={"pk": chapter1.id})
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status_code)
 
-#     def test_update_chapters(self):
-#         """
-#         Ensure we can update an existing Chapter object.
-#         """
-#         user = User.objects.create_user("test3@test.com", "Test@1003")
-#         user.save()
-#         course1 = Course(owner_id=user.id, title="Course1", course_type="O")
-#         course1.save()
-#         user2 = User.objects.create_user("test4@test.com", "Test@1004")
-#         user2.save()
-#         course2 = Course(owner_id=user2.id, title="Course1", course_type="O")
-#         course2.save()
-#         self.client.login(email="test3@test.com", password="Test@1003")
-#         chapter1 = Chapter(title="Chapter1", course_id=course1.id)
-#         chapter1.save()
-#         data = {
-#             "title": "Chapter2",
-#             "course": course2.id,
-#         }
-#         url = reverse(("course:chapter-detail"), kwargs={"pk": chapter1.id})
-#         response = self.client.put(url, data)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def test_update_chapters(self):
+        """
+        Ensure we can update an existing Chapter object.
+        """
+        self.client.login(**self.ins_cred)
+        self.update_chapters_helper("chapter78", status.HTTP_200_OK)
+        self.client.logout()
+        self.client.login(**self.ta_cred)
+        self.update_chapters_helper("chapter79", status.HTTP_200_OK)
+        self.client.logout()
+        self.client.login(**self.stu_cred)
+        self.update_chapters_helper("chapter80", status.HTTP_403_FORBIDDEN)
+        self.client.logout()
 
-#     def test_partial_update_chapter(self):
-#         """
-#         Ensure we can partially update an existing Chapter object.
-#         """
-#         user = User.objects.create_user("test5@test.com", "Test@1005")
-#         user.save()
-#         course1 = Course(owner_id=user.id, title="Course1", course_type="O")
-#         course1.save()
-#         self.client.login(email="test5@test.com", password="Test@1005")
-#         chapter1 = Chapter(title="Chapter1", course_id=course1.id)
-#         chapter1.save()
-#         data = {"title": "Chapter2"}
-#         url = reverse(("course:chapter-detail"), kwargs={"pk": chapter1.id})
-#         response = self.client.patch(url, data)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def partial_update_helper(self, title, status_code):
+        chapter1 = Chapter(title="Chapter77", course_id=1)
+        chapter1.save()
+        data = {
+            "title": title,
+        }
+        url = reverse(("course:chapter-detail"), kwargs={"pk": chapter1.id})
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status_code)
 
-#     def test_delete_coursehistory(self):
-#         """
-#         Ensure we can delete an existing Chapter object.
-#         """
-#         user = User.objects.create_user("test6@test.com", "Test@1006")
-#         user.save()
-#         course1 = Course(owner_id=user.id, title="Course1", course_type="O")
-#         course1.save()
-#         self.client.login(email="test6@test.com", password="Test@1006")
-#         chapter1 = Chapter(title="Chapter1", course_id=course1.id)
-#         chapter1.save()
-#         url = reverse(("course:chapter-detail"), kwargs={"pk": chapter1.id})
-#         response = self.client.delete(url)
-#         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+    def test_partial_update_chapter(self):
+        """
+        Ensure we can partially update an existing Chapter object.
+        """
+        self.client.login(**self.ins_cred)
+        self.update_chapters_helper("chapter78", status.HTTP_200_OK)
+        self.client.logout()
+        self.client.login(**self.ta_cred)
+        self.update_chapters_helper("chapter79", status.HTTP_200_OK)
+        self.client.logout()
+        self.client.login(**self.stu_cred)
+        self.update_chapters_helper("chapter80", status.HTTP_403_FORBIDDEN)
+        self.client.logout()
+
+    def delete_chapter_helper(self, title, status_code):
+        chapter1 = Chapter(title=title, course_id=1)
+        chapter1.save()
+        url = reverse(("course:chapter-detail"), kwargs={"pk": chapter1.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status_code)
+
+    def test_delete_chapter(self):
+        """
+        Ensure we can delete an existing Chapter object.
+        """
+        self.client.login(**self.ins_cred)
+        self.delete_chapter_helper("chapter98", status.HTTP_204_NO_CONTENT)
+        self.client.logout()
+        self.client.login(**self.ta_cred)
+        self.delete_chapter_helper("chapter99", status.HTTP_204_NO_CONTENT)
+        self.client.logout()
+        self.client.login(**self.stu_cred)
+        self.delete_chapter_helper("chapter100", status.HTTP_403_FORBIDDEN)
+        self.client.logout()
 
 
 class PageViewSetTest(APITestCase):

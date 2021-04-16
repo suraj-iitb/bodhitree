@@ -7,10 +7,9 @@ from .models import (
     College,
     Degree,
     Department,
-    InstructorProfile,
+    Profile,
     PlanType,
     Registration,
-    StudentProfile,
     Subscription,
     SubscriptionHistory,
     User,
@@ -159,23 +158,7 @@ class DegreeAdmin(admin.ModelAdmin):
     )
     search_fields = ("name",)
 
-
-class InstructorProfileAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "user",
-        "gender",
-        "college",
-        "city",
-        "state",
-        "created_on",
-        "modified_on",
-        "domain",
-    )
-    search_fields = ("user__email",)
-
-
-class StudentProfileAdmin(admin.ModelAdmin):
+class ProfileAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "user",
@@ -186,9 +169,8 @@ class StudentProfileAdmin(admin.ModelAdmin):
         "created_on",
         "modified_on",
         "roll_no",
-        "department",
+        "dept",
         "degree",
-        "year_of_passing",
     )
     search_fields = ("user__email", "roll_no")
 
@@ -203,5 +185,4 @@ admin.site.register(Registration, RegistrationAdmin)
 admin.site.register(College, CollegeAdmin)
 admin.site.register(Department, DepartmentAdmin)
 admin.site.register(Degree, DegreeAdmin)
-admin.site.register(InstructorProfile, InstructorProfileAdmin)
-admin.site.register(StudentProfile, StudentProfileAdmin)
+admin.site.register(Profile, ProfileAdmin)

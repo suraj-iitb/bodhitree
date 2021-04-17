@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
-from course.models import Course, CourseHistory, Page
+from course.models import Course, CourseHistory, Page, Section
 from discussion_forum.models import DiscussionForum
 from registration.models import PlanType, Subscription, SubscriptionHistory, User
 
@@ -620,3 +620,157 @@ class PageViewSetTest(APITestCase):
         self.login(**PageViewSetTest.stu_cred)
         self.delete_page_helper(status.HTTP_403_FORBIDDEN)
         self.logout()
+
+
+class SectionViewSetTest(APITestCase):
+    fixtures = [
+        "users.test.yaml",
+        "courses.test.yaml",
+        "coursehistories.test.yaml",
+        "chapters.test.yaml",
+        "sections.test.yaml",
+    ]
+
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Set up data for the whole TestCase.
+        """
+        cls.ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
+        cls.ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
+        cls.stu_cred = {"email": "student@bodhitree.com", "password": "student"}
+
+    def get_sections_helper(self):
+        url = reverse("course:section-list-sections", args=[1])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_sections(self):
+        """
+        Ensure we can get all Sections objects.
+        """
+        self.client.login(**self.ins_cred)
+        self.get_sections_helper()
+        self.client.logout()
+        self.client.login(**self.ta_cred)
+        self.get_sections_helper()
+        self.client.logout()
+        self.client.login(**self.stu_cred)
+        self.get_sections_helper()
+        self.client.logout()
+
+    def get_section_helper(self, section_id):
+        url = reverse(
+            "course:section-retrieve-section",
+            kwargs={"pk": section_id},
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_section(self):
+        """
+        Ensure we can get one section object.
+        """
+        section_id = 1
+        self.client.login(**self.ins_cred)
+        self.get_section_helper(section_id)
+        self.client.logout()
+        self.client.login(**self.ta_cred)
+        self.get_section_helper(section_id)
+        self.client.logout()
+        self.client.login(**self.stu_cred)
+        self.get_section_helper(section_id)
+        self.client.logout()
+
+    def create_section_helper(self, title, status_code):
+        data = {
+            "chapter": 1,
+            "title": title,
+        }
+        url = reverse("course:section-create-section", args=[1])
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status_code)
+
+    def test_create_section(self):
+        """
+        Ensure we can create a new 'Section' object
+        """
+        self.client.login(**self.ins_cred)
+        self.create_section_helper("Section3", status.HTTP_201_CREATED)
+        self.client.logout()
+        self.client.login(**self.ta_cred)
+        self.create_section_helper("Section4", status.HTTP_201_CREATED)
+        self.client.logout()
+        self.client.login(**self.stu_cred)
+        self.create_section_helper("Section5", status.HTTP_403_FORBIDDEN)
+        self.client.logout()
+
+    def update_sections_helper(self, title, status_code):
+        section1 = Section(title="Section77", chapter_id=1)
+        section1.save()
+        data = {
+            "title": title,
+            "chapter": 1,
+        }
+        url = reverse(("course:section-update-section"), kwargs={"pk": section1.id})
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status_code)
+
+    def test_update_sections(self):
+        """
+        Ensure we can update an existing Section object.
+        """
+        self.client.login(**self.ins_cred)
+        self.update_sections_helper("section78", status.HTTP_200_OK)
+        self.client.logout()
+        self.client.login(**self.ta_cred)
+        self.update_sections_helper("section79", status.HTTP_200_OK)
+        self.client.logout()
+        self.client.login(**self.stu_cred)
+        self.update_sections_helper("section80", status.HTTP_403_FORBIDDEN)
+        self.client.logout()
+
+    def partial_update_helper(self, title, status_code):
+        section1 = Section(title="Section77", chapter_id=1)
+        section1.save()
+        data = {
+            "title": title,
+        }
+        url = reverse(("course:section-update-section"), kwargs={"pk": section1.id})
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status_code)
+
+    def test_partial_update_section(self):
+        """
+        Ensure we can partially update an existing Section object.
+        """
+        self.client.login(**self.ins_cred)
+        self.partial_update_helper("Section78", status.HTTP_200_OK)
+        self.client.logout()
+        self.client.login(**self.ta_cred)
+        self.partial_update_helper("Section79", status.HTTP_200_OK)
+        self.client.logout()
+        self.client.login(**self.stu_cred)
+        self.partial_update_helper("Section80", status.HTTP_403_FORBIDDEN)
+        self.client.logout()
+
+    def delete_section_helper(self, title, status_code):
+        section1 = Section(title=title, chapter_id=1)
+        section1.save()
+        url = reverse(("course:section-delete-section"), kwargs={"pk": section1.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status_code)
+
+    def test_delete_section(self):
+        """
+        Ensure we can delete an existing Section object.
+        """
+        self.client.login(**self.ins_cred)
+        self.delete_section_helper("section98", status.HTTP_204_NO_CONTENT)
+        self.client.logout()
+        self.client.login(**self.ta_cred)
+        self.delete_section_helper("section99", status.HTTP_204_NO_CONTENT)
+        self.client.logout()
+        self.client.login(**self.stu_cred)
+        self.delete_section_helper("section100", status.HTTP_403_FORBIDDEN)
+        self.client.logout()

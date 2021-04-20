@@ -132,8 +132,8 @@ class VideoViewSet(viewsets.GenericViewSet):
         if check is True:
             if video.chapter_id is not None and video.section_id is not None:
                 data = {
-                    "Validation error": """Atleast one of
-                    chapter and section fields must be given"""
+                    "Validation error": """Both chapter and section
+                     fields cannot be empty"""
                 }
                 return Response(data, status.HTTP_400_BAD_REQUEST)
             if video.chapter_id is None and video.section_id is None:

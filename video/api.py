@@ -68,11 +68,11 @@ class VideoViewSet(viewsets.GenericViewSet):
                  chapter and section fields must be given"""
             }
             return Response(data, status.HTTP_400_BAD_REQUEST)
-        if video.chapter_id is None:
-            section_id = video.section_id
+        if video["chapter"] == "":
+            section_id = video["section"]
             chapter_id = Section.objects.get(id=section_id).chapter_id
         else:
-            chapter_id = video.chapter_id
+            chapter_id = video["chapter"]
         course_id = Chapter.objects.get(id=chapter_id).course_id
         instructor_or_ta = is_instructor_or_ta(course_id, user)
         if not instructor_or_ta:

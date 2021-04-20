@@ -371,7 +371,7 @@ class ChapterViewSetTest(APITestCase):
         cls.stu_cred = {"email": "student@bodhitree.com", "password": "student"}
 
     def get_chapters_helper(self):
-        url = reverse("course:chapter-list")
+        url = reverse("course:chapter-list-chapters", args=[1])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -391,7 +391,7 @@ class ChapterViewSetTest(APITestCase):
 
     def get_chapter_helper(self, chapter_id):
         url = reverse(
-            "course:chapter-detail",
+            "course:chapter-retrieve-chapter",
             kwargs={"pk": chapter_id},
         )
         response = self.client.get(url)
@@ -442,7 +442,7 @@ class ChapterViewSetTest(APITestCase):
             "title": title,
             "course": 1,
         }
-        url = reverse(("course:chapter-detail"), kwargs={"pk": chapter1.id})
+        url = reverse(("course:chapter-update-chapter"), kwargs={"pk": chapter1.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
 
@@ -466,7 +466,7 @@ class ChapterViewSetTest(APITestCase):
         data = {
             "title": title,
         }
-        url = reverse(("course:chapter-detail"), kwargs={"pk": chapter1.id})
+        url = reverse(("course:chapter-update-chapter"), kwargs={"pk": chapter1.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
 
@@ -487,7 +487,7 @@ class ChapterViewSetTest(APITestCase):
     def delete_chapter_helper(self, title, status_code):
         chapter1 = Chapter(title=title, course_id=1)
         chapter1.save()
-        url = reverse(("course:chapter-detail"), kwargs={"pk": chapter1.id})
+        url = reverse(("course:chapter-delete-chapter"), kwargs={"pk": chapter1.id})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
 

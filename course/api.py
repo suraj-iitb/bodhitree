@@ -207,7 +207,7 @@ class CourseHistoryViewSet(viewsets.ModelViewSet):
     ordering_fields = ("id",)
 
 
-class ChapterViewSet(viewsets.ModelViewSet):
+class ChapterViewSet(viewsets.GenericViewSet):
     queryset = Chapter.objects.all()
     serializer_class = ChapterSerializer
     permission_classes = (IsInstructorOrTA,)
@@ -296,7 +296,15 @@ class ChapterViewSet(viewsets.ModelViewSet):
         if check is True:
             serializer = self.get_serializer(chapter, data=request.data, partial=True)
             if serializer.is_valid(raise_exception=True):
-                serializer.save()
+                try:
+                    serializer.save()
+                except IntegrityError:
+                    error = {
+                        "error": "Chapter with title '{}' already exists".format(
+                            serializer.initial_data["title"]
+                        )
+                    }
+                    return Response(error, status=status.HTTP_403_FORBIDDEN)
                 return Response(serializer.data)
         return check
 

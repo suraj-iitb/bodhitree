@@ -253,7 +253,13 @@ class SectionViewSet(viewsets.GenericViewSet):
     def create_section(self, request, pk):
         """Add a section to a chapter with primary key as pk"""
         user = request.user
-        course_id = Chapter.objects.get(id=pk).course.id
+        try:
+            course_id = Chapter.objects.get(id=pk).course.id
+        except Course.DoesNotExist:
+            data = {
+                "error": "Course with id: {} does not exist".format(course_id),
+            }
+            return Response(data, status.HTTP_400_BAD_REQUEST)
         instructor_or_ta = is_instructor_or_ta(course_id, user)
         if not instructor_or_ta:
             data = {
@@ -281,7 +287,13 @@ class SectionViewSet(viewsets.GenericViewSet):
     @action(detail=True, methods=["GET"])
     def list_sections(self, request, pk):
         """Get all sections of a chapter with primary key as pk"""
-        course_id = Chapter.objects.get(id=pk).course.id
+        try:
+            course_id = Chapter.objects.get(id=pk).course.id
+        except Course.DoesNotExist:
+            data = {
+                "error": "Course with id: {} does not exist".format(course_id),
+            }
+            return Response(data, status.HTTP_400_BAD_REQUEST)
         check = self._checks(course_id, pk, request.user)
         if check is True:
             sections = Section.objects.filter(chapter_id=pk)

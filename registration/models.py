@@ -188,20 +188,9 @@ class Profile(models.Model):
     state = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
+    dept = models.ForeignKey(Department, on_delete=models.CASCADE)
+    roll_no = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True, null=True)
+    degree = models.ForeignKey(Degree, on_delete=models.CASCADE, blank=True, null=True)
 
     def __str__(self):
         return "{}: {}".format(self.user.email, self.college)
-
-
-class InstructorProfile(Profile):
-    domain = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
-
-
-class StudentProfile(Profile):
-    roll_no = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
-    degree = models.ForeignKey(Degree, on_delete=models.CASCADE)
-    year_of_passing = models.DateField()

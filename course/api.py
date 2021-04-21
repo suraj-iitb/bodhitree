@@ -207,7 +207,7 @@ class CourseHistoryViewSet(viewsets.ModelViewSet):
     ordering_fields = ("id",)
 
 
-class ChapterViewSet(viewsets.ModelViewSet):
+class ChapterViewSet(viewsets.GenericViewSet):
     queryset = Chapter.objects.all()
     serializer_class = ChapterSerializer
     permission_classes = (IsInstructorOrTA,)
@@ -221,16 +221,99 @@ class ChapterViewSet(viewsets.ModelViewSet):
     )
     ordering_fields = ("id",)
 
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    def _checks(self, course_id, user):
+        """To check if the user is registered in a given course"""
         try:
-            serializer.save()
-        except IntegrityError:
-            error = {
-                "error": "Chapter with title '{}' already exists".format(
-                    serializer.initial_data["title"]
-                )
+            Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            data = {
+                "error": "Course with id: {} does not exist".format(course_id),
             }
-            return Response(error, status=status.HTTP_403_FORBIDDEN)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(data, status.HTTP_400_BAD_REQUEST)
+
+        if not check_course_registration(course_id, user):
+            data = {
+                "error": "User: {} not registered in course with id: {}".format(
+                    user, course_id
+                ),
+            }
+            return Response(data, status.HTTP_400_BAD_REQUEST)
+        return True
+
+    @action(detail=True, methods=["POST"])
+    def create_chapter(self, request, pk):
+        """Add a chapter to a course with primary key as pk"""
+        user = request.user
+        instructor_or_ta = is_instructor_or_ta(pk, user)
+        if not instructor_or_ta:
+            data = {
+                "error": "User: {} is not instructor/ta of course with id: {}".format(
+                    user, pk
+                ),
+            }
+            return Response(data, status.HTTP_403_FORBIDDEN)
+        check = self._checks(pk, user)
+        if check is True:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            try:
+                serializer.save()
+            except IntegrityError:
+                error = {
+                    "error": "Chapter with title '{}' already exists".format(
+                        serializer.initial_data["title"]
+                    )
+                }
+                return Response(error, status=status.HTTP_403_FORBIDDEN)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return check
+
+    @action(detail=True, methods=["GET"])
+    def list_chapters(self, request, pk):
+        """Get all chapters of a course with primary key as pk"""
+        check = self._checks(pk, request.user)
+        if check is True:
+            chapters = Chapter.objects.filter(course_id=pk)
+            serializer = self.get_serializer(chapters, many=True)
+            return Response(serializer.data)
+        return check
+
+    @action(detail=True, methods=["GET"])
+    def retrieve_chapter(self, request, pk):
+        """Get a chapter with primary key as pk"""
+        chapter = self.get_object()
+        check = self._checks(chapter.course.id, request.user)
+        if check is True:
+            serializer = self.get_serializer(chapter)
+            return Response(serializer.data)
+        return check
+
+    @action(detail=True, methods=["PUT", "PATCH"])
+    def update_chapter(self, request, pk):
+        """Update chapter with primary key as pk"""
+        chapter = self.get_object()
+        check = self._checks(chapter.course.id, request.user)
+        if check is True:
+            serializer = self.get_serializer(chapter, data=request.data, partial=True)
+            if serializer.is_valid(raise_exception=True):
+                try:
+                    serializer.save()
+                except IntegrityError:
+                    error = {
+                        "error": "Chapter with title '{}' already exists".format(
+                            serializer.initial_data["title"]
+                        )
+                    }
+                    return Response(error, status=status.HTTP_403_FORBIDDEN)
+                return Response(serializer.data)
+        return check
+
+    @action(detail=True, methods=["DELETE"])
+    def delete_chapter(self, request, pk):
+        """Delete chapter with primary key as pk"""
+        chapter = self.get_object()
+        check = self._checks(chapter.course.id, request.user)
+        if check is True:
+            chapter.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return check

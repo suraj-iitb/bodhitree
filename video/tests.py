@@ -53,6 +53,25 @@ class VideoViewSetTest(APITestCase):
         self.get_videos_helper()
         self.logout()
 
+    def get_videos_per_section_helper(self):
+        url = reverse("video:video-list-videos-section", args=[1])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_videos_section(self):
+        """
+        Ensure we can get all Videos objects per section .
+        """
+        self.login(**self.ins_cred)
+        self.get_videos_per_section_helper()
+        self.logout()
+        self.login(**self.ta_cred)
+        self.get_videos_per_section_helper()
+        self.logout()
+        self.login(**self.stu_cred)
+        self.get_videos_per_section_helper()
+        self.logout()
+
     def get_video_helper(self, video_id):
         url = reverse(
             "video:video-retrieve-video",

@@ -103,6 +103,18 @@ class VideoViewSet(viewsets.GenericViewSet):
         return check
 
     @action(detail=True, methods=["GET"])
+    def list_videos_section(self, request, pk):
+        """Get all videos of a section with primary key as pk"""
+        chapter_id = Section.objects.get(id=pk).chapter.id
+        course_id = Chapter.objects.get(id=chapter_id).course.id
+        check = self._checks(course_id, chapter_id, request.user)
+        if check is True:
+            videos = Video.objects.filter(section_id=pk)
+            serializer = self.get_serializer(videos, many=True)
+            return Response(serializer.data)
+        return check
+
+    @action(detail=True, methods=["GET"])
     def retrieve_video(self, request, pk):
         """Get a video with primary key as pk"""
         video = self.get_object()

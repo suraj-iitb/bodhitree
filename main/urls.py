@@ -32,9 +32,6 @@ urlpatterns = [
     # Our urls
     path("accounts/", include("registration.urls")),
     path("courses/", include("course.urls")),
-<<<<<<< HEAD
     path("documents/", include("document.urls")),
-=======
     path("videos/", include("video.urls")),
->>>>>>> origin/video_api
 ]

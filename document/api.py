@@ -102,14 +102,30 @@ class DocumentViewSet(viewsets.GenericViewSet):
         return check
 
     @action(detail=True, methods=["GET"])
-    def retrieve_document(self, request, pk):
-        """Get a document with primary key as pk"""
-        doc = self.get_object()
+    def list_documents_per_section(self, request, pk):
+        """Get all documents of a section with primary key as pk"""
+        chapter_id = Section.objects.get(id=pk).chapter_id
+        course_id = Chapter.objects.get(id=chapter_id).course.id
+        check = self._checks(course_id, chapter_id, request.user)
+        if check is True:
+            documents = Document.objects.filter(chapter_id=pk)
+            serializer = self.get_serializer(documents, many=True)
+            return Response(serializer.data)
+        return check
+
+    def get_chapter_id(self, doc):
         if doc.chapter_id is None:
             section_id = doc.section_id
             chapter_id = Section.objects.get(id=section_id).chapter_id
         else:
             chapter_id = doc.chapter_id
+        return chapter_id
+
+    @action(detail=True, methods=["GET"])
+    def retrieve_document(self, request, pk):
+        """Get a document with primary key as pk"""
+        doc = self.get_object()
+        chapter_id = self.get_chapter_id(doc)
         course_id = Chapter.objects.get(id=chapter_id).course_id
         check = self._checks(course_id, chapter_id, request.user)
         if check is True:
@@ -121,11 +137,7 @@ class DocumentViewSet(viewsets.GenericViewSet):
     def update_document(self, request, pk):
         """Update document with primary key as pk"""
         document = self.get_object()
-        if document.chapter_id is None:
-            section_id = document.section_id
-            chapter_id = Section.objects.get(id=section_id).chapter_id
-        else:
-            chapter_id = document.chapter_id
+        chapter_id = self.get_chapter_id(document)
         course_id = Chapter.objects.get(id=chapter_id).course_id
         check = self._checks(course_id, chapter_id, request.user)
         if check is True:
@@ -153,11 +165,7 @@ class DocumentViewSet(viewsets.GenericViewSet):
     def delete_document(self, request, pk):
         """Delete document with primary key as pk"""
         document = self.get_object()
-        if document.chapter_id is None:
-            section_id = document.section_id
-            chapter_id = Section.objects.get(id=section_id).chapter_id
-        else:
-            chapter_id = document.chapter_id
+        chapter_id = self.get_chapter_id(document)
         course_id = Chapter.objects.get(id=chapter_id).course_id
         check = self._checks(course_id, chapter_id, request.user)
         if check is True:

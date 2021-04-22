@@ -52,6 +52,25 @@ class DocumentViewSetTest(APITestCase):
         self.get_documents_helper()
         self.logout()
 
+    def get_documents_helper_section(self):
+        url = reverse("document:document-list-documents-per-section", args=[1])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_documents_per_section(self):
+        """
+        Ensure we can get all Docuemnts objects of section
+        """
+        self.login(**self.ins_cred)
+        self.get_documents_helper_section()
+        self.logout()
+        self.login(**self.ta_cred)
+        self.get_documents_helper_section()
+        self.logout()
+        self.login(**self.stu_cred)
+        self.get_documents_helper_section()
+        self.logout()
+
     def get_document_helper(self, doc_id):
         url = reverse(
             "document:document-retrieve-document",

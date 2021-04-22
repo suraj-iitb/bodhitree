@@ -32,4 +32,5 @@ urlpatterns = [
     # Our urls
     path("accounts/", include("registration.urls")),
     path("courses/", include("course.urls")),
+    path("documents/", include("document.urls")),
 ]

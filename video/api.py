@@ -114,15 +114,19 @@ class VideoViewSet(viewsets.GenericViewSet):
             return Response(serializer.data)
         return check
 
-    @action(detail=True, methods=["GET"])
-    def retrieve_video(self, request, pk):
-        """Get a video with primary key as pk"""
-        video = self.get_object()
+    def get_chapter_id(self, video):
         if video.chapter_id is None:
             section_id = video.section_id
             chapter_id = Section.objects.get(id=section_id).chapter_id
         else:
             chapter_id = video.chapter_id
+        return chapter_id
+
+    @action(detail=True, methods=["GET"])
+    def retrieve_video(self, request, pk):
+        """Get a video with primary key as pk"""
+        video = self.get_object()
+        chapter_id = self.get_chapter_id(video)
         course_id = Chapter.objects.get(id=chapter_id).course_id
         check = self._checks(course_id, chapter_id, request.user)
         if check is True:
@@ -134,11 +138,7 @@ class VideoViewSet(viewsets.GenericViewSet):
     def update_video(self, request, pk):
         """Update video with primary key as pk"""
         video = self.get_object()
-        if video.chapter_id is None:
-            section_id = video.section_id
-            chapter_id = Section.objects.get(id=section_id).chapter_id
-        else:
-            chapter_id = video.chapter_id
+        chapter_id = self.get_chapter_id(video)
         course_id = Chapter.objects.get(id=chapter_id).course_id
         check = self._checks(course_id, chapter_id, request.user)
         if check is True:
@@ -166,11 +166,7 @@ class VideoViewSet(viewsets.GenericViewSet):
     def delete_video(self, request, pk):
         """Delete video with primary key as pk"""
         video = self.get_object()
-        if video.chapter_id is None:
-            section_id = video.section_id
-            chapter_id = Section.objects.get(id=section_id).chapter_id
-        else:
-            chapter_id = video.chapter_id
+        chapter_id = self.get_chapter_id(video)
         course_id = Chapter.objects.get(id=chapter_id).course_id
         check = self._checks(course_id, chapter_id, request.user)
         if check is True:

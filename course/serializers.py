@@ -4,7 +4,7 @@ from rest_framework import serializers
 from discussion_forum.models import DiscussionForum
 from discussion_forum.serializers import DiscussionForumSerializer
 
-from .models import Chapter, Course, CourseHistory, Page
+from .models import Chapter, Course, CourseHistory, Page, Section
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -61,4 +61,10 @@ class ChapterSerializer(serializers.ModelSerializer):
 class PageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Page
+        fields = "__all__"
+
+
+class SectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Section
         fields = "__all__"

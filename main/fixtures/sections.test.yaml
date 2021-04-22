@@ -2,7 +2,11 @@
   pk: 1
   fields:
     chapter: 1
+<<<<<<< HEAD
     title: Section1
+=======
+    title: Section 1
+>>>>>>> origin/video_api
     description: ''
     content_sequence: '[]'
     created_on: 2021-04-16 12:37:05.764825+00:00
@@ -11,7 +15,11 @@
   pk: 2
   fields:
     chapter: 1
+<<<<<<< HEAD
     title: Section2
+=======
+    title: Section 2
+>>>>>>> origin/video_api
     description: ''
     content_sequence: '[]'
     created_on: 2021-04-16 12:37:20.315482+00:00

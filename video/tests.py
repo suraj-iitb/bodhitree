@@ -65,7 +65,7 @@ class VideoViewSetTest(APITestCase):
         """
         Ensure we can get one video object.
         """
-        video_id = 1
+        video_id = 5
         self.login(**self.ins_cred)
         self.get_video_helper(video_id)
         self.logout()
@@ -82,11 +82,16 @@ class VideoViewSetTest(APITestCase):
         video_content = b"video_content"
         video = BytesIO(video_content)
         video.name = "video.mp4"
+        doc_file_path = "main/test_data/video/eye-of-the-tiger-workout.pdf"
+        doc_content = open(doc_file_path, "rb").read()
+        doc_content = b"doc_content"
+        doc = BytesIO(doc_content)
         data = {
             "chapter": 1,
             "section": "",
             "title": title,
             "video_file": video,
+            "doc_file": doc,
             "video_duration": video_duration,
         }
         url = reverse("video:video-create-video", args=[1])
@@ -127,10 +132,15 @@ class VideoViewSetTest(APITestCase):
         video_content = open(video_file_path, "rb").read()
         video_content = b"video_content"
         _file = SimpleUploadedFile("video.mp4", video_content)
+        doc_file_path = "main/test_data/video/eye-of-the-tiger-workout.pdf"
+        doc_content = open(doc_file_path, "rb").read()
+        doc_content = b"doc_content"
+        doc_file = SimpleUploadedFile("doc.pdf", doc_content)
         data = {
             "title": title,
             "chapter": 1,
             "video_file": _file,
+            "doc_file": doc_file,
             "video_duration": datetime.timedelta(days=4),
         }
         url = reverse(("video:video-update-video"), kwargs={"pk": video1.id})

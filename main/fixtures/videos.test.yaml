@@ -1,26 +1,26 @@
 - model: video.video
-  pk: 1
+  pk: 5
   fields:
     chapter: 1
     section: null
     title: Video1
     description: ''
-    video_file: 1.Practice_course/video_files/IITBADV_Hsq74A3.ovpn
-    doc_file: ''
+    video_file: 1.Practice_course/video_files/file_example_MP4_480_1_5MG.mp4
+    doc_file: 1.Practice_course/video_doc_files/eye-of-the-tiger-workout.pdf
     in_video_quiz_file: ''
-    video_duration: '12:00:00'
-    uploaded_on: 2021-04-17 12:48:00.509870+00:00
-    modified_on: 2021-04-17 12:48:00.509915+00:00
+    video_duration: '10:00:00'
+    uploaded_on: 2021-04-22 09:44:46.265084+00:00
+    modified_on: 2021-04-22 09:44:46.265138+00:00
 - model: video.video
-  pk: 3
+  pk: 6
   fields:
     chapter: null
     section: 1
     title: Video2
     description: ''
-    video_file: 1.Practice_course/video_files/IITBADV_J11AAps.ovpn
-    doc_file: ''
+    video_file: 1.Practice_course/video_files/file_example_MP4_480_1_5MG_B8q2KeM.mp4
+    doc_file: 1.Practice_course/video_doc_files/eye-of-the-tiger-workout_pqHeXcn.pdf
     in_video_quiz_file: ''
-    video_duration: '15:00:00'
-    uploaded_on: 2021-04-17 12:51:10.596517+00:00
-    modified_on: 2021-04-17 12:51:10.596544+00:00
+    video_duration: '10:00:00'
+    uploaded_on: 2021-04-22 09:45:18.217673+00:00
+    modified_on: 2021-04-22 09:45:18.217740+00:00

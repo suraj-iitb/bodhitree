@@ -1,0 +1,28 @@
+[database]
+host               = db
+port               = 5432
+user               = bodhitree
+password           = bodhitree123
+db_name            = elearning_academy
+engine             = django.db.backends.postgresql
+
+[email]
+host               =
+port               =
+user               =
+password           =
+backend            = django.core.mail.backends.smtp.EmailBackend
+use_tls            = True
+subject_prefix     = '[Bodhitree] '
+domain             = 
+reply_to           = no_reply
+
+[server]
+secret_key         = q)f4nfk4gc0u*tm8d+)&m8n75dh=mf09kwq+cl(816(mz57!tl
+debug              = True
+allowed_hosts      = ["*"]
+
+[app]
+protocol           = http
+ip                 = 127.0.0.1
+port               = 7654

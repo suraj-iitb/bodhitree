@@ -1,0 +1,4 @@
+- model: registration.department
+  pk: 1
+  fields:
+    name: CSE

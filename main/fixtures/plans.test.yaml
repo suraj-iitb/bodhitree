@@ -1,0 +1,4 @@
+- model: registration.plantype
+  pk: 1
+  fields:
+    name: Unlimited

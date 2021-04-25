@@ -386,6 +386,8 @@ class ChapterViewSetTest(APITestCase):
         url = reverse("course:chapter-list-chapters", args=[1])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        length = Chapter.objects.all().count()
+        self.assertEqual(len(response.data), length)
 
     def test_get_chapters(self):
         """
@@ -408,6 +410,7 @@ class ChapterViewSetTest(APITestCase):
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], 1)
 
     def test_get_chapter(self):
         """
@@ -428,10 +431,16 @@ class ChapterViewSetTest(APITestCase):
         data = {
             "title": title,
             "course": 1,
+            "description": "This is the description of chapter",
         }
         url = reverse("course:chapter-create-chapter", args=[1])
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id", "content_sequence"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_create_chapter(self):
         """
@@ -453,10 +462,16 @@ class ChapterViewSetTest(APITestCase):
         data = {
             "title": title,
             "course": 1,
+            "description": "Description of chapter n",
         }
         url = reverse(("course:chapter-update-chapter"), kwargs={"pk": chapter1.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id", "content_sequence"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_update_chapters(self):
         """
@@ -481,6 +496,11 @@ class ChapterViewSetTest(APITestCase):
         url = reverse(("course:chapter-update-chapter"), kwargs={"pk": chapter1.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id", "content_sequence"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_partial_update_chapter(self):
         """
@@ -502,6 +522,10 @@ class ChapterViewSetTest(APITestCase):
         url = reverse(("course:chapter-delete-chapter"), kwargs={"pk": chapter1.id})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
+        try:
+            Chapter.objects.get(id=chapter1.id)
+        except ObjectDoesNotExist:
+            self.assertEqual(response.status_code, status_code)
 
     def test_delete_chapter(self):
         """

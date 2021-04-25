@@ -7,8 +7,8 @@ from .models import (
     College,
     Degree,
     Department,
-    Profile,
     PlanType,
+    Profile,
     Registration,
     Subscription,
     SubscriptionHistory,
@@ -157,6 +157,7 @@ class DegreeAdmin(admin.ModelAdmin):
         "name",
     )
     search_fields = ("name",)
+
 
 class ProfileAdmin(admin.ModelAdmin):
     list_display = (

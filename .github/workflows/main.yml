@@ -32,6 +32,7 @@ jobs:
       - name: Run tests
         run: |
           if [ -f docker-compose.test.yml ]; then
+            cp main/settings.ini.sample main/settings.ini
             docker-compose --file docker-compose.yml --file docker-compose.test.yml build
             docker-compose --file docker-compose.yml --file docker-compose.test.yml run backend
           else

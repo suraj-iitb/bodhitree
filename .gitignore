@@ -1,10 +1,14 @@
+# Python compiled files
 **/__pycache__/
 
-# Data
+# User data
 main/data/
 
-#Logs
-*.log
+# Log files
+**/*.log
 
-# Venv
-pre_commit_env
+# Venv for git hooks
+pre_commit_env/
+
+# Settings file
+main/settings.ini

@@ -189,7 +189,9 @@ class Profile(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
     dept = models.ForeignKey(Department, on_delete=models.CASCADE)
-    roll_no = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True, null=True)
+    roll_no = models.CharField(
+        max_length=settings.MAX_CHARFIELD_LENGTH, blank=True, null=True
+    )
     degree = models.ForeignKey(Degree, on_delete=models.CASCADE, blank=True, null=True)
 
     def __str__(self):

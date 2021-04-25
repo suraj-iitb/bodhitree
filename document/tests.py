@@ -1,5 +1,6 @@
 from io import BytesIO
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -37,6 +38,8 @@ class DocumentViewSetTest(APITestCase):
         url = reverse("document:document-list-documents", args=[1])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        length = Document.objects.filter(chapter_id=1).count()
+        self.assertEqual(len(response.data), length)
 
     def test_get_documents(self):
         """
@@ -56,6 +59,8 @@ class DocumentViewSetTest(APITestCase):
         url = reverse("document:document-list-documents-per-section", args=[1])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        length = Document.objects.filter(section_id=1).count()
+        self.assertEqual(len(response.data), length)
 
     def test_get_documents_per_section(self):
         """
@@ -78,6 +83,7 @@ class DocumentViewSetTest(APITestCase):
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], doc_id)
 
     def test_get_document(self):
         """
@@ -105,10 +111,18 @@ class DocumentViewSetTest(APITestCase):
             "section": "",
             "title": title,
             "doc_file": doc,
+            "description": "This is the doc description",
         }
         url = reverse("document:document-create-document", args=[1])
         response = self.client.post(url, data, format="multipart")
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id", "doc_file", "section"]:
+                return_data.pop(k)
+            for k in ["doc_file", "section"]:
+                data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_create_document(self):
         """
@@ -141,12 +155,20 @@ class DocumentViewSetTest(APITestCase):
             "title": title,
             "chapter": 1,
             "doc_file": _file,
+            "description": "This is the doc description",
         }
         url = reverse(
             ("document:document-update-document"), kwargs={"pk": document1.id}
         )
         response = self.client.put(url, data, format="multipart")
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id", "doc_file", "section"]:
+                return_data.pop(k)
+            for k in ["doc_file"]:
+                data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_update_documents(self):
         """
@@ -177,12 +199,25 @@ class DocumentViewSetTest(APITestCase):
         _file = SimpleUploadedFile("doc.pdf", document_content)
         data = {
             "title": title,
+            "description": "This is the section description",
         }
         url = reverse(
             ("document:document-update-document"), kwargs={"pk": document1.id}
         )
         response = self.client.put(url, data, format="multipart")
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in [
+                "created_on",
+                "modified_on",
+                "id",
+                "doc_file",
+                "section",
+                "chapter",
+            ]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_partial_update_document(self):
         """
@@ -214,6 +249,10 @@ class DocumentViewSetTest(APITestCase):
         )
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
+        try:
+            Document.objects.get(id=document1.id)
+        except ObjectDoesNotExist:
+            self.assertEqual(response.status_code, status_code)
 
     def test_delete_document(self):
         """

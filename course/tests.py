@@ -716,6 +716,8 @@ class SectionViewSetTest(APITestCase):
         url = reverse("course:section-list-sections", args=[1])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        length = Section.objects.all().count()
+        self.assertEqual(len(response.data), length)
 
     def test_get_sections(self):
         """
@@ -738,6 +740,7 @@ class SectionViewSetTest(APITestCase):
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], 1)
 
     def test_get_section(self):
         """
@@ -758,10 +761,19 @@ class SectionViewSetTest(APITestCase):
         data = {
             "chapter": 1,
             "title": title,
+            "description": "this is the section description",
+            "content_sequence": [
+                [1, 2],
+            ],
         }
         url = reverse("course:section-create-section", args=[1])
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_create_section(self):
         """
@@ -783,10 +795,16 @@ class SectionViewSetTest(APITestCase):
         data = {
             "title": title,
             "chapter": 1,
+            "description": "SEction description",
         }
         url = reverse(("course:section-update-section"), kwargs={"pk": section1.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id", "content_sequence"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_update_sections(self):
         """
@@ -807,10 +825,16 @@ class SectionViewSetTest(APITestCase):
         section1.save()
         data = {
             "title": title,
+            "description": "New section description",
         }
         url = reverse(("course:section-update-section"), kwargs={"pk": section1.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id", "content_sequence", "chapter"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_partial_update_section(self):
         """
@@ -832,6 +856,10 @@ class SectionViewSetTest(APITestCase):
         url = reverse(("course:section-delete-section"), kwargs={"pk": section1.id})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
+        try:
+            Section.objects.get(id=section1.id)
+        except ObjectDoesNotExist:
+            self.assertEqual(response.status_code, status_code)
 
     def test_delete_section(self):
         """

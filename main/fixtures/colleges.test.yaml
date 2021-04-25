@@ -1,0 +1,4 @@
+- model: registration.college
+  pk: 1
+  fields:
+    name: bmsce

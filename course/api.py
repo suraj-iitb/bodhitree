@@ -87,7 +87,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         user = request.user
         data = request.data
         check = self._checks(pk, user)
-        if check:
+        if check is True:
             serializer = self.get_serializer(self.get_object(), data=data, partial=True)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()

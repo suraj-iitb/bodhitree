@@ -1,6 +1,7 @@
 import datetime
 from io import BytesIO
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -38,6 +39,8 @@ class VideoViewSetTest(APITestCase):
         url = reverse("video:video-list-videos", args=[1])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        length = Video.objects.filter(chapter_id=1).count()
+        self.assertEqual(len(response.data), length)
 
     def test_get_videos(self):
         """
@@ -57,6 +60,8 @@ class VideoViewSetTest(APITestCase):
         url = reverse("video:video-list-videos-section", args=[1])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        length = Video.objects.filter(section_id=1).count()
+        self.assertEqual(len(response.data), length)
 
     def test_get_videos_section(self):
         """
@@ -79,6 +84,7 @@ class VideoViewSetTest(APITestCase):
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], video_id)
 
     def test_get_video(self):
         """
@@ -112,10 +118,27 @@ class VideoViewSetTest(APITestCase):
             "video_file": video,
             "doc_file": doc,
             "video_duration": video_duration,
+            "description": "this is the video description",
         }
         url = reverse("video:video-create-video", args=[1])
         response = self.client.post(url, data, format="multipart")
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            return_data = response.data
+            for k in [
+                "uploaded_on",
+                "modified_on",
+                "id",
+                "video_file",
+                "doc_file",
+                "section",
+                "in_video_quiz_file",
+                "video_duration",
+            ]:
+                return_data.pop(k)
+            for k in ["doc_file", "section", "video_file", "video_duration"]:
+                data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_create_video(self):
         """
@@ -161,10 +184,27 @@ class VideoViewSetTest(APITestCase):
             "video_file": _file,
             "doc_file": doc_file,
             "video_duration": datetime.timedelta(days=4),
+            "description": "This is the video description",
         }
         url = reverse(("video:video-update-video"), kwargs={"pk": video1.id})
         response = self.client.put(url, data, format="multipart")
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in [
+                "uploaded_on",
+                "modified_on",
+                "id",
+                "video_file",
+                "doc_file",
+                "section",
+                "in_video_quiz_file",
+                "video_duration",
+            ]:
+                return_data.pop(k)
+            for k in ["doc_file", "video_file", "video_duration"]:
+                data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_update_videos(self):
         """
@@ -198,6 +238,22 @@ class VideoViewSetTest(APITestCase):
         url = reverse(("video:video-update-video"), kwargs={"pk": video1.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in [
+                "uploaded_on",
+                "modified_on",
+                "id",
+                "video_file",
+                "doc_file",
+                "section",
+                "in_video_quiz_file",
+                "video_duration",
+                "description",
+                "chapter",
+            ]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_partial_update_video(self):
         """
@@ -228,6 +284,10 @@ class VideoViewSetTest(APITestCase):
         url = reverse(("video:video-delete-video"), kwargs={"pk": video1.id})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
+        try:
+            Video.objects.get(id=video1.id)
+        except ObjectDoesNotExist:
+            self.assertEqual(response.status_code, status_code)
 
     def test_delete_video(self):
         """

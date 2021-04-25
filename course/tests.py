@@ -1,54 +1,33 @@
-import datetime
-
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
 from course.models import Chapter, Course, CourseHistory, Page, Section
 from discussion_forum.models import DiscussionForum
-from registration.models import PlanType, Subscription, SubscriptionHistory, User
+from registration.models import User
 
 
 class CourseViewSetTest(APITestCase):
+    fixtures = [
+        "users.test.yaml",
+        "plans.test.yaml",
+        "colleges.test.yaml",
+        "departments.test.yaml",
+        "courses.test.yaml",
+        "coursehistories.test.yaml",
+        "subscriptions.test.yaml",
+        "subscriptionhistories.test.yaml",
+    ]
+
     @classmethod
     def setUpTestData(cls):
         """
         Set up data for the whole TestCase.
         """
-        cls.ins_cred = {"email": "ins@ins.com", "password": "ins"}
-        cls.ta_cred = {"email": "ta@ta.com", "password": "ta"}
-        cls.stu_cred = {"email": "stu@stu.com", "password": "stu"}
-        cls.ins = User.objects.create_user(**cls.ins_cred)
-        cls.ins.save()
-        cls.ta = User.objects.create_user(**cls.ta_cred)
-        cls.ta.save()
-        cls.stu = User.objects.create_user(**cls.stu_cred)
-        cls.stu.save()
-        cls.course = Course(owner=cls.ins, title="Course", course_type="O")
-        cls.course.save()
-        cls.plan_type = PlanType(name="unlimited")
-        cls.plan_type.save()
-        cls.subscription = Subscription(
-            plan_type=cls.plan_type,
-            no_of_courses=10,
-            no_of_students_per_course=25,
-            prog_assign_enabled=True,
-            subjective_assign_enabled=True,
-            email_enabled=True,
-            per_video_limit=10000,
-            per_video_limit_unit="MB",
-            total_video_limit=10000,
-            total_video_limit_unit="MB",
-            subjective_assign_submission_size_per_student=10000,
-            subjective_assign_submission_size_per_student_unit="MB",
-        )
-        cls.subscription.save()
-        cls.subscription_history_ins = SubscriptionHistory(
-            user=cls.ins,
-            subscription=cls.subscription,
-            duration=datetime.timedelta(days=3),
-        )
-        cls.subscription_history_ins.save()
+        cls.ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
+        cls.ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
+        cls.stu_cred = {"email": "student@bodhitree.com", "password": "student"}
 
     def login(self, email, password):
         self.client.login(email=email, password=password)
@@ -63,22 +42,29 @@ class CourseViewSetTest(APITestCase):
         url = reverse("course:course-list")
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        length = Course.objects.all().count()
+        self.assertEqual(len(response.data["results"]), length)
 
     def test_get_course(self):
         """
         Ensure we can get one Course object.
         """
-        url = reverse(
-            "course:course-detail", kwargs={"pk": CourseViewSetTest.course.id}
-        )
+        url = reverse("course:course-detail", kwargs={"pk": 1})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], 1)
 
     def create_course_helper(self, status_code, title):
         data = {
-            "owner": CourseViewSetTest.ins.id,
+            "owner": 1,
+            "code": "111",
             "title": title,
+            "description": "This is the description of course 1",
+            "is_published": False,
             "course_type": "O",
+            "chapters_sequence": [1, 2],
+            "institute": 1,
+            "department": 1,
             "df_settings": {
                 "anonymous_to_instructor": True,
                 "send_email_to_all": True,
@@ -87,6 +73,11 @@ class CourseViewSetTest(APITestCase):
         url = reverse("course:course-list")
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "image", "id"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_create_course(self):
         """
@@ -102,13 +93,21 @@ class CourseViewSetTest(APITestCase):
         self.create_course_helper(status.HTTP_403_FORBIDDEN, "Course 3")
         self.logout()
 
-    def update_course_helper(self, course, status_code, title, user, role):
-        course_history = CourseHistory(user=user, course=course, role=role, status="E")
+    def update_course_helper(self, course, status_code, title, user_id, role):
+        course_history = CourseHistory(
+            user_id=user_id, course=course, role=role, status="E"
+        )
         course_history.save()
         data = {
-            "owner": CourseViewSetTest.ins.id,
+            "owner": 1,
+            "code": "111",
             "title": title,
-            "course_type": "M",
+            "description": "This is the description of course n",
+            "is_published": False,
+            "course_type": "O",
+            "chapters_sequence": [1, 2],
+            "institute": 1,
+            "department": 1,
             "df_settings": {
                 "anonymous_to_instructor": True,
                 "send_email_to_all": False,
@@ -117,13 +116,18 @@ class CourseViewSetTest(APITestCase):
         url = reverse("course:course-update-course", kwargs={"pk": course.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "image", "id"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_update_course(self):
         """
         Ensure we can update an existing Course object.
         """
         course = Course(
-            owner=CourseViewSetTest.ins,
+            owner_id=1,
             title="Course 4",
             course_type="O",
         )
@@ -135,40 +139,51 @@ class CourseViewSetTest(APITestCase):
         )
         discussion_forum.save()
         self.login(**CourseViewSetTest.ins_cred)
-        self.update_course_helper(
-            course, status.HTTP_200_OK, "Course 5", CourseViewSetTest.ins, "I"
-        )
+        self.update_course_helper(course, status.HTTP_200_OK, "Course 5", 1, "I")
         self.logout()
         self.login(**CourseViewSetTest.ta_cred)
-        self.update_course_helper(
-            course, status.HTTP_200_OK, "Course 6", CourseViewSetTest.ta, "T"
-        )
+        self.update_course_helper(course, status.HTTP_200_OK, "Course 6", 2, "T")
         self.logout()
         self.login(**CourseViewSetTest.stu_cred)
-        self.update_course_helper(
-            course, status.HTTP_403_FORBIDDEN, "Course 7", CourseViewSetTest.stu, "S"
-        )
+        self.update_course_helper(course, status.HTTP_403_FORBIDDEN, "Course 7", 3, "S")
         self.logout()
 
-    def partial_update_course_helper(self, course, status_code, title, user, role):
-        course_history = CourseHistory(user=user, course=course, role=role, status="E")
+    def partial_update_course_helper(self, course, status_code, title, user_id, role):
+        course_history = CourseHistory(
+            user_id=user_id, course=course, role=role, status="E"
+        )
         course_history.save()
         data = {
             "title": title,
             "course_type": "M",
-            "df_settings": {
-                "send_email_to_all": False,
-            },
         }
         url = reverse("course:course-update-course", kwargs={"pk": course.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in [
+                "owner",
+                "code",
+                "description",
+                "is_published",
+                "chapters_sequence",
+                "institute",
+                "department",
+                "df_settings",
+                "created_on",
+                "modified_on",
+                "image",
+                "id",
+            ]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_partial_update_course(self):
         """
         Ensure we can partially update an existing Course object.
         """
-        course = Course(owner=CourseViewSetTest.ins, title="Course6", course_type="O")
+        course = Course(owner_id=1, title="Course6", course_type="O")
         course.save()
         discussion_forum = DiscussionForum(
             course=course,
@@ -178,22 +193,22 @@ class CourseViewSetTest(APITestCase):
         discussion_forum.save()
         self.login(**CourseViewSetTest.ins_cred)
         self.partial_update_course_helper(
-            course, status.HTTP_200_OK, "Course 5", CourseViewSetTest.ins, "I"
+            course, status.HTTP_200_OK, "Course 5", 1, "I"
         )
         self.logout()
         self.login(**CourseViewSetTest.ta_cred)
         self.partial_update_course_helper(
-            course, status.HTTP_200_OK, "Course 6", CourseViewSetTest.ta, "T"
+            course, status.HTTP_200_OK, "Course 6", 2, "T"
         )
         self.logout()
         self.login(**CourseViewSetTest.stu_cred)
         self.partial_update_course_helper(
-            course, status.HTTP_403_FORBIDDEN, "Course 7", CourseViewSetTest.stu, "S"
+            course, status.HTTP_403_FORBIDDEN, "Course 7", 3, "S"
         )
         self.logout()
 
-    def delete_course_helper(self, title, status_code, user, role):
-        course = Course(owner=CourseViewSetTest.ins, title=title, course_type="O")
+    def delete_course_helper(self, title, status_code, user_id, role):
+        course = Course(owner_id=1, title=title, course_type="O")
         course.save()
         discussion_forum = DiscussionForum(
             course=course,
@@ -202,12 +217,15 @@ class CourseViewSetTest(APITestCase):
         )
         discussion_forum.save()
         course_history = CourseHistory(
-            user=user, course_id=course.id, role=role, status="E"
+            user_id=user_id, course_id=course.id, role=role, status="E"
         )
         course_history.save()
         url = reverse(("course:course-delete-course"), kwargs={"pk": course.id})
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status_code)
+        try:
+            Course.objects.get(id=course.id)
+        except ObjectDoesNotExist:
+            self.assertEqual(response.status_code, status_code)
 
     def test_delete_course(self):
         """
@@ -215,19 +233,13 @@ class CourseViewSetTest(APITestCase):
         """
 
         self.login(**CourseViewSetTest.ins_cred)
-        self.delete_course_helper(
-            "Course 8", status.HTTP_204_NO_CONTENT, CourseViewSetTest.ins, "I"
-        )
+        self.delete_course_helper("Course 8", status.HTTP_204_NO_CONTENT, 1, "I")
         self.logout()
         self.login(**CourseViewSetTest.ta_cred)
-        self.delete_course_helper(
-            "Course 9", status.HTTP_403_FORBIDDEN, CourseViewSetTest.ta, "T"
-        )
+        self.delete_course_helper("Course 9", status.HTTP_403_FORBIDDEN, 2, "T")
         self.logout()
         self.login(**CourseViewSetTest.stu_cred)
-        self.delete_course_helper(
-            "Course 10", status.HTTP_403_FORBIDDEN, CourseViewSetTest.stu, "S"
-        )
+        self.delete_course_helper("Course 10", status.HTTP_403_FORBIDDEN, 3, "S")
         self.logout()
 
 
@@ -374,6 +386,8 @@ class ChapterViewSetTest(APITestCase):
         url = reverse("course:chapter-list-chapters", args=[1])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        length = Chapter.objects.all().count()
+        self.assertEqual(len(response.data), length)
 
     def test_get_chapters(self):
         """
@@ -396,6 +410,7 @@ class ChapterViewSetTest(APITestCase):
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], 1)
 
     def test_get_chapter(self):
         """
@@ -416,10 +431,16 @@ class ChapterViewSetTest(APITestCase):
         data = {
             "title": title,
             "course": 1,
+            "description": "This is the description of chapter",
         }
         url = reverse("course:chapter-create-chapter", args=[1])
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id", "content_sequence"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_create_chapter(self):
         """
@@ -441,10 +462,16 @@ class ChapterViewSetTest(APITestCase):
         data = {
             "title": title,
             "course": 1,
+            "description": "Description of chapter n",
         }
         url = reverse(("course:chapter-update-chapter"), kwargs={"pk": chapter1.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id", "content_sequence"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_update_chapters(self):
         """
@@ -469,6 +496,11 @@ class ChapterViewSetTest(APITestCase):
         url = reverse(("course:chapter-update-chapter"), kwargs={"pk": chapter1.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id", "content_sequence"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_partial_update_chapter(self):
         """
@@ -490,6 +522,10 @@ class ChapterViewSetTest(APITestCase):
         url = reverse(("course:chapter-delete-chapter"), kwargs={"pk": chapter1.id})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
+        try:
+            Chapter.objects.get(id=chapter1.id)
+        except ObjectDoesNotExist:
+            self.assertEqual(response.status_code, status_code)
 
     def test_delete_chapter(self):
         """
@@ -680,6 +716,8 @@ class SectionViewSetTest(APITestCase):
         url = reverse("course:section-list-sections", args=[1])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        length = Section.objects.all().count()
+        self.assertEqual(len(response.data), length)
 
     def test_get_sections(self):
         """
@@ -702,6 +740,7 @@ class SectionViewSetTest(APITestCase):
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], 1)
 
     def test_get_section(self):
         """
@@ -722,10 +761,19 @@ class SectionViewSetTest(APITestCase):
         data = {
             "chapter": 1,
             "title": title,
+            "description": "this is the section description",
+            "content_sequence": [
+                [1, 2],
+            ],
         }
         url = reverse("course:section-create-section", args=[1])
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_create_section(self):
         """
@@ -747,10 +795,16 @@ class SectionViewSetTest(APITestCase):
         data = {
             "title": title,
             "chapter": 1,
+            "description": "SEction description",
         }
         url = reverse(("course:section-update-section"), kwargs={"pk": section1.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id", "content_sequence"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_update_sections(self):
         """
@@ -771,10 +825,16 @@ class SectionViewSetTest(APITestCase):
         section1.save()
         data = {
             "title": title,
+            "description": "New section description",
         }
         url = reverse(("course:section-update-section"), kwargs={"pk": section1.id})
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            return_data = response.data
+            for k in ["created_on", "modified_on", "id", "content_sequence", "chapter"]:
+                return_data.pop(k)
+            self.assertEqual(return_data, data)
 
     def test_partial_update_section(self):
         """
@@ -796,6 +856,10 @@ class SectionViewSetTest(APITestCase):
         url = reverse(("course:section-delete-section"), kwargs={"pk": section1.id})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
+        try:
+            Section.objects.get(id=section1.id)
+        except ObjectDoesNotExist:
+            self.assertEqual(response.status_code, status_code)
 
     def test_delete_section(self):
         """

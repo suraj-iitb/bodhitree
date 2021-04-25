@@ -11,25 +11,24 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
 import os
+from configparser import ConfigParser
 from pathlib import Path
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
+# Read configurations from settings.ini file
+config = ConfigParser()
+config.read(os.path.join(BASE_DIR, "main/settings.ini"))
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "q)f4nfk4gc0u*tm8d+)&m8n75dh=mf09kwq+cl(816(mz57!tl"
+SECRET_KEY = config["server"]["secret_key"]
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config["server"].getboolean("debug")
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = config["server"]["allowed_hosts"]
 
 # Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -93,12 +92,12 @@ WSGI_APPLICATION = "main.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB"),
-        "USER": os.environ.get("POSTGRES_USER"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD"),
-        "HOST": "db",
-        "PORT": 5432,
+        "ENGINE": config["database"]["engine"],
+        "NAME": config["database"]["db_name"],
+        "USER": config["database"]["user"],
+        "PASSWORD": config["database"]["password"],
+        "HOST": config["database"]["host"],
+        "PORT": config["database"]["port"],
     }
 }
 
@@ -108,7 +107,7 @@ DATABASES = {
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation."
-        + "UserAttributeSimilarityValidator",
+        "UserAttributeSimilarityValidator",
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
@@ -123,17 +122,19 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Django rest framework
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
+    "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
-    ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     "DEFAULT_PAGINATION_CLASS": "utils.drf_utils.StandardResultsSetPagination",
-    "DEFAULT_FILTER_BACKENDS": (
+    "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
-    ),
+    ],
     "DEFAULT_THROTTLE_RATES": {
         "user": "200/min",
     },
@@ -142,7 +143,11 @@ REST_FRAMEWORK = {
 
 # CORS hosts
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:7654",
+    "{protocol}://{ip}:{port}".format(
+        protocol=config["app"]["protocol"],
+        ip=config["app"]["ip"],
+        port=config["app"]["port"],
+    )
 ]
 
 # Simple JWT
@@ -212,14 +217,14 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 
-# User Uploaded Files Locations
+# User uploaded files locations
 MEDIA_ROOT = os.path.join(BASE_DIR, "main/data/")
 
-# User Model
+# User model
 AUTH_USER_MODEL = "registration.User"
 
-# Max CharField limit
+# Max charfield limit
 MAX_CHARFIELD_LENGTH = 100
 
-# Additional Fixtures Path
-FIXTURE_DIRS = ["main/fixtures/"]
+# Additional fixtures directories
+FIXTURE_DIRS = [os.path.join(BASE_DIR, "main/fixtures")]

@@ -10,17 +10,17 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
-import logging.config
 import os
+from configparser import ConfigParser
 from pathlib import Path
-from  configparser import ConfigParser
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Read configurations from settings.ini file
 config = ConfigParser()
-config.read(os.path.join(BASE_DIR, 'main/settings.ini'))
+config.read(os.path.join(BASE_DIR, "main/settings.ini"))
 
 SECRET_KEY = config["server"]["secret_key"]
 
@@ -107,7 +107,7 @@ DATABASES = {
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation."
-                    "UserAttributeSimilarityValidator",
+        "UserAttributeSimilarityValidator",
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
@@ -126,29 +126,28 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
-
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated",],
-    
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     "DEFAULT_PAGINATION_CLASS": "utils.drf_utils.StandardResultsSetPagination",
-    
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ],
-    
     "DEFAULT_THROTTLE_RATES": {
         "user": "200/min",
     },
-    
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
 
 # CORS hosts
 CORS_ALLOWED_ORIGINS = [
-    "{protocol}://{ip}:{port}".format(protocol=config["app"]["protocol"],
-                                      ip=config["app"]["ip"],
-                                      port=config["app"]["port"])
+    "{protocol}://{ip}:{port}".format(
+        protocol=config["app"]["protocol"],
+        ip=config["app"]["ip"],
+        port=config["app"]["port"],
+    )
 ]
 
 # Simple JWT
@@ -228,6 +227,4 @@ AUTH_USER_MODEL = "registration.User"
 MAX_CHARFIELD_LENGTH = 100
 
 # Additional fixtures directories
-FIXTURE_DIRS = [
-    os.path.join(BASE_DIR, 'main/fixtures')
-]
+FIXTURE_DIRS = [os.path.join(BASE_DIR, "main/fixtures")]

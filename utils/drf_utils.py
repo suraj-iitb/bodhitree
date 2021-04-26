@@ -46,9 +46,7 @@ from video.models import QuizMarker, SectionMarker, Video
 
 
 class StandardResultsSetPagination(PageNumberPagination):
-    """
-    Pagination class for DEFAULT_PAGINATION_CLASS rest_framework settings.
-    """
+    """Pagination class for viewsets."""
 
     page_size = 10
     page_size_query_param = "page_size"
@@ -56,7 +54,8 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 
 class IsInstructorOrTA(permissions.BasePermission):
-    """
+    """Permission class
+
     Allows:
         1. complete permissions to instructor/ta
         2. list/retrieve permissions to students
@@ -153,19 +152,18 @@ class IsInstructorOrTA(permissions.BasePermission):
 
 
 class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
-    """
-    Allows:
-        1. complete permissions to instructor/ta
-        2. list/retrieve permissions to students
-        3. list/retrieve permissions to anonymous users
+    """Permission class for viewsets.
 
     Applicable for: Course
+
+    Allows:
+        1. complete permissions to instructor/ta
+        2. list/retrieve permissions to students/anonymous users
     """
 
     def has_permission(self, request, view):
         """
-        Applicable at model level (list, create, retrieve, update,
-                                   partial_update, destroy)
+        Applicable at model level (GET, POST, PUT, PATCH, DELETE)
         """
         if request.method in permissions.SAFE_METHODS:
             return True
@@ -175,14 +173,14 @@ class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         """
-        Applicable at model instance level (retrieve, update, partial_update, destroy)
+        Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
         """
         if request.method in permissions.SAFE_METHODS:
             return True
         if request.user.is_authenticated:
             course_histories = CourseHistory.objects.filter(
                 Q(course=obj) & (Q(role="I") | Q(role="T")) & Q(user=request.user)
-            )
+            ).count()
             if course_histories:
                 return True
             return False
@@ -281,7 +279,7 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
-    """
+    """Permission class for viewsets
     Allows:
         1. all permission to admin users
         2. list/retrieve to authenticated users
@@ -302,31 +300,19 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         return False
 
 
-class Isowner(permissions.BasePermission):
-    """
+class IsOwner(permissions.BasePermission):
+    """Permission class for viewsets.
+
+    Applicable for: Course
+
     Allows:
-        1. complete permissions to instructor/ta
-
-    Applicable for:
+        1. complete permissions to instructor
     """
-
-    def has_permission(self, request, view):
-        """
-        Applicable at model level (list, create, retrieve, update,
-                                   partial_update, destroy)
-        """
-        if request.user.is_authenticated:
-            return True
-        return False
 
     def has_object_permission(self, request, view, obj):
         """
-        Applicable at model instance level (retrieve, update, partial_update, destroy)
+        Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
         """
-        if request.user.is_authenticated:
-            if request.method in permissions.SAFE_METHODS:
-                return True
-
-            if obj.owner == request.user:
-                return True
-            return False
+        if request.user.is_authenticated and obj.owner == request.user:
+            return True
+        return False

@@ -8,26 +8,24 @@ from discussion_forum.models import DiscussionForum
 from registration.models import User
 
 
+ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
+ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
+stu_cred = {"email": "student@bodhitree.com", "password": "student"}
+
+
 class CourseViewSetTest(APITestCase):
+    """Test for CourseViewSet."""
+
     fixtures = [
         "users.test.yaml",
-        "plans.test.yaml",
-        "colleges.test.yaml",
         "departments.test.yaml",
+        "colleges.test.yaml",
         "courses.test.yaml",
         "coursehistories.test.yaml",
+        "plans.test.yaml",
         "subscriptions.test.yaml",
         "subscriptionhistories.test.yaml",
     ]
-
-    @classmethod
-    def setUpTestData(cls):
-        """
-        Set up data for the whole TestCase.
-        """
-        cls.ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
-        cls.ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
-        cls.stu_cred = {"email": "student@bodhitree.com", "password": "student"}
 
     def login(self, email, password):
         self.client.login(email=email, password=password)
@@ -36,30 +34,27 @@ class CourseViewSetTest(APITestCase):
         self.client.logout()
 
     def test_get_courses(self):
-        """
-        Ensure we can get all Course objects.
-        """
+        """Ensure we can get all Course objects."""
         url = reverse("course:course-list")
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        length = Course.objects.all().count()
-        self.assertEqual(len(response.data["results"]), length)
+        no_of_courses = Course.objects.all().count()
+        self.assertEqual(len(response.data["results"]), no_of_courses)
 
     def test_get_course(self):
-        """
-        Ensure we can get one Course object.
-        """
-        url = reverse("course:course-detail", kwargs={"pk": 1})
+        """Ensure we can get one Course object."""
+        course_id = 1
+        url = reverse("course:course-detail", kwargs={"pk": course_id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["id"], 1)
+        self.assertEqual(response.data["id"], course_id)
 
-    def create_course_helper(self, status_code, title):
+    def _create_course_helper(self, status_code, title, owner_id):
         data = {
-            "owner": 1,
-            "code": "111",
+            "owner": owner_id,
+            "code": "101",
             "title": title,
-            "description": "This is the description of course 1",
+            "description": "This is the description of the course",
             "is_published": False,
             "course_type": "O",
             "chapters_sequence": [1, 2],
@@ -67,30 +62,28 @@ class CourseViewSetTest(APITestCase):
             "department": 1,
             "df_settings": {
                 "anonymous_to_instructor": True,
-                "send_email_to_all": True,
+                "send_email_to_all": False,
             },
         }
-        url = reverse("course:course-list")
+        url = reverse("course:course-create-course")
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_201_CREATED:
-            return_data = response.data
-            for k in ["created_on", "modified_on", "image", "id"]:
-                return_data.pop(k)
-            self.assertEqual(return_data, data)
+            response_data = response.data
+            for field in ["id", "image", "created_on", "modified_on"]:
+                response_data.pop(field)
+            self.assertEqual(response_data, data)
 
     def test_create_course(self):
-        """
-        Ensure we can create a new Course object.
-        """
-        self.login(**CourseViewSetTest.ins_cred)
-        self.create_course_helper(status.HTTP_201_CREATED, "Course 1")
+        """Ensure we can create a new Course object."""
+        self.login(**ins_cred)
+        self._create_course_helper(status.HTTP_201_CREATED, "Course 1", 1)
         self.logout()
-        self.login(**CourseViewSetTest.ta_cred)
-        self.create_course_helper(status.HTTP_403_FORBIDDEN, "Course 2")
+        self.login(**ta_cred)
+        self._create_course_helper(status.HTTP_403_FORBIDDEN, "Course 2", 2)
         self.logout()
-        self.login(**CourseViewSetTest.stu_cred)
-        self.create_course_helper(status.HTTP_403_FORBIDDEN, "Course 3")
+        self.login(**stu_cred)
+        self._create_course_helper(status.HTTP_403_FORBIDDEN, "Course 3", 3)
         self.logout()
 
     def update_course_helper(self, course, status_code, title, user_id, role):
@@ -102,7 +95,7 @@ class CourseViewSetTest(APITestCase):
             "owner": 1,
             "code": "111",
             "title": title,
-            "description": "This is the description of course n",
+            "description": "This is the description of the course",
             "is_published": False,
             "course_type": "O",
             "chapters_sequence": [1, 2],
@@ -117,15 +110,13 @@ class CourseViewSetTest(APITestCase):
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
-            return_data = response.data
-            for k in ["created_on", "modified_on", "image", "id"]:
-                return_data.pop(k)
-            self.assertEqual(return_data, data)
+            response_data = response.data
+            for field in ["created_on", "modified_on", "image", "id"]:
+                response_data.pop(field)
+            self.assertEqual(response_data, data)
 
     def test_update_course(self):
-        """
-        Ensure we can update an existing Course object.
-        """
+        """Ensure we can update an existing Course object."""
         course = Course(
             owner_id=1,
             title="Course 4",
@@ -138,13 +129,13 @@ class CourseViewSetTest(APITestCase):
             send_email_to_all="True",
         )
         discussion_forum.save()
-        self.login(**CourseViewSetTest.ins_cred)
+        self.login(**ins_cred)
         self.update_course_helper(course, status.HTTP_200_OK, "Course 5", 1, "I")
         self.logout()
-        self.login(**CourseViewSetTest.ta_cred)
+        self.login(**ta_cred)
         self.update_course_helper(course, status.HTTP_200_OK, "Course 6", 2, "T")
         self.logout()
-        self.login(**CourseViewSetTest.stu_cred)
+        self.login(**stu_cred)
         self.update_course_helper(course, status.HTTP_403_FORBIDDEN, "Course 7", 3, "S")
         self.logout()
 
@@ -162,28 +153,12 @@ class CourseViewSetTest(APITestCase):
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
             return_data = response.data
-            for k in [
-                "owner",
-                "code",
-                "description",
-                "is_published",
-                "chapters_sequence",
-                "institute",
-                "department",
-                "df_settings",
-                "created_on",
-                "modified_on",
-                "image",
-                "id",
-            ]:
-                return_data.pop(k)
-            self.assertEqual(return_data, data)
+            self.assertEqual(return_data["title"], data["title"])
+            self.assertEqual(return_data["course_type"], data["course_type"])
 
-    def test_partial_update_course(self):
-        """
-        Ensure we can partially update an existing Course object.
-        """
-        course = Course(owner_id=1, title="Course6", course_type="O")
+    def _test_partial_update_course(self):
+        """Ensure we can partially update an existing Course object."""
+        course = Course(owner_id=1, title="Course 8", course_type="O")
         course.save()
         discussion_forum = DiscussionForum(
             course=course,
@@ -191,23 +166,21 @@ class CourseViewSetTest(APITestCase):
             send_email_to_all="True",
         )
         discussion_forum.save()
-        self.login(**CourseViewSetTest.ins_cred)
-        self.partial_update_course_helper(
-            course, status.HTTP_200_OK, "Course 5", 1, "I"
+        self.login(**ins_cred)
+        self._test_partial_update_course(course, status.HTTP_200_OK, "Course 9", 1, "I")
+        self.logout()
+        self.login(**ta_cred)
+        self._test_partial_update_course(
+            course, status.HTTP_200_OK, "Course 10", 2, "T"
         )
         self.logout()
-        self.login(**CourseViewSetTest.ta_cred)
-        self.partial_update_course_helper(
-            course, status.HTTP_200_OK, "Course 6", 2, "T"
-        )
-        self.logout()
-        self.login(**CourseViewSetTest.stu_cred)
-        self.partial_update_course_helper(
-            course, status.HTTP_403_FORBIDDEN, "Course 7", 3, "S"
+        self.login(**stu_cred)
+        self._test_partial_update_course(
+            course, status.HTTP_403_FORBIDDEN, "Course 11", 3, "S"
         )
         self.logout()
 
-    def delete_course_helper(self, title, status_code, user_id, role):
+    def _delete_course_helper(self, status_code, title, user_id, role):
         course = Course(owner_id=1, title=title, course_type="O")
         course.save()
         discussion_forum = DiscussionForum(
@@ -222,24 +195,20 @@ class CourseViewSetTest(APITestCase):
         course_history.save()
         url = reverse(("course:course-delete-course"), kwargs={"pk": course.id})
         response = self.client.delete(url)
-        try:
-            Course.objects.get(id=course.id)
-        except ObjectDoesNotExist:
-            self.assertEqual(response.status_code, status_code)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_204_NO_CONTENT:
+            self.assertEqual(Course.objects.filter(id=course.id).count(), 0)
 
     def test_delete_course(self):
-        """
-        Ensure we can delete an existing Course object.
-        """
-
-        self.login(**CourseViewSetTest.ins_cred)
-        self.delete_course_helper("Course 8", status.HTTP_204_NO_CONTENT, 1, "I")
+        """Ensure we can delete an existing Course object."""
+        self.login(**ins_cred)
+        self._delete_course_helper(status.HTTP_204_NO_CONTENT, "Course 12", 1, "I")
         self.logout()
-        self.login(**CourseViewSetTest.ta_cred)
-        self.delete_course_helper("Course 9", status.HTTP_403_FORBIDDEN, 2, "T")
+        self.login(**ta_cred)
+        self._delete_course_helper(status.HTTP_403_FORBIDDEN, "Course 13", 2, "T")
         self.logout()
-        self.login(**CourseViewSetTest.stu_cred)
-        self.delete_course_helper("Course 10", status.HTTP_403_FORBIDDEN, 3, "S")
+        self.login(**stu_cred)
+        self._delete_course_helper(status.HTTP_403_FORBIDDEN, "Course 14", 3, "S")
         self.logout()
 
 

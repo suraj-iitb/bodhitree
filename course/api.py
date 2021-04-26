@@ -1,15 +1,22 @@
+import logging
+
 from django.db import IntegrityError
-from django.db.models import Q
-from django.shortcuts import get_object_or_404
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from utils.drf_utils import IsInstructorOrTA, IsInstructorOrTAOrReadOnly, Isowner
+from registration.models import SubscriptionHistory
+from utils.drf_utils import (
+    IsInstructorOrTA,
+    IsInstructorOrTAOrReadOnly,
+    IsOwner,
+    StandardResultsSetPagination,
+)
 from utils.utils import (
     check_course_registration,
     has_valid_subscription,
+    is_course_limit_reached,
     is_instructor_or_ta,
 )
 
@@ -23,56 +30,81 @@ from .serializers import (
 )
 
 
-class CourseViewSet(viewsets.ModelViewSet):
+logger = logging.getLogger(__name__)
+
+
+class CourseViewSet(
+    viewsets.GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin
+):
+    """ViewSet for Course."""
+
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = (IsInstructorOrTAOrReadOnly,)
+    pagination_class = StandardResultsSetPagination
     filterset_fields = (
         "owner__email",
         "code",
         "title",
-        "course_type",
     )
     search_fields = (
         "owner__email",
         "code",
         "title",
-        "course_type",
     )
     ordering_fields = ("id",)
 
-    def valid_subscription(self, user):
-        if has_valid_subscription(user):
-            return True
-        else:
+    def _create_course_check(self, user):
+        try:
+            if not is_course_limit_reached(user):
+                return True
             data = {
-                "error": """User: {} does not have a valid subscription or the
-                limit of number of courses in subscription exceeded""".format(
-                    user
-                ),
+                "error": "For user: {}, the limit of number of courses in "
+                "subscription exceeded".format(user),
             }
-            return Response(data, status.HTTP_403_FORBIDDEN)
+        except SubscriptionHistory.DoesNotExist:
+            data = {
+                "error": "User: {} does not have a valid subscription".format(user),
+            }
+        except SubscriptionHistory.MultipleObjectsReturned:
+            data = {
+                "error": "For user: {}, multiple subscriptions exist".format(user),
+            }
+        return Response(data, status.HTTP_403_FORBIDDEN)
 
-    def _checks(self, course_id, user):
-        course = get_object_or_404(Course, id=course_id)
-        if self.valid_subscription(course.owner):
+    def _update_course_check(self, course_id, user):
+        try:
+            course = Course.objects.select_related("owner").get(id=course_id)
+        except Course.DoesNotExist as e:
+            logger.exception(e)
+            data = {
+                "error": "Course: {} does not exist".format(course),
+            }
+            return Response(data, status.HTTP_404_NOT_FOUND)
+        except Course.MultipleObjectsReturned as e:
+            logger.exception(e)
+            data = {
+                "error": "Multiple courses exist with id: {}".format(course_id),
+            }
+            return Response(data, status.HTTP_400_BAD_REQUEST)
+        if is_instructor_or_ta(course_id, user) and has_valid_subscription(
+            course.owner
+        ):
             return True
-        elif CourseHistory.objects.filter(Q(role="I") | Q(role="T")):
-            if not check_course_registration(course_id, user):
-                data = {
-                    "error": "User: {} not registered in course with id: {}".format(
-                        user, course_id
-                    ),
-                }
-                return Response(data, status.HTTP_401_UNAUTHORIZED)
-        return True
+        data = {
+            "error": "User: {} is not permitted to update the course: {}".format(
+                user, course
+            ),
+        }
+        return Response(data, status.HTTP_403_FORBIDDEN)
 
-    def create(self, request):
+    @action(detail=False, methods=["POST"])
+    def create_course(self, request):
+        """Creates a course."""
         user = request.user
-        data = request.data
-        _check = self.valid_subscription(user)
-        if _check is True:
-            serializer = self.get_serializer(data=data)
+        check = self._create_course_check(user)
+        if check is True:
+            serializer = self.get_serializer(data=request.data)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 course_history = CourseHistory(
@@ -80,22 +112,24 @@ class CourseViewSet(viewsets.ModelViewSet):
                 )
                 course_history.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return _check
+        return check
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_course(self, request, pk):
-        user = request.user
-        data = request.data
-        check = self._checks(pk, user)
+        """Updates a course with id=pk."""
+        check = self._update_course_check(pk, request.user)
         if check is True:
-            serializer = self.get_serializer(self.get_object(), data=data, partial=True)
+            serializer = self.get_serializer(
+                self.get_object(), data=request.data, partial=True
+            )
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 return Response(serializer.data)
         return check
 
-    @action(detail=True, methods=["DELETE"], permission_classes=[Isowner])
+    @action(detail=True, methods=["DELETE"], permission_classes=[IsOwner])
     def delete_course(self, request, pk):
+        """Deletes a course with id=pk."""
         instance = self.get_object()
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -1,9 +1,13 @@
+import logging
 import os
 
 from django.db.models import Q
 
 from course.models import Course, CourseHistory
 from registration.models import SubscriptionHistory
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_course_folder(course):
@@ -41,18 +45,33 @@ def check_course_registration(course_id, user):
 def is_instructor_or_ta(course_id, user):
     course_history = CourseHistory.objects.filter(
         Q(course_id=course_id) & (Q(role="I") | Q(role="T")) & Q(user=user)
-    )
+    ).count()
     if course_history:
         return True
     return False
 
 
+# TODO: Add date check for subscription_history
 def has_valid_subscription(user):
-    no_of_courses = Course.objects.filter(owner=user)
-    subscription_history = SubscriptionHistory.objects.filter(user=user)
-    if (
-        subscription_history
-        and len(no_of_courses) < subscription_history[0].subscription.no_of_courses
-    ):
+    subscription_history = SubscriptionHistory.objects.filter(user=user).count()
+    if subscription_history:
         return True
     return False
+
+
+# TODO: Add date check for subscription_history
+def is_course_limit_reached(user):
+    no_of_courses = Course.objects.filter(owner=user).count()
+    try:
+        subscription_history = SubscriptionHistory.objects.select_related(
+            "subscription"
+        ).get(user=user)
+    except (
+        SubscriptionHistory.DoesNotExist,
+        SubscriptionHistory.MultipleObjectsReturned,
+    ) as e:
+        logger.exception(e)
+        raise
+    if no_of_courses < subscription_history.subscription.no_of_courses:
+        return False
+    return True

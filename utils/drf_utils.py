@@ -54,24 +54,28 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 
 class IsInstructorOrTA(permissions.BasePermission):
-    """Permission class
+    """Permission class for viewsets.
+
+    Applicable for: Chapter, Section, Video, Document, Quiz, SectionMarker, QuizMarker,
+                    QuestionModule, SingleCorrectQuestion, MultipleCorrectQuestion,
+                    FixedAnswerQuestion, DescriptiveQuestion, Schedule, Page,
+                    Announcement, Notification, DiscussionForum,
+                    SimpleProgrammingAssignment, AdvancedProgrammingAssignment,
+                    AssignmentSection, Testcase, Exam, SubjectiveAssignment
 
     Allows:
         1. complete permissions to instructor/ta
         2. list/retrieve permissions to students
-
-    Applicable for: Video, Document, Quiz, SectionMarker, QuizMarker,
-                    QuestionModule, SingleCorrectQuestion, MultipleCorrectQuestion,
-                    FixedAnswerQuestion, DescriptiveQuestion,
-                    Chapter, Schedule, Page, Announcement,
-                    Section, Notification, DiscussionForum,
-                    SimpleProgrammingAssignment, AdvancedProgrammingAssignment,
-                    AssignmentSection, Testcase, Exam, SubjectiveAssignment
     """
 
-    def get_course_from_object(self, obj):
-        """
-        get course using obj instance
+    def _get_course_from_object(self, obj):
+        """get course using obj instance
+
+        Args:
+            obj : Model object (like Chapter, Quiz)
+
+        Returns:
+            course: Course model object
         """
         if type(obj) in (Video, Document, Quiz):
             course = obj.chapter.course if obj.chapter else obj.section.chapter.course
@@ -129,8 +133,7 @@ class IsInstructorOrTA(permissions.BasePermission):
 
     def has_permission(self, request, view):
         """
-        Applicable at model level (list, create, retrieve, update,
-                                   partial_update, destroy)
+        Applicable at model level (GET, POST, PUT, PATCH, DELETE)
         """
         if request.user.is_authenticated:
             return True
@@ -138,13 +141,13 @@ class IsInstructorOrTA(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         """
-        Applicable at model instance level (retrieve, update, partial_update, destroy)
+        Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
         """
         if request.user.is_authenticated:
             if request.method in permissions.SAFE_METHODS:
                 return True
             instructor_or_ta = is_instructor_or_ta(
-                self.get_course_from_object(obj).id, request.user
+                self._get_course_from_object(obj).id, request.user
             )
             if instructor_or_ta:
                 return True
@@ -186,46 +189,8 @@ class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
             return False
 
 
-class UserPermission(permissions.BasePermission):
-    """
-    Allows:
-        1. create permission to anonymous users
-        2. list/retrieve permission to authenticated users
-        3. update/partial_update/destroy to authenticated owners only
-
-    Applicable for: User
-    """
-
-    def has_permission(self, request, view):
-        """
-        Applicable at model level (list, create, retrieve, update,
-                                   partial_update, destroy)
-        """
-        if request.method in permissions.SAFE_METHODS:
-            if request.user.is_authenticated:
-                return True
-        elif request.method == "POST":
-            return True
-        if request.user.is_authenticated:
-            return True
-        return False
-
-    def has_object_permission(self, request, view, obj):
-        """
-        Applicable at model instance level (retrieve, update, partial_update, destroy)
-        """
-        if request.method in permissions.SAFE_METHODS:
-            if request.user.is_authenticated:
-                return True
-        if request.user.is_authenticated and obj.email == request.user.email:
-            return True
-        return False
-
-
 class IsInstructorOrTAOrStudent(permissions.BasePermission):
-    """
-    Allows:
-        1. complete permissions to instructor/ta/students
+    """Permission class for viewsets
 
     Applicable for: VideoHistory, SingleCorrectQuestionHistory,
                     MultipleCorrectQuestionHistory, FixedAnswerQuestionHistory,
@@ -235,12 +200,21 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
                     AdvancedProgrammingAssignmentHistory, TestcaseHistory,
                     ExamHistory, SubjectiveAssignmentHistory,
                     StudentProfile, InstructorProfile, Registration
+
+    Allows:
+        1. complete permissions to instructor/ta/students
     """
 
-    def get_user_from_object(self, obj):
+    def _get_user_from_object(self, obj):
+        """get user from object instance
+
+        Args:
+            obj : Model objects (like VideoHistory)
+
+        Returns:
+            user: User model object
         """
-        get user from object instance
-        """
+
         if type(obj) == Crib:
             user = obj.created_by
         if type(obj) in (DiscussionComment, DiscussionThread, DiscussionReply):
@@ -258,8 +232,7 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
 
     def has_permission(self, request, view):
         """
-        Applicable at model level (list, create, retrieve, update,
-                                   partial_update, destroy)
+        Applicable at model level (GET, POST, PUT, PATCH, DELETE)
         """
         if request.user.is_authenticated:
             return True
@@ -267,30 +240,66 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         """
-        Applicable at model instance level (retrieve, update, partial_update, destroy)
+        Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
         """
         if request.user.is_authenticated:
             if request.method in permissions.SAFE_METHODS:
                 return True
 
-            if self.get_user_from_object(obj).email == request.user.email:
+            if self._get_user_from_object(obj).email == request.user.email:
                 return True
             return False
 
 
-class IsAdminOrReadOnly(permissions.BasePermission):
-    """Permission class for viewsets
-    Allows:
-        1. all permission to admin users
-        2. list/retrieve to authenticated users
+class UserPermission(permissions.BasePermission):
+    """Permision class for viewsets.
 
-    Applicable for: SubscriptionHistory
+    Applicable for: User
+
+    Allows:
+        1. create permission to anonymous users
+        2. list/retrieve permission to authenticated users
+        3. update/partial_update/destroy to authenticated owners only
     """
 
     def has_permission(self, request, view):
         """
-        Applicable at model level (list, create, retrieve, update,
-                                   partial_update, destroy)
+        Applicable at model level (GET, POST, PUT, PATCH, DELETE)
+        """
+        if request.method in permissions.SAFE_METHODS:
+            if request.user.is_authenticated:
+                return True
+        elif request.method == "POST":
+            return True
+        if request.user.is_authenticated:
+            return True
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        """
+        Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
+        """
+        if request.method in permissions.SAFE_METHODS:
+            if request.user.is_authenticated:
+                return True
+        if request.user.is_authenticated and obj.email == request.user.email:
+            return True
+        return False
+
+
+class IsAdminOrReadOnly(permissions.BasePermission):
+    """Permission class for viewsets
+
+    Applicable for: SubscriptionHistory
+
+    Allows:
+        1. all permission to admin users
+        2. list/retrieve to authenticated users
+    """
+
+    def has_permission(self, request, view):
+        """
+        Applicable at model level (GET, POST, PUT, PATCH, DELETE)
         """
         if request.user.is_authenticated:
             if request.method in permissions.SAFE_METHODS:

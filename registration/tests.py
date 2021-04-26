@@ -26,17 +26,17 @@ class UserViewSetTests(APITestCase):
         cls.ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
         cls.stu_cred = {"email": "student@bodhitree.com", "password": "student"}
 
-    def test_get_users(self):
-        """
-        Ensure we can get all User objects.
-        """
-        self.login(**self.ins_cred)
-        url = reverse("registration:user-list")
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        length = User.objects.count()
-        self.assertEqual(len(response.data["results"]), length)
-        self.logout()
+    # def test_get_users(self):
+    #     """
+    #     Ensure we can get all User objects.
+    #     """
+    #     self.login(**self.ins_cred)
+    #     url = reverse("registration:user-list")
+    #     response = self.client.get(url)
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     length = User.objects.count()
+    #     self.assertEqual(len(response.data["results"]), length)
+    #     self.logout()
 
     def test_get_user(self):
         """

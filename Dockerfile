@@ -8,7 +8,7 @@ ONBUILD COPY . /bodhitree
 # Dont copy source code if development env
 FROM python:3.9-slim-buster as dev
 ONBUILD COPY requirements.dev.txt /tmp/requirements.dev.txt
-ONBUILD RUN pip install --upgrade pip && python -m pip install --no-cache-dir -r /tmp/requirements.dev.txt
+ONBUILD RUN python -m pip install --no-cache-dir -r /tmp/requirements.dev.txt
 
 FROM ${BUILD_ENV}
 
@@ -20,7 +20,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Install pip requirements
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install --upgrade pip && python -m pip install --no-cache-dir -r /tmp/requirements.txt
+RUN python -m pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Working directory
 WORKDIR /bodhitree

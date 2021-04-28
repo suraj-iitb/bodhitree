@@ -36,7 +36,9 @@ def get_assignment_file_upload_path(assignment, assignment_type, sub_folder, fil
 
 
 def check_course_registration(course_id, user):
-    course_history = CourseHistory.objects.filter(course_id=course_id, user=user)
+    course_history = CourseHistory.objects.filter(
+        course_id=course_id, user=user
+    ).count()
     if course_history:
         return True
     return False

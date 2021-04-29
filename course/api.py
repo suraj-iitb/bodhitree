@@ -3,13 +3,14 @@ import logging
 from django.db import IntegrityError
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+import mixins as custom_mixins
 from registration.models import SubscriptionHistory
 from utils.drf_utils import (
     IsInstructorOrTA,
     IsInstructorOrTAOrReadOnly,
+    IsInstructorOrTAOrStudent,
     IsOwner,
     StandardResultsSetPagination,
 )
@@ -230,23 +231,136 @@ class CourseViewSet(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CourseHistoryViewSet(viewsets.ModelViewSet):
+class CourseHistoryViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.IsRegisteredMixins,
+):
+    """ViewSet for `CourseHistory`."""
+
     queryset = CourseHistory.objects.all()
     serializer_class = CourseHistorySerializer
-    permission_classes = (AllowAny,)
-    filterset_fields = (
-        "user__email",
-        "course__title",
-        "role",
-        "status",
-    )
-    search_fields = (
-        "user__email",
-        "course__title",
-        "role",
-        "status",
-    )
-    ordering_fields = ("id",)
+    permission_classes = (IsInstructorOrTAOrStudent,)
+
+    @action(detail=False, methods=["POST"])
+    def create_course_history(self, request):
+        """Adds a course history.
+
+        Args:
+            request (Request): DRF `Request` object
+
+        Returns:
+            `Response` with the created course history data and status HTTP_201_CREATED.
+
+        Raises:
+            HTTP_400_BAD_REQUEST: Raised due to serialization errors
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
+                permission class
+            HTTP_403_FORBIDDEN: Raised by:
+                1. `IsInstructorOrTAOrStudent` permission class
+                2. `IntegrityError` of the database
+        """
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                serializer.save()
+            except IntegrityError as e:
+                logger.exception(e)
+                data = {
+                    "error": "Course history for the user: {} in the course: {}"
+                    " exists.".format(
+                        serializer.initial_data["user"],
+                        serializer.initial_data["course"],
+                    )
+                }
+                return Response(data, status=status.HTTP_403_FORBIDDEN)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        errors = serializer.errors
+        logger.error(errors)
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=["GET"])
+    def list_course_histories(self, request, pk):
+        """Gets all the course history in the course with id as pk.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): course id
+
+        Returns:
+            `Response` with all the course histories data and status HTTP_200_OK.
+
+        Raises:
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
+                permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
+            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+        """
+        check = self._is_registered_as_instructor_or_ta(pk, request.user)
+
+        if check is not True:
+            return check
+
+        course_histories = CourseHistory.objects.filter(course_id=pk)
+        serializer = self.get_serializer(course_histories, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["GET"])
+    def retrieve_course_history(self, request, pk):
+        """Gets the course history with id as pk.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): course history id
+
+        Returns:
+            `Response` with the course history data and status HTTP_200_OK.
+
+        Raises:
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
+                permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
+            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+        """
+        course_history = self.get_object()
+        check = self._is_registered(course_history.course.id, request.user)
+        if check is not True:
+            return check
+
+        serializer = self.get_serializer(course_history)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["PUT", "PATCH"])
+    def update_course_history(self, request, pk):
+        """Updates the course history with id as pk.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): course history id
+
+        Returns:
+            `Response` with the updated course history data and status HTTP_200_OK.
+
+        Raises:
+            HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
+                permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
+            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+        """
+        course_history = self.get_object()
+        check = self._is_registered(course_history.course.id, request.user)
+        if check is not True:
+            return check
+
+        serializer = self.get_serializer(
+            course_history, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        errors = serializer.errors
+        logger.error(errors)
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ChapterViewSet(viewsets.GenericViewSet):

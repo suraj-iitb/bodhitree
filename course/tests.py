@@ -234,7 +234,8 @@ class CourseHistoryViewSetTest(APITestCase):
         """
         Ensure we can get all Course objects.
         """
-        url = reverse("course:coursehistory-list")
+        self.login("test1@test.com", "Test@1001")
+        url = reverse("course:coursehistory-list-course-histories", kwargs={"pk": 1})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -242,8 +243,9 @@ class CourseHistoryViewSetTest(APITestCase):
         """
         Ensure we can get one Course object.
         """
+        self.login("test1@test.com", "Test@1001")
         url = reverse(
-            "course:coursehistory-detail",
+            "course:coursehistory-retrieve-course-history",
             kwargs={"pk": CourseHistoryViewSetTest.course_history1.id},
         )
         response = self.client.get(url)
@@ -264,7 +266,7 @@ class CourseHistoryViewSetTest(APITestCase):
             "role": "T",
             "status": "E",
         }
-        url = reverse("course:coursehistory-list")
+        url = reverse("course:coursehistory-create-course-history")
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -291,7 +293,11 @@ class CourseHistoryViewSetTest(APITestCase):
             "role": "T",
             "status": "E",
         }
-        url = reverse(("course:coursehistory-detail"), kwargs={"pk": course_history.id})
+        self.client.login(email="test2@test.com", password="Test@1002")
+        url = reverse(
+            ("course:coursehistory-update-course-history"),
+            kwargs={"pk": course_history.id},
+        )
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -312,26 +318,13 @@ class CourseHistoryViewSetTest(APITestCase):
             "role": "I",
             "status": "E",
         }
-        url = reverse(("course:coursehistory-detail"), kwargs={"pk": course_history.id})
+        self.client.login(email="test2@test.com", password="Test@1002")
+        url = reverse(
+            ("course:coursehistory-update-course-history"),
+            kwargs={"pk": course_history.id},
+        )
         response = self.client.patch(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_delete_coursehistory(self):
-        """
-        Ensure we can delete an existing Course object.
-        """
-        user = User.objects.create_user("test6@test.com", "Test@1006")
-        user.save()
-        course1 = Course(owner_id=user.id, title="Course1", course_type="O")
-        course1.save()
-        self.client.login(email="test6@test.com", password="Test@1006")
-        course_history = CourseHistory(
-            user_id=user.id, course_id=course1.id, role="T", status="E"
-        )
-        course_history.save()
-        url = reverse(("course:coursehistory-detail"), kwargs={"pk": course_history.id})
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
 
 class ChapterViewSetTest(APITestCase):

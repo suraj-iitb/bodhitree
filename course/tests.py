@@ -548,7 +548,7 @@ class PageViewSetTest(APITestCase):
         self.client.logout()
 
     def add_page_helper(self, status_code, title):
-        url = reverse("course:page-add-page", args=[PageViewSetTest.course.id])
+        url = reverse("course:page-create-page")
         data = {
             "course": PageViewSetTest.course.id,
             "title": title,
@@ -565,7 +565,7 @@ class PageViewSetTest(APITestCase):
         self.add_page_helper(status.HTTP_201_CREATED, "Page 3")
         self.logout()
         self.login(**PageViewSetTest.stu_cred)
-        self.add_page_helper(status.HTTP_401_UNAUTHORIZED, "Page 4")
+        self.add_page_helper(status.HTTP_403_FORBIDDEN, "Page 4")
         self.logout()
 
     def list_pages_helper(self, status_code):

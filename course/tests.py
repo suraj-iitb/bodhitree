@@ -735,7 +735,7 @@ class SectionViewSetTest(APITestCase):
                 [1, 2],
             ],
         }
-        url = reverse("course:section-create-section", args=[1])
+        url = reverse("course:section-create-section")
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_201_CREATED:

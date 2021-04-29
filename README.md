@@ -7,6 +7,12 @@
 https://github.com/suraj-iitb/bodhitree.git
 ```
 
+## Create settings.ini file
+```bash
+cp main/settings.ini.sample main/setings.ini
+```
+Note: Modify settings.ini file configuration
+
 ## Containers up
 ```bash
 docker-compose -f docker-compose.yml -f docker-compose.debug.yml up -d --build
@@ -64,6 +70,12 @@ pre-commit run --all-files
 ```bash
 https://github.com/suraj-iitb/bodhitree.git
 ```
+
+## Create settings.ini file
+```bash
+cp main/settings.ini.sample main/setings.ini
+```
+Note: Modify settings.ini file configuration
 
 ## Containers up
 ```bash

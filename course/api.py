@@ -413,13 +413,12 @@ class ChapterViewSet(viewsets.GenericViewSet):
             return Response(data, status.HTTP_404_NOT_FOUND)
         return True
 
-    @action(detail=True, methods=["POST"])
-    def create_chapter(self, request, pk):
+    @action(detail=False, methods=["POST"])
+    def create_chapter(self, request):
         """Adds a chapter to the course with id as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): course id
 
         Returns:
             `Response` with the created chapter data and status HTTP_201_CREATED.
@@ -434,18 +433,19 @@ class ChapterViewSet(viewsets.GenericViewSet):
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
         user = request.user
-        check = self._is_registered(pk, user)
+        course_id = request.data["course"]
+        check = self._is_registered(course_id, user)
         if check is not True:
             return check
 
         # This is specifically done during chapter creation (not during updation or
         # deletion) because it can't be handled by IsInstructorOrTA permission class
-        if not is_instructor_or_ta(pk, user):
+        if not is_instructor_or_ta(course_id, user):
             data = {
                 "error": "User: {} is not the instructor/ta"
                 " of course with id: {}".format(
                     user,
-                    pk,
+                    course_id,
                 ),
             }
             return Response(data, status.HTTP_403_FORBIDDEN)

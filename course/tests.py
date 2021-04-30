@@ -1,4 +1,3 @@
-from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
@@ -468,180 +467,191 @@ class CourseHistoryViewSetTest(APITestCase):
 
 
 class ChapterViewSetTest(APITestCase):
+    """Test for ChapterViewSetTest."""
+
     fixtures = [
         "users.test.yaml",
+        "departments.test.yaml",
+        "colleges.test.yaml",
         "courses.test.yaml",
         "coursehistories.test.yaml",
         "chapters.test.yaml",
     ]
 
-    @classmethod
-    def setUpTestData(cls):
-        """
-        Set up data for the whole TestCase.
-        """
-        cls.ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
-        cls.ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
-        cls.stu_cred = {"email": "student@bodhitree.com", "password": "student"}
+    def login(self, email, password):
+        self.client.login(email=email, password=password)
 
-    def get_chapters_helper(self):
-        url = reverse("course:chapter-list-chapters", args=[1])
+    def logout(self):
+        self.client.logout()
+
+    def _list_chapters_helper(self):
+        """Helper function to test list chapters functionality."""
+        course_id = 1  # course with id 1 is created by django fixture
+        url = reverse("course:chapter-list-chapters", args=[course_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        length = Chapter.objects.all().count()
-        self.assertEqual(len(response.data), length)
+        self.assertEqual(len(response.data), Chapter.objects.all().count())
 
-    def test_get_chapters(self):
-        """
-        Ensure we can get all Chapter objects.
-        """
-        self.client.login(**self.ins_cred)
-        self.get_chapters_helper()
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.get_chapters_helper()
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.get_chapters_helper()
-        self.client.logout()
+    def test_list_chapters(self):
+        """Test to check: list all chapters."""
+        self.login(**ins_cred)
+        self._list_chapters_helper()
+        self.logout()
+        self.login(**ta_cred)
+        self._list_chapters_helper()
+        self.logout()
+        self.login(**stu_cred)
+        self._list_chapters_helper()
+        self.logout()
 
-    def get_chapter_helper(self, chapter_id):
-        url = reverse(
-            "course:chapter-retrieve-chapter",
-            kwargs={"pk": chapter_id},
-        )
+    def _retrieve_chapter_helper(self):
+        """Helper function to test the retrieve section functionality."""
+        chapter_id = 1  # chapter with id 1 is created by django fixture
+        url = reverse("course:chapter-retrieve-chapter", args=[chapter_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["id"], 1)
+        self.assertEqual(response.data["id"], chapter_id)
 
-    def test_get_chapter(self):
-        """
-        Ensure we can get one chapter object.
-        """
-        chapter_id = 1
-        self.client.login(**self.ins_cred)
-        self.get_chapter_helper(chapter_id)
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.get_chapter_helper(chapter_id)
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.get_chapter_helper(chapter_id)
-        self.client.logout()
+    def test_retrieve_chapter(self):
+        """Test to check: retrieve the chapter."""
+        self.login(**ins_cred)
+        self._retrieve_chapter_helper()
+        self.logout()
+        self.login(**ta_cred)
+        self._retrieve_chapter_helper()
+        self.logout()
+        self.login(**stu_cred)
+        self._retrieve_chapter_helper()
+        self.logout()
 
-    def create_chapter_helper(self, title, status_code):
+    def _create_chapter_helper(self, title, status_code):
+        """Helper function to test create the chapter functionality.
+
+        Args:
+            title (str): title of the chapter
+            status_code (int): expected status code of the API call
+        """
+        course_id = 1  # course with id 1 is created by django fixture
         data = {
             "title": title,
-            "course": 1,
+            "course": course_id,
             "description": "This is the description of chapter",
         }
-        url = reverse("course:chapter-create-chapter", args=[1])
+        url = reverse("course:chapter-create-chapter")
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_201_CREATED:
             return_data = response.data
-            for k in ["created_on", "modified_on", "id", "content_sequence"]:
-                return_data.pop(k)
+            for field in ["id", "content_sequence", "created_on", "modified_on"]:
+                return_data.pop(field)
             self.assertEqual(return_data, data)
 
     def test_create_chapter(self):
-        """
-        Ensure we can create a new 'Chapter' object
-        """
-        self.client.login(**self.ins_cred)
-        self.create_chapter_helper("Chapter3", status.HTTP_201_CREATED)
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.create_chapter_helper("Chapter4", status.HTTP_201_CREATED)
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.create_chapter_helper("Chapter5", status.HTTP_403_FORBIDDEN)
-        self.client.logout()
+        """Test to check: create a chapter."""
+        self.login(**ins_cred)
+        self._create_chapter_helper("Chapter 3", status.HTTP_201_CREATED)
+        self.logout()
+        self.login(**ta_cred)
+        self._create_chapter_helper("Chapter 4", status.HTTP_201_CREATED)
+        self.logout()
+        self.login(**stu_cred)
+        self._create_chapter_helper("Chapter 5", status.HTTP_403_FORBIDDEN)
+        self.logout()
 
-    def update_chapters_helper(self, title, status_code):
-        chapter1 = Chapter(title="Chapter77", course_id=1)
-        chapter1.save()
+    def _update_chapters_helper(self, chapter, title, status_code):
+        """Helper function to test update of the chapter functionality.
+
+        Args:
+            chapter (Chapter): `Chapter` model instance
+            title (str): title of the chapter
+            status_code (int): expected status code of the API call
+        """
         data = {
             "title": title,
             "course": 1,
-            "description": "Description of chapter n",
+            "description": "Description of the chapter",
         }
-        url = reverse(("course:chapter-update-chapter"), kwargs={"pk": chapter1.id})
+        url = reverse(("course:chapter-update-chapter"), args=[chapter.id])
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
             return_data = response.data
-            for k in ["created_on", "modified_on", "id", "content_sequence"]:
-                return_data.pop(k)
+            for field in ["id", "content_sequence", "created_on", "modified_on"]:
+                return_data.pop(field)
             self.assertEqual(return_data, data)
 
-    def test_update_chapters(self):
-        """
-        Ensure we can update an existing Chapter object.
-        """
-        self.client.login(**self.ins_cred)
-        self.update_chapters_helper("chapter78", status.HTTP_200_OK)
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.update_chapters_helper("chapter79", status.HTTP_200_OK)
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.update_chapters_helper("chapter80", status.HTTP_403_FORBIDDEN)
-        self.client.logout()
+    def test_update_chapter(self):
+        """Test to check: update the chapter."""
+        chapter = Chapter(title="Chapter 6", course_id=1)
+        chapter.save()
+        self.login(**ins_cred)
+        self._update_chapters_helper(chapter, "Chapter 7", status.HTTP_200_OK)
+        self.logout()
+        self.login(**ta_cred)
+        self._update_chapters_helper(chapter, "Chapter 8", status.HTTP_200_OK)
+        self.logout()
+        self.login(**stu_cred)
+        self._update_chapters_helper(chapter, "Chapter 9", status.HTTP_403_FORBIDDEN)
+        self.logout()
 
-    def partial_update_helper(self, title, status_code):
-        chapter1 = Chapter(title="Chapter77", course_id=1)
-        chapter1.save()
+    def _partial_update_chapter_helper(self, chapter, title, status_code):
+        """Helper function to test partial update of the chapter functionality.
+
+        Args:
+            chapter (Chapter): `Chapter` model instance
+            title (str): title of the chapter
+            status_code (int): expected status code of the API call
+        """
         data = {
             "title": title,
         }
-        url = reverse(("course:chapter-update-chapter"), kwargs={"pk": chapter1.id})
-        response = self.client.put(url, data)
+        url = reverse(("course:chapter-update-chapter"), args=[chapter.id])
+        response = self.client.patch(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
-            return_data = response.data
-            for k in ["created_on", "modified_on", "id", "content_sequence"]:
-                return_data.pop(k)
-            self.assertEqual(return_data, data)
+            self.assertEqual(response.data["title"], data["title"])
 
     def test_partial_update_chapter(self):
-        """
-        Ensure we can partially update an existing Chapter object.
-        """
-        self.client.login(**self.ins_cred)
-        self.update_chapters_helper("chapter78", status.HTTP_200_OK)
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.update_chapters_helper("chapter79", status.HTTP_200_OK)
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.update_chapters_helper("chapter80", status.HTTP_403_FORBIDDEN)
-        self.client.logout()
+        """"Test to check: partial update the chapter."""
+        chapter = Chapter(title="Chapter 10", course_id=1)
+        chapter.save()
+        self.login(**ins_cred)
+        self._partial_update_chapter_helper(chapter, "Chapter 11", status.HTTP_200_OK)
+        self.logout()
+        self.login(**ta_cred)
+        self._partial_update_chapter_helper(chapter, "Chapter 12", status.HTTP_200_OK)
+        self.logout()
+        self.login(**stu_cred)
+        self._partial_update_chapter_helper(
+            chapter, "Chapter 13", status.HTTP_403_FORBIDDEN
+        )
+        self.logout()
 
-    def delete_chapter_helper(self, title, status_code):
-        chapter1 = Chapter(title=title, course_id=1)
-        chapter1.save()
-        url = reverse(("course:chapter-delete-chapter"), kwargs={"pk": chapter1.id})
+    def _delete_chapter_helper(self, status_code):
+        """Helper function to test delete the chapter functionality.
+
+        Args:
+            status_code (int): expected status code of the API call
+        """
+        chapter = Chapter(title="Chapter 14", course_id=1)
+        chapter.save()
+        url = reverse(("course:chapter-delete-chapter"), args=[chapter.id])
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
-        try:
-            Chapter.objects.get(id=chapter1.id)
-        except ObjectDoesNotExist:
-            self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_204_NO_CONTENT:
+            self.assertEqual(Chapter.objects.filter(id=chapter.id).count(), 0)
 
     def test_delete_chapter(self):
-        """
-        Ensure we can delete an existing Chapter object.
-        """
-        self.client.login(**self.ins_cred)
-        self.delete_chapter_helper("chapter98", status.HTTP_204_NO_CONTENT)
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.delete_chapter_helper("chapter99", status.HTTP_204_NO_CONTENT)
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.delete_chapter_helper("chapter100", status.HTTP_403_FORBIDDEN)
-        self.client.logout()
+        """Test to check: delete the chapter."""
+        self.login(**ins_cred)
+        self._delete_chapter_helper(status.HTTP_204_NO_CONTENT)
+        self.logout()
+        self.login(**ta_cred)
+        self._delete_chapter_helper(status.HTTP_204_NO_CONTENT)
+        self.logout()
+        self.login(**stu_cred)
+        self._delete_chapter_helper(status.HTTP_403_FORBIDDEN)
+        self.logout()
 
 
 class PageViewSetTest(APITestCase):
@@ -941,16 +951,9 @@ class SectionViewSetTest(APITestCase):
         response = self.client.patch(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
-            return_data = response.data
-            for field in [
-                "id",
-                "content_sequence",
-                "chapter",
-                "created_on",
-                "modified_on",
-            ]:
-                return_data.pop(field)
-            self.assertEqual(return_data, data)
+            response_data = response.data
+            self.assertEqual(response_data["title"], data["title"])
+            self.assertEqual(response_data["description"], data["description"])
 
     def test_partial_update_section(self):
         """Test to check: partial update the section."""
@@ -974,7 +977,7 @@ class SectionViewSetTest(APITestCase):
         Args:
             status_code (int): expected status code of the API call
         """
-        section = Section(title="section 14", chapter_id=1)
+        section = Section(title="Section 14", chapter_id=1)
         section.save()
         url = reverse(("course:section-delete-section"), args=[section.id])
         response = self.client.delete(url)

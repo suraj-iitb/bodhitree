@@ -239,7 +239,8 @@ class CourseHistoryViewSet(
 
     queryset = CourseHistory.objects.all()
     serializer_class = CourseHistorySerializer
-    permission_classes = (IsInstructorOrTAOrStudent,)
+    permission_classes = (IsInstructorOrTAOrStudent, IsOwner)
+    pagination_class = StandardResultsSetPagination
 
     @action(detail=False, methods=["POST"])
     def create_course_history(self, request):
@@ -266,8 +267,8 @@ class CourseHistoryViewSet(
             except IntegrityError as e:
                 logger.exception(e)
                 data = {
-                    "error": "Course history for the user: {} in the course: {}"
-                    " exists.".format(
+                    "error": "Course history for the user with id: {} in the course"
+                    " with id: {} exists.".format(
                         serializer.initial_data["user"],
                         serializer.initial_data["course"],
                     )
@@ -292,8 +293,10 @@ class CourseHistoryViewSet(
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by:
+                1. `IsInstructorOrTAOrStudent` permission class
+                2. `_is_registered_as_instructor_or_ta()` method
+            HTTP_404_NOT_FOUND: Raised by `_is_registered_as_instructor_or_ta()` method
         """
         check = self._is_registered_as_instructor_or_ta(pk, request.user)
 
@@ -301,6 +304,10 @@ class CourseHistoryViewSet(
             return check
 
         course_histories = CourseHistory.objects.filter(course_id=pk)
+        page = self.paginate_queryset(course_histories)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(course_histories, many=True)
         return Response(serializer.data)
 

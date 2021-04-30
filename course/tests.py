@@ -8,8 +8,12 @@ from discussion_forum.models import DiscussionForum
 from registration.models import User
 
 
+# These users are created by django fixtures
+# instructor has user id 1
 ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
+# ta has user id 2
 ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
+# student has user id 3
 stu_cred = {"email": "student@bodhitree.com", "password": "student"}
 
 
@@ -49,7 +53,7 @@ class CourseViewSetTest(APITestCase):
         self.assertEqual(response.data["id"], course_id)
 
     def _create_course_helper(self, status_code, title, owner_id):
-        """Helper function to test create course functionality
+        """Helper function to test create course functionality.
 
         Args:
             status_code (int): expected status code of the API call
@@ -93,7 +97,7 @@ class CourseViewSetTest(APITestCase):
         self.logout()
 
     def _update_course_helper(self, course, status_code, title, user_id, role):
-        """Helper function to test update course functionality
+        """Helper function to test update course functionality.
 
         Args:
             course (Course): `Course` model instance
@@ -160,7 +164,7 @@ class CourseViewSetTest(APITestCase):
         self.logout()
 
     def _partial_update_course_helper(self, course, status_code, title, user_id, role):
-        """Helper function to test update course functionality
+        """Helper function to test update course functionality.
 
         Args:
             course (Course): `Course` model instance
@@ -266,118 +270,201 @@ class CourseViewSetTest(APITestCase):
 
 
 class CourseHistoryViewSetTest(APITestCase):
-    @classmethod
-    def setUpTestData(cls):
-        """
-        Set up data for the whole TestCase.
-        """
-        cls.user = User.objects.create_user("test1@test.com", "Test@1001")
-        cls.user.save()
-        cls.course1 = Course(owner_id=cls.user.id, title="Course1", course_type="O")
-        cls.course1.save()
-        cls.course_history1 = CourseHistory(
-            user_id=cls.user.id, course_id=cls.course1.id, role="I", status="E"
-        )
-        cls.course_history1.save()
+    """Test for CourseHistoryViewSet."""
+
+    fixtures = [
+        "users.test.yaml",
+        "departments.test.yaml",
+        "colleges.test.yaml",
+        "courses.test.yaml",
+        "coursehistories.test.yaml",
+    ]
 
     def login(self, email, password):
         self.client.login(email=email, password=password)
 
-    def test_get_coursehistories(self):
-        """
-        Ensure we can get all Course objects.
-        """
-        self.login("test1@test.com", "Test@1001")
-        url = reverse("course:coursehistory-list-course-histories", kwargs={"pk": 1})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def logout(self):
+        self.client.logout()
 
-    def test_get_coursehistory(self):
+    def _list_course_histories_helper(self, status_code):
+        """Helper function to test list all course histories functionality.
+
+        Args:
+            status_code (int): expected status code of the API call
         """
-        Ensure we can get one Course object.
-        """
-        self.login("test1@test.com", "Test@1001")
+        course_id = 1  # course with id 1 is created by django fixture
         url = reverse(
-            "course:coursehistory-retrieve-course-history",
-            kwargs={"pk": CourseHistoryViewSetTest.course_history1.id},
+            "course:coursehistory-list-course-histories", kwargs={"pk": course_id}
         )
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status_code)
+        if response.status_code == status.HTTP_200_OK:
+            self.assertEqual(
+                len(response.data["results"]), CourseHistory.objects.all().count()
+            )
 
-    def test_create_coursehistory(self):
+    def test_list_course_histories(self):
+        """Test to check: list all courses histories."""
+        self.login(**ins_cred)
+        self._list_course_histories_helper(status.HTTP_200_OK)
+        self.logout()
+        self.login(**ta_cred)
+        self._list_course_histories_helper(status.HTTP_200_OK)
+        self.logout()
+        self.login(**stu_cred)
+        self._list_course_histories_helper(status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+    def _retrieve_course_history_helper(self, status_code, user_id):
+        """Helper function to test retrieve the course history functionality.
+
+        Args:
+            status_code (int): expected status code of the API call
+            user_id (int): user id
         """
-        Ensure we can create a new Course object.
+        course_history_id = user_id
+        url = reverse(
+            "course:coursehistory-retrieve-course-history",
+            kwargs={"pk": course_history_id},
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status_code)
+        if response.status_code == status.HTTP_200_OK:
+            self.assertEqual(response.data["id"], user_id)
+
+    def test_retrieve_course_history(self):
+        """Test to check: retrieve the courses history."""
+        self.login(**ins_cred)
+        self._retrieve_course_history_helper(status.HTTP_200_OK, 1)
+        self.logout()
+        self.login(**ta_cred)
+        self._retrieve_course_history_helper(status.HTTP_200_OK, 2)
+        self.logout()
+        self.login(**stu_cred)
+        self._retrieve_course_history_helper(status.HTTP_200_OK, 3)
+        self.logout()
+
+    def _create_course_history_helper(self, status_code, user_id, role):
+        """Helper function to test create course history functionality
+
+        Args:
+            status_code (int): expected status code of the API call
+            user_id (int): user id
+            role (str): user role (instructor/ta/student)
         """
-        user = User.objects.create_user("test2@test.com", "Test@1002")
-        user.save()
-        course1 = Course(owner_id=user.id, title="Course2", course_type="O")
-        course1.save()
-        self.client.login(email="test2@test.com", password="Test@1002")
+        course_id = 2  # course with id 2 is created by django fixture
         data = {
-            "user": user.id,
-            "course": course1.id,
-            "role": "T",
+            "user": user_id,
+            "course": course_id,
+            "role": role,
             "status": "E",
         }
         url = reverse("course:coursehistory-create-course-history")
         response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            response_data = response.data
+            for field in ["id", "created_on", "modified_on"]:
+                response_data.pop(field)
+            self.assertEqual(response_data, data)
 
-    def test_update_coursehistories(self):
+    def test_create_course_history(self):
+        """Test to check: create the course history."""
+        self.login(**ins_cred)
+        self._create_course_history_helper(status.HTTP_201_CREATED, 1, "I")
+        self.logout()
+        self.login(**ta_cred)
+        self._create_course_history_helper(status.HTTP_201_CREATED, 2, "T")
+        self.logout()
+        self.login(**stu_cred)
+        self._create_course_history_helper(status.HTTP_201_CREATED, 3, "S")
+        self.logout()
+
+    def _update_course_history_helper(self, status_code, user_id, role):
+        """Helper function to test update course functionality
+
+        Args:
+            status_code (int): expected status code of the API call
+            user_id (int): user id
+            role (str): role of the user (instructor/ta/student)
         """
-        Ensure we can update an existing Course object.
-        """
-        user = User.objects.create_user("test3@test.com", "Test@1003")
-        user.save()
-        course1 = Course(owner_id=user.id, title="Course1", course_type="O")
-        course1.save()
-        user2 = User.objects.create_user("test4@test.com", "Test@1004")
-        user2.save()
-        course2 = Course(owner_id=user2.id, title="Course1", course_type="O")
-        course2.save()
-        self.client.login(email="test3@test.com", password="Test@1003")
+        course_id = 2  # course with id 2 is created by django fixture
         course_history = CourseHistory(
-            user_id=user.id, course_id=course1.id, role="T", status="E"
+            user_id=user_id,
+            course_id=course_id,
+            role=role,
+            status="E",
         )
         course_history.save()
         data = {
-            "user": user2.id,
-            "course": course2.id,
-            "role": "T",
-            "status": "E",
+            "user": user_id,
+            "course": course_id,
+            "role": role,
+            "status": "U",
         }
-        self.client.login(email="test2@test.com", password="Test@1002")
         url = reverse(
-            ("course:coursehistory-update-course-history"),
+            "course:coursehistory-update-course-history",
             kwargs={"pk": course_history.id},
         )
         response = self.client.put(url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            response_data = response.data
+            for field in ["id", "created_on", "modified_on"]:
+                response_data.pop(field)
+            self.assertEqual(response_data, data)
 
-    def test_partial_update_coursehistory(self):
+    def test_update_course_history(self):
+        """Test to check: update the course history."""
+        self.login(**ins_cred)
+        self._update_course_history_helper(status.HTTP_200_OK, 1, "I")
+        self.logout()
+        self.login(**ta_cred)
+        self._update_course_history_helper(status.HTTP_200_OK, 2, "T")
+        self.logout()
+        self.login(**stu_cred)
+        self._update_course_history_helper(status.HTTP_200_OK, 3, "S")
+        self.logout()
+
+    def _partial_update_course_history_helper(self, status_code, user_id, role):
+        """Helper function to test partial update course functionality
+
+        Args:
+            status_code (int): expected status code of the API call
+            user_id (int): user id
+            role (str): role of the user (instructor/ta/student)
         """
-        Ensure we can partially update an existing Course object.
-        """
-        user = User.objects.create_user("test5@test.com", "Test@1005")
-        user.save()
-        course1 = Course(owner_id=user.id, title="Course1", course_type="O")
-        course1.save()
-        self.client.login(email="test5@test.com", password="Test@1005")
+        course_id = 2  # course with id 2 is created by django fixture
         course_history = CourseHistory(
-            user_id=user.id, course_id=course1.id, role="T", status="E"
+            user_id=user_id,
+            course_id=course_id,
+            role=role,
+            status="E",
         )
         course_history.save()
         data = {
-            "role": "I",
-            "status": "E",
+            "status": "U",
         }
-        self.client.login(email="test2@test.com", password="Test@1002")
         url = reverse(
-            ("course:coursehistory-update-course-history"),
+            "course:coursehistory-update-course-history",
             kwargs={"pk": course_history.id},
         )
         response = self.client.patch(url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            self.assertEqual(response.data["status"], data["status"])
+
+    def test_partial_update_course_history(self):
+        """Test to check: partial update the course history."""
+        self.login(**ins_cred)
+        self._partial_update_course_history_helper(status.HTTP_200_OK, 1, "I")
+        self.logout()
+        self.login(**ta_cred)
+        self._partial_update_course_history_helper(status.HTTP_200_OK, 2, "T")
+        self.logout()
+        self.login(**stu_cred)
+        self._partial_update_course_history_helper(status.HTTP_200_OK, 3, "S")
+        self.logout()
 
 
 class ChapterViewSetTest(APITestCase):

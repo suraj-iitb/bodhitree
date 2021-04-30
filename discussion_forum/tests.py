@@ -9,6 +9,8 @@ ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
 
 
 class DiscussionThreadViewSetTest(APITestCase):
+    """Test for DiscussionThreadViewSet."""
+
     fixtures = [
         "users.test.yaml",
         "courses.test.yaml",
@@ -17,7 +19,9 @@ class DiscussionThreadViewSetTest(APITestCase):
         "discussionthread.tests.yaml",
     ]
 
-    def get_discussion_threads_helper(self):
+    def _list_discussion_threads_helper(self):
+        """helper function to test list discussion threads functionality."""
+
         url = reverse(
             "discussion_forum:discussionthread-list-discussion-threads", args=[1]
         )
@@ -26,33 +30,42 @@ class DiscussionThreadViewSetTest(APITestCase):
         length = DiscussionThread.objects.all().count()
         self.assertEqual(len(response.data), length)
 
-    def test_get_discussion_threads(self):
+    def test_list_discussion_threads(self):
         """
-        Ensure we can get all DiscussionThreads objects.
+        Test to check: list all discussion_threads.
         """
         self.client.login(**ins_cred)
-        self.get_discussion_threads_helper()
+        self._list_discussion_threads_helper()
         self.client.logout()
 
-    def get_discussion_thread_helper(self, discussion_thread_id):
+    def _retrieve_discussion_thread_helper(self, discussion_thread_id):
+        """helper function to test retrive discussion thread functionality."""
+
         url = reverse(
             "discussion_forum:discussionthread-retrieve-discussion-thread",
             kwargs={"pk": discussion_thread_id},
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["id"], 1)
+        self.assertEqual(response.data["id"], discussion_thread_id)
 
-    def test_get_discussion_thread(self):
+    def test_retrieve_discussion_thread(self):
         """
-        Ensure we can get one DiscussionThread object.
+        Test to check: retrieve discussion_thread.
         """
         discussion_thread_id = 1
         self.client.login(**ins_cred)
-        self.get_discussion_thread_helper(discussion_thread_id)
+        self._retrieve_discussion_thread_helper(discussion_thread_id)
         self.client.logout()
 
-    def create_discussion_thread_helper(self, title, status_code):
+    def _create_discussion_thread_helper(self, title, status_code):
+        """helper function to test create discussion thread functionality.
+
+        Args:
+        title (str): title of the discussion thread
+        status_code (int): expected status code of the API call
+        """
+
         data = {
             "discussion_forum": 1,
             "title": title,
@@ -83,13 +96,21 @@ class DiscussionThreadViewSetTest(APITestCase):
 
     def test_create_discussion_thread(self):
         """
-        Ensure we can create a new 'DiscussionThread' object
+        test to check: create a discussion thread.
         """
         self.client.login(**ins_cred)
-        self.create_discussion_thread_helper("Thread1", status.HTTP_201_CREATED)
+        self._create_discussion_thread_helper("Thread1", status.HTTP_201_CREATED)
         self.client.logout()
 
-    def update_discussion_thread_helper(self, title, status_code):
+    def _update_discussion_thread_helper(self, title, status_code):
+        """
+        Helper function to test update discussion thread functionality.
+
+        Args:
+        status_code (int): expected status code of the API call
+        title (str): title of the discussion thread
+        """
+
         discussion_thread1 = DiscussionThread(
             title="DiscussionThread77",
             discussion_forum_id=1,
@@ -128,17 +149,26 @@ class DiscussionThreadViewSetTest(APITestCase):
 
     def test_update_discussion_thread(self):
         """
-        Ensure we can update an existing DiscussionThread object.
+        Test to check: Update discussion thread functionality.
         """
+
         self.client.login(**ins_cred)
-        self.update_discussion_thread_helper("DiscussionThread78", status.HTTP_200_OK)
+        self._update_discussion_thread_helper("DiscussionThread78", status.HTTP_200_OK)
         self.client.logout()
 
-    def partial_update_discussion_thread_helper(self, title, status_code):
+    def _partial_update_discussion_thread_helper(self, title, status_code):
+        """
+        Helper function to test partial update discussion thread functionality.
+
+        Args:
+        status_code (int): expected status code of the API call
+        title (str): title of the discussion thread
+        """
+
         discussion_thread1 = DiscussionThread(
             title="DiscussionThread79",
-            discussion_forum=1,
-            author=1,
+            discussion_forum_id=1,
+            author_id=1,
             author_category="I",
         )
         discussion_thread1.save()
@@ -162,7 +192,8 @@ class DiscussionThreadViewSetTest(APITestCase):
                 "pinned",
                 "anonymous_to_student",
                 "upvote",
-                "downvote" "created_on",
+                "downvote",
+                "created_on",
                 "modified_on",
                 "id",
                 "tag",
@@ -175,11 +206,15 @@ class DiscussionThreadViewSetTest(APITestCase):
         Ensure we can partial update an existing DiscussionThread object.
         """
         self.client.login(**ins_cred)
-        self.update_discussion_thread_helper("DiscussionThread78", status.HTTP_200_OK)
+        self._partial_update_discussion_thread_helper(
+            "DiscussionThread78", status.HTTP_200_OK
+        )
         self.client.logout()
 
 
 class DiscussionCommentViewSetTest(APITestCase):
+    """Test for DiscussionCommentViewSet."""
+
     fixtures = [
         "users.test.yaml",
         "courses.test.yaml",
@@ -189,7 +224,9 @@ class DiscussionCommentViewSetTest(APITestCase):
         "discussioncomment.test.yaml",
     ]
 
-    def get_discussion_comments_helper(self):
+    def _list_discussion_comments_helper(self):
+        """helper function to test list discussion comments functionality."""
+
         url = reverse(
             "discussion_forum:discussioncomment-list-discussion-comments", args=[1]
         )
@@ -198,33 +235,41 @@ class DiscussionCommentViewSetTest(APITestCase):
         length = DiscussionThread.objects.all().count()
         self.assertEqual(len(response.data), length)
 
-    def test_get_discussion_comments(self):
+    def test_list_discussion_comments(self):
         """
-        Ensure we can get all DiscussionComments objects.
+        Test to check: list all discussion_comments.
         """
         self.client.login(**ins_cred)
-        self.get_discussion_comments_helper()
+        self._list_discussion_comments_helper()
         self.client.logout()
 
-    def get_discussion_comment_helper(self, discussion_comment_id):
+    def _retrieve_discussion_comment_helper(self, discussion_comment_id):
+        """helper function to test retrive discussion thread functionality."""
+
         url = reverse(
             "discussion_forum:discussioncomment-retrieve-discussion-comment",
             kwargs={"pk": discussion_comment_id},
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["id"], 1)
+        self.assertEqual(response.data["id"], discussion_comment_id)
 
-    def test_get_discussion_comment(self):
+    def test_retrieve_discussion_comment(self):
         """
         Ensure we can get one DiscussionComment object.
         """
         discussion_comment_id = 1
         self.client.login(**ins_cred)
-        self.get_discussion_comment_helper(discussion_comment_id)
+        self._retrieve_discussion_comment_helper(discussion_comment_id)
         self.client.logout()
 
-    def create_discussion_comment_helper(self, status_code):
+    def _create_discussion_comment_helper(self, status_code):
+        """helper function to test create discussion comment functionality.
+
+        Args:
+        status_code (int): expected status code of the API call
+        """
+
         data = {
             "discussion_thread": 1,
             "author": 1,
@@ -252,13 +297,20 @@ class DiscussionCommentViewSetTest(APITestCase):
 
     def test_create_discussion_comment(self):
         """
-        Ensure we can create a new 'DiscussionComment' object
+        test to check: create a discussion comment.
         """
         self.client.login(**ins_cred)
-        self.create_discussion_comment_helper(status.HTTP_201_CREATED)
+        self._create_discussion_comment_helper(status.HTTP_201_CREATED)
         self.client.logout()
 
-    def update_discussion_comment_helper(self, status_code):
+    def _update_discussion_comment_helper(self, status_code):
+        """
+        Helper function to test update discussion comment functionality.
+
+        Args:
+        status_code (int): expected status code of the API call
+        """
+
         discussion_comment1 = DiscussionComment(
             discussion_thread_id=1,
             author_id=1,
@@ -294,13 +346,20 @@ class DiscussionCommentViewSetTest(APITestCase):
 
     def test_update_discussion_comment(self):
         """
-        Ensure we can update an existing DiscussionComment object.
+        test to check: update a discussion comment.
         """
         self.client.login(**ins_cred)
-        self.update_discussion_comment_helper(status.HTTP_200_OK)
+        self._update_discussion_comment_helper(status.HTTP_200_OK)
         self.client.logout()
 
-    def partial_update_discussion_comment_helper(self, status_code):
+    def _partial_update_discussion_comment_helper(self, status_code):
+        """
+        Helper function to test partial update discussion comment functionality.
+
+        Args:
+        status_code (int): expected status code of the API call
+        """
+
         discussion_comment1 = DiscussionComment(
             discussion_thread_id=1,
             author_id=1,
@@ -336,14 +395,16 @@ class DiscussionCommentViewSetTest(APITestCase):
 
     def test_partial_update_discussion_comment(self):
         """
-        Ensure we can partial update an existing DiscussionComment object.
+        test to check: partial update a discussion comment.
         """
         self.client.login(**ins_cred)
-        self.partial_update_discussion_comment_helper(status.HTTP_200_OK)
+        self._partial_update_discussion_comment_helper(status.HTTP_200_OK)
         self.client.logout()
 
 
 class DiscussionReplyViewSetTest(APITestCase):
+    """Test for DiscussionReplyViewSet."""
+
     fixtures = [
         "users.test.yaml",
         "courses.test.yaml",
@@ -354,7 +415,9 @@ class DiscussionReplyViewSetTest(APITestCase):
         "discussionreply.test.yaml",
     ]
 
-    def get_discussion_replies_helper(self):
+    def _list_discussion_replies_helper(self):
+        """helper function to test list discussion replies functionality."""
+
         url = reverse(
             "discussion_forum:discussionreply-list-discussion-replies", args=[1]
         )
@@ -363,33 +426,41 @@ class DiscussionReplyViewSetTest(APITestCase):
         length = DiscussionReply.objects.all().count()
         self.assertEqual(len(response.data), length)
 
-    def test_get_discussion_replies(self):
+    def test_list_discussion_replies(self):
         """
-        Ensure we can get all DiscussionReplies objects.
+        Test to check: list all discussion_replies.
         """
         self.client.login(**ins_cred)
-        self.get_discussion_replies_helper()
+        self._list_discussion_replies_helper()
         self.client.logout()
 
-    def get_discussion_reply_helper(self, discussion_reply_id):
+    def _retrieve_discussion_reply_helper(self, discussion_reply_id):
+        """helper function to test retrive discussion reply functionality."""
+
         url = reverse(
             "discussion_forum:discussionreply-retrieve-discussion-reply",
             kwargs={"pk": discussion_reply_id},
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["id"], 1)
+        self.assertEqual(response.data["id"], discussion_reply_id)
 
-    def test_get_discussion_reply(self):
+    def test_retrieve_discussion_reply(self):
         """
-        Ensure we can get one DiscussionReply object.
+        Test to check: retrieve discussion_reply.
         """
         discussion_reply_id = 1
         self.client.login(**ins_cred)
-        self.get_discussion_reply_helper(discussion_reply_id)
+        self._retrieve_discussion_reply_helper(discussion_reply_id)
         self.client.logout()
 
-    def create_discussion_reply_helper(self, status_code):
+    def _create_discussion_reply_helper(self, status_code):
+        """helper function to test create discussion reply functionality.
+
+        Args:
+        status_code (int): expected status code of the API call
+        """
+
         data = {
             "discussion_comment": 1,
             "author": 1,
@@ -417,13 +488,20 @@ class DiscussionReplyViewSetTest(APITestCase):
 
     def test_create_discussion_reply(self):
         """
-        Ensure we can create a new 'DiscussionReply' object
+        test to check: create a discussion reply.
         """
         self.client.login(**ins_cred)
-        self.create_discussion_reply_helper(status.HTTP_201_CREATED)
+        self._create_discussion_reply_helper(status.HTTP_201_CREATED)
         self.client.logout()
 
-    def update_discussion_reply_helper(self, status_code):
+    def _update_discussion_reply_helper(self, status_code):
+        """
+        Helper function to test update discussion reply functionality.
+
+        Args:
+        status_code (int): expected status code of the API call
+        """
+
         discussion_reply1 = DiscussionReply(
             discussion_comment_id=1,
             author_id=1,
@@ -459,13 +537,19 @@ class DiscussionReplyViewSetTest(APITestCase):
 
     def test_update_discussion_reply(self):
         """
-        Ensure we can update an existing DiscussionReply object.
+        Test to check: Update discussion reply functionality.
         """
         self.client.login(**ins_cred)
-        self.update_discussion_reply_helper(status.HTTP_200_OK)
+        self._update_discussion_reply_helper(status.HTTP_200_OK)
         self.client.logout()
 
-    def partial_update_discussion_reply_helper(self, status_code):
+    def _partial_update_discussion_reply_helper(self, status_code):
+        """
+        Helper function to test partial update discussion reply functionality.
+
+        Args:
+        status_code (int): expected status code of the API call
+        """
         discussion_reply1 = DiscussionReply(
             discussion_comment_id=1,
             author_id=1,
@@ -504,5 +588,5 @@ class DiscussionReplyViewSetTest(APITestCase):
         Ensure we can partial update an existing DiscussionReply object.
         """
         self.client.login(**ins_cred)
-        self.partial_update_discussion_reply_helper(status.HTTP_200_OK)
+        self._partial_update_discussion_reply_helper(status.HTTP_200_OK)
         self.client.logout()

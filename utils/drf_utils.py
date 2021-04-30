@@ -5,6 +5,7 @@ from rest_framework.pagination import PageNumberPagination
 from course.models import (
     Announcement,
     Chapter,
+    Course,
     CourseHistory,
     Notification,
     Page,
@@ -312,16 +313,34 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 class IsOwner(permissions.BasePermission):
     """Permission class for viewsets.
 
-    Applicable for: Course
+    Applicable for: Course, CourseHistory
 
     Allows:
         1. complete permissions to instructor
     """
 
+    def _get_user_from_object(self, obj):
+        """get user from object instance
+
+        Args:
+            obj : Model objects (like CourseHistory)
+
+        Returns:
+            user: User model object
+        """
+        if type(obj) == CourseHistory:
+            user = obj.user
+        elif type(obj) == Course:
+            user = obj.owner
+        return user
+
     def has_object_permission(self, request, view, obj):
         """
         Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
         """
-        if request.user.is_authenticated and obj.owner == request.user:
-            return True
+        if request.user.is_authenticated:
+            if request.method in permissions.SAFE_METHODS:
+                return True
+            elif self._get_user_from_object(obj) == request.user:
+                return True
         return False

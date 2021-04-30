@@ -11,6 +11,14 @@ logger = logging.getLogger(__name__)
 
 
 def get_course_folder(course):
+    """Gives path to the course folder.
+
+    Args:
+        course (Course): `Course` model instance
+
+    Returns:
+        A path to the course folder.
+    """
     course_id = course.id
     course_code = course.code.replace(" ", "_")
     course_title = course.title.replace(" ", "_")
@@ -20,6 +28,15 @@ def get_course_folder(course):
 
 
 def get_assignment_folder(assignment, assignment_type):
+    """Gives path to assignment folder.
+
+    Args:
+        assignment (Assignment): `Assignment` model instance
+        assignment_type (str): "programming" or "subjective"
+
+    Returns:
+        A path to the assignment folder.
+    """
     assignment_id = assignment.id
     assignment_name = assignment.name.replace(" ", "_")
     assignment_folder = "{}.{}".format(assignment_id, assignment_name)
@@ -30,12 +47,32 @@ def get_assignment_folder(assignment, assignment_type):
 
 
 def get_assignment_file_upload_path(assignment, assignment_type, sub_folder, filename):
+    """Gives path to upload the assignment file (Both Programming & Subjective).
+
+    Args:
+        assignment (Assignment): `Assignment` model instance
+        assignment_type (str): "programming" or "subjective"
+        sub_folder (str): "submission_files" or "question_files" or "testcase_files"
+        filename (str): name of the file
+
+    Returns:
+        A path to upload the assignment file.
+    """
     course_folder = get_course_folder(assignment.course)
     assignment_folder = get_assignment_folder(assignment, assignment_type)
     return os.path.join(course_folder, assignment_folder, sub_folder, filename)
 
 
 def check_course_registration(course_id, user):
+    """Checks if the user is registered in the course.
+
+    Args:
+        course_id (int): course id
+        user (User): `User` model intstance
+
+    Returns:
+        A bool value indicating if the user is registered in the course or not.
+    """
     course_history = CourseHistory.objects.filter(
         course_id=course_id, user=user
     ).count()
@@ -45,6 +82,15 @@ def check_course_registration(course_id, user):
 
 
 def is_instructor_or_ta(course_id, user):
+    """Checks if the user is instructor/ta in the course.
+
+    Args:
+        course_id (int): course id
+        user (User): `User` model intstance
+
+    Returns:
+        A bool value indicating if the user is is instructor/ta in the course or not.
+    """
     course_history = CourseHistory.objects.filter(
         Q(course_id=course_id) & (Q(role="I") | Q(role="T")) & Q(user=user)
     ).count()
@@ -55,6 +101,14 @@ def is_instructor_or_ta(course_id, user):
 
 # TODO: Add date check for subscription_history
 def has_valid_subscription(user):
+    """Checks if the user has a subscription and is it valid?
+
+    Args:
+        user (User): `User` model intstance
+
+    Returns:
+        A bool value denoting if the user has a valid subscription or not.
+    """
     subscription_history = SubscriptionHistory.objects.filter(user=user).count()
     if subscription_history:
         return True
@@ -63,15 +117,25 @@ def has_valid_subscription(user):
 
 # TODO: Add date check for subscription_history
 def is_course_limit_reached(user):
+    """Checks if the subscription course limit is exhausted for the user.
+
+    Args:
+        user (User): `User` model intstance
+
+    Returns:
+        A bool value denoting if the subscription course limit is exhausted for the
+        user or not.
+
+    Raises:
+        SubscriptionHistory.DoesNotExist: Raised if the subscription history does not
+            exist for the user.
+    """
     no_of_courses = Course.objects.filter(owner=user).count()
     try:
         subscription_history = SubscriptionHistory.objects.select_related(
             "subscription"
         ).get(user=user)
-    except (
-        SubscriptionHistory.DoesNotExist,
-        SubscriptionHistory.MultipleObjectsReturned,
-    ) as e:
+    except SubscriptionHistory.DoesNotExist as e:
         logger.exception(e)
         raise
     if no_of_courses < subscription_history.subscription.no_of_courses:

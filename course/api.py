@@ -295,10 +295,10 @@ class CourseHistoryViewSet(
                 permission class
             HTTP_403_FORBIDDEN: Raised by:
                 1. `IsInstructorOrTAOrStudent` permission class
-                2. `_is_registered_as_instructor_or_ta()` method
-            HTTP_404_NOT_FOUND: Raised by `_is_registered_as_instructor_or_ta()` method
+                2. `_is_registered()` method
+            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        check = self._is_registered_as_instructor_or_ta(pk, request.user)
+        check = self._is_registered(pk, request.user)
 
         if check is not True:
             return check

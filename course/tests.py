@@ -312,7 +312,7 @@ class CourseHistoryViewSetTest(APITestCase):
         self._list_course_histories_helper(status.HTTP_200_OK)
         self.logout()
         self.login(**stu_cred)
-        self._list_course_histories_helper(status.HTTP_403_FORBIDDEN)
+        self._list_course_histories_helper(status.HTTP_200_OK)
         self.logout()
 
     def _retrieve_course_history_helper(self, status_code, user_id):

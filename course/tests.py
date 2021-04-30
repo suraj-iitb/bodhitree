@@ -4,7 +4,6 @@ from rest_framework.test import APITestCase
 
 from course.models import Chapter, Course, CourseHistory, Page, Section
 from discussion_forum.models import DiscussionForum
-from registration.models import User
 
 
 # These users are created by django fixtures
@@ -655,34 +654,16 @@ class ChapterViewSetTest(APITestCase):
 
 
 class PageViewSetTest(APITestCase):
-    @classmethod
-    def setUpTestData(cls):
-        """
-        Set up data for the whole TestCase.
-        """
-        cls.ins_cred = {"email": "ins@ins.com", "password": "ins"}
-        cls.ta_cred = {"email": "ta@ta.com", "password": "ta"}
-        cls.stu_cred = {"email": "stu@stu.com", "password": "stu"}
-        cls.ins = User.objects.create_user(**cls.ins_cred)
-        cls.ins.save()
-        cls.ta = User.objects.create_user(**cls.ta_cred)
-        cls.ta.save()
-        cls.stu = User.objects.create_user(**cls.stu_cred)
-        cls.stu.save()
-        cls.course = Course(owner=cls.ins, title="Course", course_type="O")
-        cls.course.save()
-        cls.course_history_ins = CourseHistory(
-            user=cls.ins, course=cls.course, role="I"
-        )
-        cls.course_history_ins.save()
-        cls.course_history_ta = CourseHistory(user=cls.ta, course=cls.course, role="T")
-        cls.course_history_ta.save()
-        cls.course_history_stu = CourseHistory(
-            user=cls.stu, course=cls.course, role="S"
-        )
-        cls.course_history_stu.save()
-        cls.page = Page(course=cls.course, title="Page 1")
-        cls.page.save()
+    """Test for PageViewSetTest."""
+
+    fixtures = [
+        "users.test.yaml",
+        "departments.test.yaml",
+        "colleges.test.yaml",
+        "courses.test.yaml",
+        "coursehistories.test.yaml",
+        "pages.test.yaml",
+    ]
 
     def login(self, email, password):
         self.client.login(email=email, password=password)
@@ -690,119 +671,171 @@ class PageViewSetTest(APITestCase):
     def logout(self):
         self.client.logout()
 
-    def add_page_helper(self, status_code, title):
+    def _list_pages_helper(self):
+        """Helper function to test list pages functionality."""
+        course_id = 1  # course with id 1 is created by django fixture
+        url = reverse("course:page-list-pages", args=[course_id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), Page.objects.all().count())
+
+    def test_list_pages(self):
+        """Test to check: list all pages."""
+        self.login(**ins_cred)
+        self._list_pages_helper()
+        self.logout()
+        self.login(**ta_cred)
+        self._list_pages_helper()
+        self.logout()
+        self.login(**stu_cred)
+        self._list_pages_helper()
+        self.logout()
+
+    def _retrieve_page_helper(self):
+        """Helper function to test the retrieve section functionality."""
+        page_id = 1  # page with id 1 is created by django fixture
+        url = reverse("course:page-retrieve-page", args=[page_id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], page_id)
+
+    def test_retrieve_page(self):
+        """Test to check: retrieve the page."""
+        self.login(**ins_cred)
+        self._retrieve_page_helper()
+        self.logout()
+        self.login(**ta_cred)
+        self._retrieve_page_helper()
+        self.logout()
+        self.login(**stu_cred)
+        self._retrieve_page_helper()
+        self.logout()
+
+    def _create_page_helper(self, title, status_code):
+        """Helper function to test create the page functionality.
+
+        Args:
+            title (str): title of the page
+            status_code (int): expected status code of the API call
+        """
+        course_id = 1  # course with id 1 is created by django fixture
         url = reverse("course:page-create-page")
         data = {
-            "course": PageViewSetTest.course.id,
+            "course": course_id,
             "title": title,
-            "description": "Page 2 description",
+            "description": "Page description",
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            response_data = response.data
+            for field in ["id", "created_on", "modified_on"]:
+                response_data.pop(field)
+            self.assertEqual(response_data, data)
 
-    def test_add_page(self):
-        self.login(**PageViewSetTest.ins_cred)
-        self.add_page_helper(status.HTTP_201_CREATED, "Page 2")
+    def test_create_page(self):
+        """Test to check: create a page."""
+        self.login(**ins_cred)
+        self._create_page_helper("Page 3", status.HTTP_201_CREATED)
         self.logout()
-        self.login(**PageViewSetTest.ta_cred)
-        self.add_page_helper(status.HTTP_201_CREATED, "Page 3")
+        self.login(**ta_cred)
+        self._create_page_helper("Page 4", status.HTTP_201_CREATED)
         self.logout()
-        self.login(**PageViewSetTest.stu_cred)
-        self.add_page_helper(status.HTTP_403_FORBIDDEN, "Page 4")
-        self.logout()
-
-    def list_pages_helper(self, status_code):
-        url = reverse("course:page-list-pages", args=[PageViewSetTest.course.id])
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status_code)
-
-    def test_list_pages(self):
-        self.login(**PageViewSetTest.ins_cred)
-        self.list_pages_helper(status.HTTP_200_OK)
-        self.logout()
-        self.login(**PageViewSetTest.ta_cred)
-        self.list_pages_helper(status.HTTP_200_OK)
-        self.logout()
-        self.login(**PageViewSetTest.stu_cred)
-        self.list_pages_helper(status.HTTP_200_OK)
+        self.login(**stu_cred)
+        self._create_page_helper("Page 5", status.HTTP_403_FORBIDDEN)
         self.logout()
 
-    def retrieve_page_helper(self, status_code):
-        url = reverse(
-            ("course:page-retrieve-page"), kwargs={"pk": PageViewSetTest.page.id}
-        )
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status_code)
+    def _update_page_helper(self, page, title, status_code):
+        """Helper function to test update of the page functionality.
 
-    def test_retrieve_page(self):
-        self.login(**PageViewSetTest.ins_cred)
-        self.retrieve_page_helper(status.HTTP_200_OK)
-        self.logout()
-        self.login(**PageViewSetTest.ta_cred)
-        self.retrieve_page_helper(status.HTTP_200_OK)
-        self.logout()
-        self.login(**PageViewSetTest.stu_cred)
-        self.retrieve_page_helper(status.HTTP_200_OK)
-        self.logout()
-
-    def update_page_helper(self, status_code, title):
-        page = Page(course=PageViewSetTest.course, title="Page 5")
-        page.save()
+        Args:
+            page (Page): `Page` model instance
+            title (str): title of the page
+            status_code (int): expected status code of the API call
+        """
         data = {
-            "course": PageViewSetTest.course.id,
+            "course": 1,
             "title": title,
             "description": "Description of page",
         }
-        url = reverse("course:page-update-page", kwargs={"pk": page.id})
+        url = reverse("course:page-update-page", args=[page.id])
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            response_data = response.data
+            for field in ["id", "created_on", "modified_on"]:
+                response_data.pop(field)
+            self.assertEqual(response_data, data)
 
     def test_update_page(self):
-        self.login(**PageViewSetTest.ins_cred)
-        self.update_page_helper(status.HTTP_200_OK, "Page 6")
+        """Test to check: update the page."""
+        page = Page(title="Page 6", course_id=1)
+        page.save()
+        self.login(**ins_cred)
+        self._update_page_helper(page, "Page 7", status.HTTP_200_OK)
         self.logout()
-        self.login(**PageViewSetTest.ta_cred)
-        self.update_page_helper(status.HTTP_200_OK, "Page 7")
+        self.login(**ta_cred)
+        self._update_page_helper(page, "Page 8", status.HTTP_200_OK)
         self.logout()
-        self.login(**PageViewSetTest.stu_cred)
-        self.update_page_helper(status.HTTP_403_FORBIDDEN, "Page 8")
+        self.login(**stu_cred)
+        self._update_page_helper(page, "Page 9", status.HTTP_403_FORBIDDEN)
         self.logout()
 
-    def partial_update_page_helper(self, status_code, title):
-        page = Page(course=PageViewSetTest.course, title="Page 9")
-        page.save()
-        data = {"title": title}
-        url = reverse(("course:page-update-page"), kwargs={"pk": page.id})
+    def _partial_update_page_helper(self, page, title, status_code):
+        """Helper function to test partial update of the page functionality.
+
+        Args:
+            page (Page): `Page` model instance
+            title (str): title of the page
+            status_code (int): expected status code of the API call
+        """
+        data = {
+            "title": title,
+        }
+        url = reverse("course:page-update-page", args=[page.id])
         response = self.client.patch(url, data)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            self.assertEqual(response.data["title"], data["title"])
 
     def test_partial_update_page(self):
-        self.login(**PageViewSetTest.ins_cred)
-        self.partial_update_page_helper(status.HTTP_200_OK, "Page 10")
+        """Test to check: partial update of the page."""
+        page = Page(title="Page 10", course_id=1)
+        page.save()
+        self.login(**ins_cred)
+        self._partial_update_page_helper(page, "Page 11", status.HTTP_200_OK)
         self.logout()
-        self.login(**PageViewSetTest.ta_cred)
-        self.partial_update_page_helper(status.HTTP_200_OK, "Page 11")
+        self.login(**ta_cred)
+        self._partial_update_page_helper(page, "Page 12", status.HTTP_200_OK)
         self.logout()
-        self.login(**PageViewSetTest.stu_cred)
-        self.partial_update_page_helper(status.HTTP_403_FORBIDDEN, "Page 12")
+        self.login(**stu_cred)
+        self._partial_update_page_helper(page, "Page 13", status.HTTP_403_FORBIDDEN)
         self.logout()
 
-    def delete_page_helper(self, status_code):
-        page = Page(course=PageViewSetTest.course, title="Page 13")
+    def _delete_page_helper(self, status_code):
+        """Helper function to test delete the page functionality.
+
+        Args:
+            status_code (int): expected status code of the API call
+        """
+        page = Page(course_id=1, title="Page 14")
         page.save()
-        url = reverse(("course:page-delete-page"), kwargs={"pk": page.id})
+        url = reverse(("course:page-delete-page"), args=[page.id])
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_204_NO_CONTENT:
+            self.assertEqual(Page.objects.filter(id=page.id).count(), 0)
 
     def test_delete_page(self):
-        self.login(**PageViewSetTest.ins_cred)
-        self.delete_page_helper(status.HTTP_204_NO_CONTENT)
+        """Test to check: delete the page."""
+        self.login(**ins_cred)
+        self._delete_page_helper(status.HTTP_204_NO_CONTENT)
         self.logout()
-        self.login(**PageViewSetTest.ta_cred)
-        self.delete_page_helper(status.HTTP_204_NO_CONTENT)
+        self.login(**ta_cred)
+        self._delete_page_helper(status.HTTP_204_NO_CONTENT)
         self.logout()
-        self.login(**PageViewSetTest.stu_cred)
-        self.delete_page_helper(status.HTTP_403_FORBIDDEN)
+        self.login(**stu_cred)
+        self._delete_page_helper(status.HTTP_403_FORBIDDEN)
         self.logout()
 
 

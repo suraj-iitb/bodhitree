@@ -33,23 +33,29 @@ class CourseViewSetTest(APITestCase):
     def logout(self):
         self.client.logout()
 
-    def test_get_courses(self):
-        """Ensure we can get all Course objects."""
+    def test_list_courses(self):
+        """Test to check: list all courses."""
         url = reverse("course:course-list")
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        no_of_courses = Course.objects.all().count()
-        self.assertEqual(len(response.data["results"]), no_of_courses)
+        self.assertEqual(len(response.data["results"]), Course.objects.all().count())
 
-    def test_get_course(self):
-        """Ensure we can get one Course object."""
-        course_id = 1
+    def test_retrieve_course(self):
+        """Test to check: retrieve a course."""
+        course_id = 1  # course with id 1 is created by django fixture
         url = reverse("course:course-detail", kwargs={"pk": course_id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["id"], course_id)
 
     def _create_course_helper(self, status_code, title, owner_id):
+        """Helper function to test create course functionality
+
+        Args:
+            status_code (int): expected status code of the API call
+            title (str): title of the course
+            owner_id (int): user id
+        """
         data = {
             "owner": owner_id,
             "code": "101",
@@ -57,7 +63,7 @@ class CourseViewSetTest(APITestCase):
             "description": "This is the description of the course",
             "is_published": False,
             "course_type": "O",
-            "chapters_sequence": [1, 2],
+            "chapters_sequence": [],
             "institute": 1,
             "department": 1,
             "df_settings": {
@@ -75,7 +81,7 @@ class CourseViewSetTest(APITestCase):
             self.assertEqual(response_data, data)
 
     def test_create_course(self):
-        """Ensure we can create a new Course object."""
+        """Test to check: create a course."""
         self.login(**ins_cred)
         self._create_course_helper(status.HTTP_201_CREATED, "Course 1", 1)
         self.logout()
@@ -86,9 +92,21 @@ class CourseViewSetTest(APITestCase):
         self._create_course_helper(status.HTTP_403_FORBIDDEN, "Course 3", 3)
         self.logout()
 
-    def update_course_helper(self, course, status_code, title, user_id, role):
+    def _update_course_helper(self, course, status_code, title, user_id, role):
+        """Helper function to test update course functionality
+
+        Args:
+            course (Course): `Course` model instance
+            status_code (int): expected status code of the API call
+            title (str): title of the course
+            user_id (int): user id
+            role (str): role of the user (instructor/ta/student)
+        """
         course_history = CourseHistory(
-            user_id=user_id, course=course, role=role, status="E"
+            user_id=user_id,
+            course=course,
+            role=role,
+            status="E",
         )
         course_history.save()
         data = {
@@ -98,11 +116,11 @@ class CourseViewSetTest(APITestCase):
             "description": "This is the description of the course",
             "is_published": False,
             "course_type": "O",
-            "chapters_sequence": [1, 2],
+            "chapters_sequence": [],
             "institute": 1,
             "department": 1,
             "df_settings": {
-                "anonymous_to_instructor": True,
+                "anonymous_to_instructor": False,
                 "send_email_to_all": False,
             },
         }
@@ -111,12 +129,12 @@ class CourseViewSetTest(APITestCase):
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
             response_data = response.data
-            for field in ["created_on", "modified_on", "image", "id"]:
+            for field in ["id", "image", "created_on", "modified_on"]:
                 response_data.pop(field)
             self.assertEqual(response_data, data)
 
     def test_update_course(self):
-        """Ensure we can update an existing Course object."""
+        """Test to check: update the course."""
         course = Course(
             owner_id=1,
             title="Course 4",
@@ -130,18 +148,32 @@ class CourseViewSetTest(APITestCase):
         )
         discussion_forum.save()
         self.login(**ins_cred)
-        self.update_course_helper(course, status.HTTP_200_OK, "Course 5", 1, "I")
+        self._update_course_helper(course, status.HTTP_200_OK, "Course 5", 1, "I")
         self.logout()
         self.login(**ta_cred)
-        self.update_course_helper(course, status.HTTP_200_OK, "Course 6", 2, "T")
+        self._update_course_helper(course, status.HTTP_200_OK, "Course 6", 2, "T")
         self.logout()
         self.login(**stu_cred)
-        self.update_course_helper(course, status.HTTP_403_FORBIDDEN, "Course 7", 3, "S")
+        self._update_course_helper(
+            course, status.HTTP_403_FORBIDDEN, "Course 7", 3, "S"
+        )
         self.logout()
 
-    def partial_update_course_helper(self, course, status_code, title, user_id, role):
+    def _partial_update_course_helper(self, course, status_code, title, user_id, role):
+        """Helper function to test update course functionality
+
+        Args:
+            course (Course): `Course` model instance
+            status_code (int): expected status code of the API call
+            title (str): title of the course
+            user_id (int): user id
+            role (str): role of the user (instructor/ta/student)
+        """
         course_history = CourseHistory(
-            user_id=user_id, course=course, role=role, status="E"
+            user_id=user_id,
+            course=course,
+            role=role,
+            status="E",
         )
         course_history.save()
         data = {
@@ -156,9 +188,13 @@ class CourseViewSetTest(APITestCase):
             self.assertEqual(return_data["title"], data["title"])
             self.assertEqual(return_data["course_type"], data["course_type"])
 
-    def _test_partial_update_course(self):
-        """Ensure we can partially update an existing Course object."""
-        course = Course(owner_id=1, title="Course 8", course_type="O")
+    def test_partial_update_course(self):
+        """Test to check: partial update the course."""
+        course = Course(
+            owner_id=1,
+            title="Course 8",
+            course_type="O",
+        )
         course.save()
         discussion_forum = DiscussionForum(
             course=course,
@@ -167,21 +203,35 @@ class CourseViewSetTest(APITestCase):
         )
         discussion_forum.save()
         self.login(**ins_cred)
-        self._test_partial_update_course(course, status.HTTP_200_OK, "Course 9", 1, "I")
+        self._partial_update_course_helper(
+            course, status.HTTP_200_OK, "Course 9", 1, "I"
+        )
         self.logout()
         self.login(**ta_cred)
-        self._test_partial_update_course(
+        self._partial_update_course_helper(
             course, status.HTTP_200_OK, "Course 10", 2, "T"
         )
         self.logout()
         self.login(**stu_cred)
-        self._test_partial_update_course(
+        self._partial_update_course_helper(
             course, status.HTTP_403_FORBIDDEN, "Course 11", 3, "S"
         )
         self.logout()
 
     def _delete_course_helper(self, status_code, title, user_id, role):
-        course = Course(owner_id=1, title=title, course_type="O")
+        """Helper function to test delete course functionality
+
+        Args:
+            status_code (int): expected status code of the API call
+            title (str): title of the course
+            user_id (int): user id
+            role (str): role of the user (instructor/ta/student)
+        """
+        course = Course(
+            owner_id=1,
+            title=title,
+            course_type="O",
+        )
         course.save()
         discussion_forum = DiscussionForum(
             course=course,
@@ -190,7 +240,10 @@ class CourseViewSetTest(APITestCase):
         )
         discussion_forum.save()
         course_history = CourseHistory(
-            user_id=user_id, course_id=course.id, role=role, status="E"
+            user_id=user_id,
+            course=course,
+            role=role,
+            status="E",
         )
         course_history.save()
         url = reverse(("course:course-delete-course"), kwargs={"pk": course.id})
@@ -200,7 +253,7 @@ class CourseViewSetTest(APITestCase):
             self.assertEqual(Course.objects.filter(id=course.id).count(), 0)
 
     def test_delete_course(self):
-        """Ensure we can delete an existing Course object."""
+        """Test to check: delete the course."""
         self.login(**ins_cred)
         self._delete_course_helper(status.HTTP_204_NO_CONTENT, "Course 12", 1, "I")
         self.logout()

@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from course.models import Course
+from utils import mixins as custom_mixins
 from utils.drf_utils import (
     IsInstructorOrTAOrStudent,
     IsOwner,
@@ -28,7 +29,10 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 
-class DiscussionThreadViewSet(viewsets.GenericViewSet):
+class DiscussionThreadViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.IsRegisteredMixins,
+):
     """Viewset for DiscussionThread."""
 
     queryset = DiscussionThread.objects.all()
@@ -38,40 +42,6 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet):
     filterset_fields = ("title",)
     search_fields = ("title",)
     ordering_fields = ("id",)
-
-    def _is_registered(self, course_id, user):
-        """Checks if the user is registered in the given course.
-
-        Args:
-            course_id (int): course id (pk)
-            user (User): `User` model object
-
-        Returns:
-            A bool value representing whether the user is registered
-            in the course with id course_id
-
-        Raises:
-            HTTP_404_NOT_FOUND: Raised if:
-                1. The course does not exist
-                2. The user is not registered in the course
-        """
-        try:
-            course = Course.objects.get(id=course_id)
-        except Course.DoesNotExist:
-            data = {
-                "error": "Course with id: {} does not exist".format(course_id),
-            }
-            return Response(data, status.HTTP_404_NOT_FOUND)
-
-        if not check_course_registration(course_id, user):
-            data = {
-                "error": "User: {} is not registered in the course: {}".format(
-                    user, course
-                ),
-            }
-            return Response(data, status.HTTP_404_NOT_FOUND)
-
-        return True
 
     @action(detail=False, methods=["POST"])
     def create_discussion_thread(self, request):
@@ -135,6 +105,7 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet):
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
+
         serializer = self.get_serializer(discussion_threads, many=True)
         return Response(serializer.data)
 
@@ -166,6 +137,7 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet):
                 ),
             }
             return Response(data, status.HTTP_404_NOT_FOUND)
+
         check = self._is_registered(course_id, request.user)
         if check is not True:
             return check

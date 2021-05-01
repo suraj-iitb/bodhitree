@@ -5,8 +5,8 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-import mixins as custom_mixins
 from registration.models import SubscriptionHistory
+from utils import mixins as custom_mixins
 from utils.drf_utils import (
     IsInstructorOrTA,
     IsInstructorOrTAOrReadOnly,

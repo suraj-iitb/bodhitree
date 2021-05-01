@@ -1,7 +1,5 @@
 import datetime
-from io import BytesIO
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -10,9 +8,20 @@ from rest_framework.test import APITestCase
 from video.models import Video
 
 
+# These users are created by django fixtures
+# instructor has user id 1
+ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
+# ta has user id 2
+ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
+# student has user id 3
+stu_cred = {"email": "student@bodhitree.com", "password": "student"}
+
+
 class VideoViewSetTest(APITestCase):
     fixtures = [
         "users.test.yaml",
+        "departments.test.yaml",
+        "colleges.test.yaml",
         "courses.test.yaml",
         "coursehistories.test.yaml",
         "chapters.test.yaml",
@@ -26,279 +35,270 @@ class VideoViewSetTest(APITestCase):
     def logout(self):
         self.client.logout()
 
-    @classmethod
-    def setUpTestData(cls):
-        """
-        Set up data for the whole TestCase.
-        """
-        cls.ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
-        cls.ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
-        cls.stu_cred = {"email": "student@bodhitree.com", "password": "student"}
-
-    def get_videos_helper(self):
-        url = reverse("video:video-list-videos", args=[1])
+    def _list_chapter_videos_helper(self):
+        """Helper function to test list all chapter videos functionality."""
+        chapter_id = 1
+        url = reverse("video:video-list-chapter-videos", args=[chapter_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        length = Video.objects.filter(chapter_id=1).count()
-        self.assertEqual(len(response.data), length)
+        no_of_videos = Video.objects.filter(chapter_id=chapter_id).count()
+        self.assertEqual(len(response.data), no_of_videos)
 
-    def test_get_videos(self):
-        """
-        Ensure we can get all Videos objects.
-        """
-        self.login(**self.ins_cred)
-        self.get_videos_helper()
+    def test_list_chapter_videos(self):
+        """Test to check: list all chapter videos."""
+        self.login(**ins_cred)
+        self._list_chapter_videos_helper()
         self.logout()
-        self.login(**self.ta_cred)
-        self.get_videos_helper()
+        self.login(**ta_cred)
+        self._list_chapter_videos_helper()
         self.logout()
-        self.login(**self.stu_cred)
-        self.get_videos_helper()
+        self.login(**stu_cred)
+        self._list_chapter_videos_helper()
         self.logout()
 
-    def get_videos_per_section_helper(self):
-        url = reverse("video:video-list-videos-section", args=[1])
+    def _list_section_videos_helper(self):
+        """Helper function to test list all chapter videos functionality."""
+        section_id = 1
+        url = reverse("video:video-list-section-videos", args=[1])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        length = Video.objects.filter(section_id=1).count()
-        self.assertEqual(len(response.data), length)
+        no_of_videos = Video.objects.filter(section_id=section_id).count()
+        self.assertEqual(len(response.data), no_of_videos)
 
-    def test_get_videos_section(self):
-        """
-        Ensure we can get all Videos objects per section .
-        """
-        self.login(**self.ins_cred)
-        self.get_videos_per_section_helper()
+    def test_list_section_videos(self):
+        """Test to check: list all section videos."""
+        self.login(**ins_cred)
+        self._list_section_videos_helper()
         self.logout()
-        self.login(**self.ta_cred)
-        self.get_videos_per_section_helper()
+        self.login(**ta_cred)
+        self._list_section_videos_helper()
         self.logout()
-        self.login(**self.stu_cred)
-        self.get_videos_per_section_helper()
+        self.login(**stu_cred)
+        self._list_section_videos_helper()
         self.logout()
 
-    def get_video_helper(self, video_id):
-        url = reverse(
-            "video:video-retrieve-video",
-            kwargs={"pk": video_id},
-        )
+    def _retrieve_video_helper(self):
+        """Helper function to test retrieve the video functionality."""
+        video_id = 1
+        url = reverse("video:video-retrieve-video", args=[video_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["id"], video_id)
 
-    def test_get_video(self):
-        """
-        Ensure we can get one video object.
-        """
-        video_id = 5
-        self.login(**self.ins_cred)
-        self.get_video_helper(video_id)
+    def test_retrieve_video(self):
+        """Test to check: retrieve the video."""
+        self.login(**ins_cred)
+        self._retrieve_video_helper()
         self.logout()
-        self.login(**self.ta_cred)
-        self.get_video_helper(video_id)
+        self.login(**ta_cred)
+        self._retrieve_video_helper()
         self.logout()
-        self.login(**self.stu_cred)
-        self.get_video_helper(video_id)
+        self.login(**stu_cred)
+        self._retrieve_video_helper()
         self.logout()
 
-    def create_video_helper(self, title, video_duration, status_code):
+    def _get_in_memory_file(self, input_file_path, output_file_name):
+        file_content = open(input_file_path, "rb").read()
+        file_content = b"file_content"
+        in_memory_file = SimpleUploadedFile(output_file_name, file_content)
+        return in_memory_file
+
+    def _create_video_helper(self, title, status_code):
+        """Helper function to test create video functionality.
+
+        Args:
+            title (str): title of the video
+            status_code (int): expected status code of the API call
+        """
+        chapter_id = 1
+        # Video file
         video_file_path = "main/test_data/video/sample-mp4-file.mp4"
-        video_content = open(video_file_path, "rb").read()
-        video_content = b"video_content"
-        video = BytesIO(video_content)
-        video.name = "video.mp4"
+        output_file_name = "video.mp4"
+        in_memory_video_file = self._get_in_memory_file(
+            video_file_path, output_file_name
+        )
+
+        # Accompanied doc file to video
         doc_file_path = "main/test_data/video/eye-of-the-tiger-workout.pdf"
-        doc_content = open(doc_file_path, "rb").read()
-        doc_content = b"doc_content"
-        doc = BytesIO(doc_content)
+        output_file_name = "doc.pdf"
+        in_memory_doc_file = self._get_in_memory_file(doc_file_path, output_file_name)
+
         data = {
-            "chapter": 1,
+            "chapter": chapter_id,
             "section": "",
             "title": title,
-            "video_file": video,
-            "doc_file": doc,
-            "video_duration": video_duration,
+            "video_file": in_memory_video_file,
+            "doc_file": in_memory_doc_file,
+            "video_duration": datetime.timedelta(minutes=3),
             "description": "this is the video description",
         }
-        url = reverse("video:video-create-video", args=[1])
+        url = reverse("video:video-create-video")
         response = self.client.post(url, data, format="multipart")
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_201_CREATED:
-            return_data = response.data
-            for k in [
-                "uploaded_on",
-                "modified_on",
-                "id",
-                "video_file",
-                "doc_file",
-                "section",
-                "in_video_quiz_file",
-                "video_duration",
-            ]:
-                return_data.pop(k)
-            for k in ["doc_file", "section", "video_file", "video_duration"]:
-                data.pop(k)
-            self.assertEqual(return_data, data)
+            response_data = response.data
+            self.assertEqual(response_data["chapter"], data["chapter"])
+            self.assertEqual(response_data["title"], data["title"])
+            self.assertEqual(response_data["description"], data["description"])
 
     def test_create_video(self):
-        """
-        Ensure we can create a new 'Video' object
-        """
-        self.client.login(**self.ins_cred)
-        self.create_video_helper(
-            "Video3", datetime.timedelta(days=3), status.HTTP_201_CREATED
-        )
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.create_video_helper(
-            "Video4", datetime.timedelta(days=3), status.HTTP_201_CREATED
-        )
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.create_video_helper(
-            "Video5", datetime.timedelta(days=3), status.HTTP_403_FORBIDDEN
-        )
-        self.client.logout()
+        """Test to check: create a video."""
+        self.login(**ins_cred)
+        self._create_video_helper("Video 3", status.HTTP_201_CREATED)
+        self.logout()
+        self.login(**ta_cred)
+        self._create_video_helper("Video 4", status.HTTP_201_CREATED)
+        self.logout()
+        self.login(**stu_cred)
+        self._create_video_helper("Video 5", status.HTTP_403_FORBIDDEN)
+        self.logout()
 
-    def update_videos_helper(self, title, status_code):
+    def _update_video_helper(self, title, status_code):
+        """Helper function to test update video functionality.
+
+        Args:
+            title (str): title of the course
+            status_code (int): expected status code of the API call
+        """
+        chapter_id = 1
+        # Video file
         video_file_path = "main/test_data/video/sample-mp4-file.mp4"
-        video_content = open(video_file_path, "rb").read()
-        _file = SimpleUploadedFile("video.mp4", b"video_content")
-        video1 = Video(
-            title="Video77",
-            chapter_id=1,
-            video_file=_file,
-            video_duration=datetime.timedelta(days=3),
+        output_file_name = "video.mp4"
+        in_memory_video_file = self._get_in_memory_file(
+            video_file_path, output_file_name
         )
-        video1.save()
-        video_content = open(video_file_path, "rb").read()
-        video_content = b"video_content"
-        _file = SimpleUploadedFile("video.mp4", video_content)
+
+        video = Video(
+            title="Video 6",
+            chapter_id=chapter_id,
+            video_file=in_memory_video_file,
+            video_duration=datetime.timedelta(minutes=3),
+        )
+        video.save()
+
+        # Video file
+        in_memory_video_file = self._get_in_memory_file(
+            video_file_path, output_file_name
+        )
+        # Accompanied doc file to video
         doc_file_path = "main/test_data/video/eye-of-the-tiger-workout.pdf"
-        doc_content = open(doc_file_path, "rb").read()
-        doc_content = b"doc_content"
-        doc_file = SimpleUploadedFile("doc.pdf", doc_content)
+        output_file_name = "doc.pdf"
+        in_memory_doc_file = self._get_in_memory_file(doc_file_path, output_file_name)
+
         data = {
             "title": title,
-            "chapter": 1,
-            "video_file": _file,
-            "doc_file": doc_file,
-            "video_duration": datetime.timedelta(days=4),
+            "chapter": chapter_id,
+            "video_file": in_memory_video_file,
+            "doc_file": in_memory_doc_file,
+            "video_duration": datetime.timedelta(minutes=3),
             "description": "This is the video description",
         }
-        url = reverse(("video:video-update-video"), kwargs={"pk": video1.id})
+
+        url = reverse(("video:video-update-video"), args=[video.id])
         response = self.client.put(url, data, format="multipart")
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
-            return_data = response.data
-            for k in [
-                "uploaded_on",
-                "modified_on",
-                "id",
-                "video_file",
-                "doc_file",
-                "section",
-                "in_video_quiz_file",
-                "video_duration",
-            ]:
-                return_data.pop(k)
-            for k in ["doc_file", "video_file", "video_duration"]:
-                data.pop(k)
-            self.assertEqual(return_data, data)
+            response_data = response.data
+            self.assertEqual(response_data["title"], data["title"])
+            self.assertEqual(response_data["description"], data["description"])
+            self.assertEqual(response_data["chapter"], data["chapter"])
 
     def test_update_videos(self):
-        """
-        Ensure we can update an existing Video object.
-        """
-        self.client.login(**self.ins_cred)
-        self.update_videos_helper("video78", status.HTTP_200_OK)
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.update_videos_helper("video79", status.HTTP_200_OK)
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.update_videos_helper("video80", status.HTTP_403_FORBIDDEN)
-        self.client.logout()
+        """Test to check: update a video."""
+        self.login(**ins_cred)
+        self._update_video_helper("Video 7", status.HTTP_200_OK)
+        self.logout()
+        self.login(**ta_cred)
+        self._update_video_helper("Video 8", status.HTTP_200_OK)
+        self.logout()
+        self.login(**stu_cred)
+        self._update_video_helper("Video 9", status.HTTP_403_FORBIDDEN)
+        self.logout()
 
-    def partial_update_helper(self, title, status_code):
+    def _partial_update_video_helper(self, title, status_code):
+        """Helper function to test partial update video functionality.
+
+        Args:
+            title (str): title of the course
+            status_code (int): expected status code of the API call
+        """
+        chapter_id = 1
+        # Video file
         video_file_path = "main/test_data/video/sample-mp4-file.mp4"
-        video_content = open(video_file_path, "rb").read()
-        video_content = b"video_content"
-        _file = SimpleUploadedFile("video.mp4", video_content)
-        video1 = Video(
-            title="Video77",
-            chapter_id=1,
-            video_file=_file,
-            video_duration=datetime.timedelta(days=3),
+        output_file_name = "video.mp4"
+        in_memory_video_file = self._get_in_memory_file(
+            video_file_path, output_file_name
         )
-        video1.save()
+
+        video = Video(
+            title="Video 6",
+            chapter_id=chapter_id,
+            video_file=in_memory_video_file,
+            video_duration=datetime.timedelta(minutes=3),
+        )
+        video.save()
+
         data = {
             "title": title,
+            "description": "This is the video description",
         }
-        url = reverse(("video:video-update-video"), kwargs={"pk": video1.id})
-        response = self.client.put(url, data)
+
+        url = reverse(("video:video-update-video"), args=[video.id])
+        response = self.client.patch(url, data, format="multipart")
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
-            return_data = response.data
-            for k in [
-                "uploaded_on",
-                "modified_on",
-                "id",
-                "video_file",
-                "doc_file",
-                "section",
-                "in_video_quiz_file",
-                "video_duration",
-                "description",
-                "chapter",
-            ]:
-                return_data.pop(k)
-            self.assertEqual(return_data, data)
+            response_data = response.data
+            self.assertEqual(response_data["title"], data["title"])
+            self.assertEqual(response_data["description"], data["description"])
 
-    def test_partial_update_video(self):
-        """
-        Ensure we can partially update an existing Section object.
-        """
-        self.client.login(**self.ins_cred)
-        self.partial_update_helper("Video78", status.HTTP_200_OK)
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.partial_update_helper("Video79", status.HTTP_200_OK)
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.partial_update_helper("Video80", status.HTTP_403_FORBIDDEN)
-        self.client.logout()
+    def test_partial_update_videos(self):
+        """Test to check: update a video."""
+        self.login(**ins_cred)
+        self._partial_update_video_helper("Video 10", status.HTTP_200_OK)
+        self.logout()
+        self.login(**ta_cred)
+        self._partial_update_video_helper("Video 11", status.HTTP_200_OK)
+        self.logout()
+        self.login(**stu_cred)
+        self._partial_update_video_helper("Video 12", status.HTTP_403_FORBIDDEN)
+        self.logout()
 
-    def delete_video_helper(self, title, status_code):
+    def _delete_video_helper(self, title, status_code):
+        """Helper function to test delete video functionality
+
+        Args:
+            title (str): title of the course
+            status_code (int): expected status code of the API call
+        """
+        # Video file
+        chapter_id = 1
         video_file_path = "main/test_data/video/sample-mp4-file.mp4"
-        video_content = open(video_file_path, "rb").read()
-        video_content = b"video_content"
-        _file = SimpleUploadedFile("video.mp4", video_content)
-        video1 = Video(
-            title=title,
-            chapter_id=1,
-            video_file=_file,
-            video_duration=datetime.timedelta(days=3),
+        output_file_name = "video.mp4"
+        in_memory_video_file = self._get_in_memory_file(
+            video_file_path, output_file_name
         )
-        video1.save()
-        url = reverse(("video:video-delete-video"), kwargs={"pk": video1.id})
+
+        video = Video(
+            title="Video 6",
+            chapter_id=chapter_id,
+            video_file=in_memory_video_file,
+            video_duration=datetime.timedelta(minutes=3),
+        )
+        video.save()
+        url = reverse(("video:video-delete-video"), args=[video.id])
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
-        try:
-            Video.objects.get(id=video1.id)
-        except ObjectDoesNotExist:
-            self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_204_NO_CONTENT:
+            self.assertEqual(Video.objects.filter(id=video.id).count(), 0)
 
     def test_delete_video(self):
-        """
-        Ensure we can delete an existing Video object.
-        """
-        self.client.login(**self.ins_cred)
-        self.delete_video_helper("video98", status.HTTP_204_NO_CONTENT)
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.delete_video_helper("video99", status.HTTP_204_NO_CONTENT)
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.delete_video_helper("video100", status.HTTP_403_FORBIDDEN)
-        self.client.logout()
+        """Test to check: delete the video."""
+        self.login(**ins_cred)
+        self._delete_video_helper("Video 13", status.HTTP_204_NO_CONTENT)
+        self.logout()
+        self.login(**ta_cred)
+        self._delete_video_helper("Video 14", status.HTTP_204_NO_CONTENT)
+        self.logout()
+        self.login(**stu_cred)
+        self._delete_video_helper("Video 14", status.HTTP_403_FORBIDDEN)
+        self.logout()

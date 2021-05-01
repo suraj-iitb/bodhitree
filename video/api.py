@@ -1,175 +1,262 @@
+import logging
+
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from course.models import Chapter, Course, Section
+from course.models import Chapter, Section
+from utils import mixins as custom_mixins
 from utils.drf_utils import IsInstructorOrTA
-from utils.utils import check_course_registration, is_instructor_or_ta
+from utils.utils import is_instructor_or_ta
 
 from .models import Video
 from .serializers import VideoSerializer
 
 
-class VideoViewSet(viewsets.GenericViewSet):
+logger = logging.getLogger(__name__)
+
+
+class VideoViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.IsRegisteredMixins,
+):
+    """Viewset for Video."""
+
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
     permission_classes = (IsInstructorOrTA,)
-    filterset_fields = (
-        "chapter__title",
-        "section__title",
-        "title",
-    )
-    search_fields = (
-        "chapter__title",
-        "section__title",
-        "title",
-    )
-    ordering_fields = ("id",)
 
-    def _checks(self, course_id, chapter_id, user):
-        """To check if the user is registered in a given course"""
-        try:
-            Course.objects.get(id=course_id)
-        except Course.DoesNotExist:
-            data = {
-                "error": "Course with id: {} does not exist".format(course_id),
-            }
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        if not check_course_registration(course_id, user):
-            data = {
-                "error": "User: {} not registered in course with id: {}".format(
-                    user, course_id
-                ),
-            }
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        try:
-            Chapter.objects.get(id=chapter_id)
-        except Chapter.DoesNotExist:
-            data = {
-                "error": "Chapter with id: {} does not exist".format(chapter_id),
-            }
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        return True
+    @action(detail=False, methods=["POST"])
+    def create_video(self, request):
+        """Adds a video to the chapter/section
 
-    @action(detail=True, methods=["POST"])
-    def create_video(self, request, pk):
-        """Add a video to a chapter/section with primary key as pk"""
+        Args:
+            request (Request): DRF `Request` object
+
+        Returns:
+            `Response` with the created video data and status HTTP_201_CREATED.
+
+        Raises:
+            HTTP_400_BAD_REQUEST: Raised by:
+                1. `is_valid()` method of the serializer
+                2. If both or none section/chapter is provided
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
+            HTTP_403_FORBIDDEN: Raised by:
+                1. If the user is not the instructor/ta of the course
+                2. `IsInstructorOrTA` permission class
+            HTTP_404_NOT_FOUND: Raised by:
+                1. `_is_registered()` method
+                2. Chapter/Section does not exist
+        """
         user = request.user
-        video = request.data
-        keys = video
-        if keys["section"] != "" and keys["chapter"] != "":
-            data = {
-                "Validation error": "Both chapter and section fields cannot be given"
-            }
+        request_data = request.data
+
+        # Validation logic such that only chapter/section is provided
+        if request_data["section"] != "" and request_data["chapter"] != "":
+            data = {"error": "Both chapter and section fields cannot be given."}
+            logger.error(data["error"])
             return Response(data, status.HTTP_400_BAD_REQUEST)
-        if keys["section"] == "" and keys["chapter"] == "":
-            data = {
-                "Validation error": """Atleast one of
-                 chapter and section fields must be given"""
-            }
+        if request_data["section"] == "" and request_data["chapter"] == "":
+            data = {"error": "Atleast one of chapter or section fields must be given"}
+            logger.error(data["error"])
             return Response(data, status.HTTP_400_BAD_REQUEST)
-        if video["chapter"] == "":
-            section_id = video["section"]
-            chapter_id = Section.objects.get(id=section_id).chapter_id
+        ##############################################################
+
+        # Finds course id
+        if request_data["chapter"] == "":
+            section_id = request_data["section"]
+            try:
+                chapter_id = (
+                    Section.objects.select_related("chapter")
+                    .get(id=section_id)
+                    .chapter.id
+                )
+            except Section.DoesNotExist as e:
+                logger.exception(e)
+                Response(e, status.HTTP_404_NOT_FOUND)
         else:
-            chapter_id = video["chapter"]
-        course_id = Chapter.objects.get(id=chapter_id).course_id
-        instructor_or_ta = is_instructor_or_ta(course_id, user)
-        if not instructor_or_ta:
+            chapter_id = request_data["chapter"]
+        try:
+            course_id = (
+                Chapter.objects.select_related("course").get(id=chapter_id).course.id
+            )
+        except Chapter.DoesNotExist as e:
+            logger.exception(e)
+            Response(e, status.HTTP_404_NOT_FOUND)
+        #################
+
+        check = self._is_registered(course_id, user)
+        if check is not True:
+            return check
+
+        # This is specifically done during video creation (not during updation or
+        # deletion) because it can't be handled by IsInstructorOrTA permission class
+        if not is_instructor_or_ta(course_id, user):
             data = {
-                "error": "User: {} is not instructor/ta of course with id: {}".format(
-                    user, course_id
-                ),
+                "error": "User: {} is not the instructor/ta of the "
+                "course with id: {}".format(user, course_id),
             }
+            logger.warning(data["error"])
             return Response(data, status.HTTP_403_FORBIDDEN)
-        check = self._checks(course_id, chapter_id, request.user)
-        if check is True:
-            serializer = self.get_serializer(data=video)
-            serializer.is_valid()
+
+        serializer = self.get_serializer(data=request_data)
+        if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return check
+        errors = serializer.errors
+        logger.error(errors)
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=["GET"])
-    def list_videos(self, request, pk):
-        """Get all videos of a chapter with primary key as pk"""
-        chapter_id = Chapter.objects.get(id=pk).id
-        course_id = Chapter.objects.get(id=chapter_id).course.id
-        check = self._checks(course_id, chapter_id, request.user)
-        if check is True:
-            videos = Video.objects.filter(chapter_id=pk)
-            serializer = self.get_serializer(videos, many=True)
-            return Response(serializer.data)
-        return check
+    def list_chapter_videos(self, request, pk):
+        """Gets all the videos in the chapter with id as pk.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): chapter id
+
+        Returns:
+            `Response` with all the video data and status HTTP_200_OK.
+
+        Raises:
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
+            HTTP_404_NOT_FOUND: Raised by `_is_registered_using_chapter_id()` method
+        """
+        check, _ = self._is_registered_using_chapter_id(pk, request.user)
+        if check is not True:
+            return check
+
+        videos = Video.objects.filter(chapter_id=pk)
+        serializer = self.get_serializer(videos, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=["GET"])
-    def list_videos_section(self, request, pk):
-        """Get all videos of a section with primary key as pk"""
-        chapter_id = Section.objects.get(id=pk).chapter.id
-        course_id = Chapter.objects.get(id=chapter_id).course.id
-        check = self._checks(course_id, chapter_id, request.user)
-        if check is True:
-            videos = Video.objects.filter(section_id=pk)
-            serializer = self.get_serializer(videos, many=True)
-            return Response(serializer.data)
-        return check
+    def list_section_videos(self, request, pk):
+        """Gets all the videos in the section with id as pk.
 
-    def get_chapter_id(self, video):
-        if video.chapter_id is None:
-            section_id = video.section_id
-            chapter_id = Section.objects.get(id=section_id).chapter_id
-        else:
-            chapter_id = video.chapter_id
-        return chapter_id
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): section id
+
+        Returns:
+            `Response` with all the video data and status HTTP_200_OK.
+
+        Raises:
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
+            HTTP_404_NOT_FOUND: Raised by `_is_registered_using_chapter_id()` method
+        """
+        check, _ = self._is_registered_using_section_id(pk, request.user)
+        if check is not True:
+            return check
+
+        videos = Video.objects.filter(section_id=pk)
+        serializer = self.get_serializer(videos, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=["GET"])
     def retrieve_video(self, request, pk):
-        """Get a video with primary key as pk"""
+        """Gets the video with id as pk.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): video id
+
+        Returns:
+            `Response` with the video data and status HTTP_200_OK.
+
+        Raises:
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
+            HTTP_404_NOT_FOUND: Raised by:
+                1. `_is_registered_using_chapter_id()` method
+                2. `_is_registered_using_section_id()` method
+        """
+        user = request.user
         video = self.get_object()
-        chapter_id = self.get_chapter_id(video)
-        course_id = Chapter.objects.get(id=chapter_id).course_id
-        check = self._checks(course_id, chapter_id, request.user)
-        if check is True:
-            serializer = self.get_serializer(video)
-            return Response(serializer.data)
-        return check
+        if video.chapter_id is None:
+            check, course_id = self._is_registered_using_section_id(
+                video.section_id, user
+            )
+        else:
+            check, course_id = self._is_registered_using_chapter_id(
+                video.chapter_id, user
+            )
+        if check is not True:
+            return check
+
+        serializer = self.get_serializer(video)
+        return Response(serializer.data)
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_video(self, request, pk):
-        """Update video with primary key as pk"""
+        """Updates the video with id as pk.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): video id
+
+        Returns:
+            `Response` with the updated video data and status HTTP_200_OK.
+
+        Raises:
+            HTTP_400_BAD_REQUEST: Raised due to serialization errors
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
+            HTTP_404_NOT_FOUND: Raised by:
+                1. `_is_registered_using_chapter_id()` method
+                2. `_is_registered_using_section_id()` method
+        """
+        user = request.user
         video = self.get_object()
-        chapter_id = self.get_chapter_id(video)
-        course_id = Chapter.objects.get(id=chapter_id).course_id
-        check = self._checks(course_id, chapter_id, request.user)
-        if check is True:
-            if video.chapter_id is not None and video.section_id is not None:
-                data = {
-                    "Validation error": """Both chapter and section
-                     fields cannot be empty"""
-                }
-                return Response(data, status.HTTP_400_BAD_REQUEST)
-            if video.chapter_id is None and video.section_id is None:
-                data = {
-                    "Validation error": """Atleast one of
-                    chapter and section fields must be given"""
-                }
-                return Response(data, status.HTTP_400_BAD_REQUEST)
-            serializer = self.get_serializer(video, data=request.data, partial=True)
+        if video.chapter_id is None:
+            check, course_id = self._is_registered_using_section_id(
+                video.section_id, user
+            )
+        else:
+            check, course_id = self._is_registered_using_chapter_id(
+                video.chapter_id, user
+            )
+        if check is not True:
+            return check
 
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
-
-        return check
+        serializer = self.get_serializer(video, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        errors = serializer.errors
+        logger.error(errors)
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=["DELETE"])
     def delete_video(self, request, pk):
-        """Delete video with primary key as pk"""
+        """Deletes the video with id as pk.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): video id
+
+        Returns:
+            `Response` with no data and status HTTP_204_NO_CONTENT.
+
+        Raises:
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
+            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+        """
+        user = request.user
         video = self.get_object()
-        chapter_id = self.get_chapter_id(video)
-        course_id = Chapter.objects.get(id=chapter_id).course_id
-        check = self._checks(course_id, chapter_id, request.user)
-        if check is True:
-            video.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return check
+        if video.chapter_id is None:
+            check, course_id = self._is_registered_using_section_id(
+                video.section_id, user
+            )
+        else:
+            check, course_id = self._is_registered_using_chapter_id(
+                video.chapter_id, user
+            )
+        if check is not True:
+            return check
+
+        video.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -313,20 +313,36 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 class IsOwner(permissions.BasePermission):
     """Permission class for viewsets.
 
-    Applicable for: Course
+    Applicable for: Course, CourseHistory
 
     Allows:
         1. complete permissions to instructor
     """
 
+    def _get_user_from_object(self, obj):
+        """get user from object instance
+
+        Args:
+            obj : Model objects (like CourseHistory)
+
+        Returns:
+            user: User model object
+        """
+        if type(obj) == CourseHistory:
+            user = obj.user
+        elif type(obj) == Course:
+            user = obj.owner
+        elif type(obj) == DiscussionThread:
+            user = obj.author
+        return user
+
     def has_object_permission(self, request, view, obj):
         """
         Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
         """
-        if type(obj) in (Course,):
-            owner = obj.owner
-        elif type(obj) in (DiscussionThread,):
-            owner = obj.author
-        if request.user.is_authenticated and owner == request.user:
-            return True
+        if request.user.is_authenticated:
+            if request.method in permissions.SAFE_METHODS:
+                return True
+            elif self._get_user_from_object(obj) == request.user:
+                return True
         return False

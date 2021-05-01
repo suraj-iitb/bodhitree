@@ -1,0 +1,7 @@
+- model: discussion_forum.tag
+  pk: 1
+  fields:
+    discussion_forum: 1
+    content_id: 1
+    content_type: D
+    tag_name: Document tag

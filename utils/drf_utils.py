@@ -5,6 +5,7 @@ from rest_framework.pagination import PageNumberPagination
 from course.models import (
     Announcement,
     Chapter,
+    Course,
     CourseHistory,
     Notification,
     Page,
@@ -322,6 +323,10 @@ class IsOwner(permissions.BasePermission):
         """
         Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
         """
-        if request.user.is_authenticated and obj.owner == request.user:
+        if type(obj) in (Course,):
+            owner = obj.owner
+        elif type(obj) in (DiscussionThread,):
+            owner = obj.author
+        if request.user.is_authenticated and owner == request.user:
             return True
         return False

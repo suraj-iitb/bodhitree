@@ -13,8 +13,7 @@
     discussion_forum: 1
     title: DiscussionThreadBegins
     mark_as_important: false
-    tag: []
-    tags: ["id":1, "discussion_forum":1, "content_id":1, "content_type": 'D', "tag_name": "Document tag"]
+    tag: [1]
 - model: discussion_forum.discussionthread
   pk: 2
   fields:

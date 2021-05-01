@@ -5,11 +5,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from course.models import Course
-from utils.utils import check_course_registration
 from utils.drf_utils import (
     IsInstructorOrTAOrStudent,
+    IsOwner,
     StandardResultsSetPagination,
 )
+from utils.utils import check_course_registration
 
 from .models import (
     DiscussionComment,
@@ -53,9 +54,6 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet):
             HTTP_404_NOT_FOUND: Raised if:
                 1. The course does not exist
                 2. The user is not registered in the course
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_403_FORBIDDEN: Raised by:
-                1. `IsInstructorOrTAOrStudent` permission class
         """
         try:
             course = Course.objects.get(id=course_id)
@@ -72,44 +70,8 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet):
                 ),
             }
             return Response(data, status.HTTP_404_NOT_FOUND)
+
         return True
-
-
-    def _discussion_thread_update_check(self, discussion_thread_id, user):
-        """Checks if the user can update a discussion thread
-
-        Args:
-            discussion_thread_id: discussion thread id
-            user (User): `User` model object
-
-        Returns:
-            A bool value representing whether the user can update a discussion_thread
-            
-        Raises:
-
-        """
-        try:
-            discussion_thread = DiscussionThread.objects.select_related("author").get(
-                id=discussion_thread_id
-            )
-        except DiscussionThread.DoesNotExist as e:
-            logger.exception(e)
-            data = {
-                "error": "DiscussionThread with id: {} does not exist".format(
-                    discussion_thread_id
-                ),
-            }
-            return Response(data, status.HTTP_404_NOT_FOUND)
-
-        if discussion_thread.author == user:
-            return True
-        data = {
-            "error": "User: {} is not permitted to update the discussion"
-            " thread with: {}".format(
-                user, discussion_thread_id
-            ),
-        }
-        return Response(data, status.HTTP_403_FORBIDDEN)
 
     @action(detail=False, methods=["POST"])
     def create_discussion_thread(self, request):
@@ -117,7 +79,6 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet):
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): Primary key of the discussion_forum
 
         Returns:
             `Response` with the created discussion thread data and
@@ -126,6 +87,9 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet):
         Raises:
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
+                                   permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
         """
         user = request.user
         discussion_forum = request.data["discussion_forum"]
@@ -136,22 +100,12 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet):
 
         serializer = self.get_serializer(data=request.data)
 
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        # if serializer.is_valid():
-        #     try:
-        #         serializer.save()
-        #     except IntegrityError as e:
-        #         logger.exception(e)
-        #         data = {
-        #             "error": "Chapter with title '{}' already exists.".format(
-        #                 serializer.initial_data["title"]
-        #             )
-        #         }
-        #         return Response(data, status=status.HTTP_403_FORBIDDEN)
-        #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        errors = serializer.errors
+        logger.error(errors)
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=["GET"])
     def list_discussion_threads(self, request, pk):
@@ -168,6 +122,9 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet):
 
         Raises:
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
+                                              permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
         """
         check = self._is_registered(pk, request.user)
         if check is not True:
@@ -194,6 +151,9 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet):
 
         Raises:
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
+                                   permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
         """
         discussion_thread = self.get_object()
         discussion_forum_id = discussion_thread.discussion_forum.id
@@ -201,7 +161,9 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet):
             course_id = DiscussionForum.objects.get(id=discussion_forum_id).course.id
         except DiscussionForum.DoesNotExist:
             data = {
-                "error": "DiscussionForum with id: {} does not exist".format(discussion_forum_id),
+                "error": "DiscussionForum with id: {} does not exist".format(
+                    discussion_forum_id
+                ),
             }
             return Response(data, status.HTTP_404_NOT_FOUND)
         check = self._is_registered(course_id, request.user)
@@ -211,21 +173,34 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(discussion_thread)
         return Response(serializer.data)
 
-
-    @action(detail=True, methods=["PUT", "PATCH"])
+    @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
     def update_discussion_thread(self, request, pk):
-        """Updates a discussion_thread with id as pk."""
-        check = self._discussion_thread_update_check(pk, request.user)
-        if check is not True:
-            return check
+        """Updates a discussion_thread with id as pk.
 
-       
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): Primary key of the discussion_thread
+
+        Returns:
+            `Response` with the updated discussion_thread data and status HTTP_200_OK
+
+        Raises:
+            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
+                                   permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
+            HTTP_404_NOT_FOUND: Raised if the discussion thread does not exist
+        """
         serializer = self.get_serializer(
             self.get_object(), data=request.data, partial=True
         )
-        if serializer.is_valid(raise_exception=True):
+        if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
+
+        errors = serializer.errors
+        logger.error(errors)
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class DiscussionCommentViewSet(viewsets.GenericViewSet):

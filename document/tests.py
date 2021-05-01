@@ -1,6 +1,3 @@
-from io import BytesIO
-
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -9,9 +6,22 @@ from rest_framework.test import APITestCase
 from document.models import Document
 
 
+# These users are created by django fixtures
+# instructor has user id 1
+ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
+# ta has user id 2
+ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
+# student has user id 3
+stu_cred = {"email": "student@bodhitree.com", "password": "student"}
+
+
 class DocumentViewSetTest(APITestCase):
+    """Test for DocumentViewSet"""
+
     fixtures = [
         "users.test.yaml",
+        "departments.test.yaml",
+        "colleges.test.yaml",
         "courses.test.yaml",
         "coursehistories.test.yaml",
         "chapters.test.yaml",
@@ -25,245 +35,245 @@ class DocumentViewSetTest(APITestCase):
     def logout(self):
         self.client.logout()
 
-    @classmethod
-    def setUpTestData(cls):
-        """
-        Set up data for the whole TestCase.
-        """
-        cls.ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
-        cls.ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
-        cls.stu_cred = {"email": "student@bodhitree.com", "password": "student"}
-
-    def get_documents_helper(self):
-        url = reverse("document:document-list-documents", args=[1])
+    def _list_chapter_documents_helper(self):
+        """Helper function to test list all chapter documents functionality."""
+        chapter_id = 1
+        url = reverse("document:document-list-chapter-documents", args=[chapter_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        length = Document.objects.filter(chapter_id=1).count()
-        self.assertEqual(len(response.data), length)
+        no_of_documents = Document.objects.filter(chapter_id=chapter_id).count()
+        self.assertEqual(len(response.data), no_of_documents)
 
-    def test_get_documents(self):
-        """
-        Ensure we can get all Docuemnts objects.
-        """
-        self.login(**self.ins_cred)
-        self.get_documents_helper()
+    def test_list_chapter_documents(self):
+        """Test to check: list all chapter videos."""
+        self.login(**ins_cred)
+        self._list_chapter_documents_helper()
         self.logout()
-        self.login(**self.ta_cred)
-        self.get_documents_helper()
+        self.login(**ta_cred)
+        self._list_chapter_documents_helper()
         self.logout()
-        self.login(**self.stu_cred)
-        self.get_documents_helper()
+        self.login(**stu_cred)
+        self._list_chapter_documents_helper()
         self.logout()
 
-    def get_documents_helper_section(self):
-        url = reverse("document:document-list-documents-per-section", args=[1])
+    def _list_section_documents_helper(self):
+        """Helper function to test list all chapter documents functionality."""
+        section_id = 1
+        url = reverse("document:document-list-section-documents", args=[1])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        length = Document.objects.filter(section_id=1).count()
-        self.assertEqual(len(response.data), length)
+        no_of_documents = Document.objects.filter(section_id=section_id).count()
+        self.assertEqual(len(response.data), no_of_documents)
 
-    def test_get_documents_per_section(self):
-        """
-        Ensure we can get all Docuemnts objects of section
-        """
-        self.login(**self.ins_cred)
-        self.get_documents_helper_section()
+    def test_list_section_documents(self):
+        """Test to check: list all section videos."""
+        self.login(**ins_cred)
+        self._list_section_documents_helper()
         self.logout()
-        self.login(**self.ta_cred)
-        self.get_documents_helper_section()
+        self.login(**ta_cred)
+        self._list_section_documents_helper()
         self.logout()
-        self.login(**self.stu_cred)
-        self.get_documents_helper_section()
+        self.login(**stu_cred)
+        self._list_section_documents_helper()
         self.logout()
 
-    def get_document_helper(self, doc_id):
-        url = reverse(
-            "document:document-retrieve-document",
-            kwargs={"pk": doc_id},
-        )
+    def _retrieve_document_helper(self):
+        """Helper function to test retrieve the document functionality."""
+        document_id = 1
+        url = reverse("document:document-retrieve-document", args=[document_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["id"], doc_id)
+        self.assertEqual(response.data["id"], document_id)
 
-    def test_get_document(self):
-        """
-        Ensure we can get one document object.
-        """
-        doc_id = 1
-        self.login(**self.ins_cred)
-        self.get_document_helper(doc_id)
+    def test_retrieve_document(self):
+        """Test to check: retrieve the document."""
+        self.login(**ins_cred)
+        self._retrieve_document_helper()
         self.logout()
-        self.login(**self.ta_cred)
-        self.get_document_helper(doc_id)
+        self.login(**ta_cred)
+        self._retrieve_document_helper()
         self.logout()
-        self.login(**self.stu_cred)
-        self.get_document_helper(doc_id)
+        self.login(**stu_cred)
+        self._retrieve_document_helper()
         self.logout()
 
-    def create_document_helper(self, title, status_code):
+    def _get_in_memory_file(self, input_file_path, output_file_name):
+        file_content = open(input_file_path, "rb").read()
+        file_content = b"file_content"
+        in_memory_file = SimpleUploadedFile(output_file_name, file_content)
+        return in_memory_file
+
+    def _create_document_helper(self, title, status_code):
+        """Helper function to test create document functionality.
+
+        Args:
+            title (str): title of the document
+            status_code (int): expected status code of the API call
+        """
+        chapter_id = 1
+        # Document file
         doc_file_path = "main/test_data/doc/eye-of-the-tiger-workout.pdf"
-        doc_content = open(doc_file_path, "rb").read()
-        doc_content = b"doc_content"
-        doc = BytesIO(doc_content)
-        doc.name = "doc.pdf"
+        output_file_name = "doc.pdf"
+        in_memory_doc_file = self._get_in_memory_file(doc_file_path, output_file_name)
+
         data = {
-            "chapter": 1,
+            "chapter": chapter_id,
             "section": "",
             "title": title,
-            "doc_file": doc,
-            "description": "This is the doc description",
+            "doc_file": in_memory_doc_file,
+            "description": "this is the document description",
         }
-        url = reverse("document:document-create-document", args=[1])
+        url = reverse("document:document-create-document")
         response = self.client.post(url, data, format="multipart")
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_201_CREATED:
-            return_data = response.data
-            for k in ["created_on", "modified_on", "id", "doc_file", "section"]:
-                return_data.pop(k)
-            for k in ["doc_file", "section"]:
-                data.pop(k)
-            self.assertEqual(return_data, data)
+            response_data = response.data
+            self.assertEqual(response_data["chapter"], data["chapter"])
+            self.assertEqual(response_data["title"], data["title"])
+            self.assertEqual(response_data["description"], data["description"])
 
     def test_create_document(self):
-        """
-        Ensure we can create a new 'document' object
-        """
-        self.client.login(**self.ins_cred)
-        self.create_document_helper("document3", status.HTTP_201_CREATED)
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.create_document_helper("document4", status.HTTP_201_CREATED)
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.create_document_helper("document5", status.HTTP_403_FORBIDDEN)
-        self.client.logout()
+        """Test to check: create a document."""
+        self.login(**ins_cred)
+        self._create_document_helper("Document 3", status.HTTP_201_CREATED)
+        self.logout()
+        self.login(**ta_cred)
+        self._create_document_helper("Document 4", status.HTTP_201_CREATED)
+        self.logout()
+        self.login(**stu_cred)
+        self._create_document_helper("Document 5", status.HTTP_403_FORBIDDEN)
+        self.logout()
 
-    def update_documents_helper(self, title, status_code):
-        document_file_path = "main/test_data/doc/eye-of-the-tiger-workout.pdf"
-        document_content = open(document_file_path, "rb").read()
-        _file = SimpleUploadedFile("doc.pdf", b"document_content")
-        document1 = Document(
-            title="document77",
-            chapter_id=1,
-            doc_file=_file,
+    def _update_document_helper(self, title, status_code):
+        """Helper function to test update document functionality.
+
+        Args:
+            title (str): title of the document
+            status_code (int): expected status code of the API call
+        """
+        chapter_id = 1
+        # Document file
+        doc_file_path = "main/test_data/doc/eye-of-the-tiger-workout.pdf"
+        output_file_name = "doc.pdf"
+        in_memory_doc_file = self._get_in_memory_file(doc_file_path, output_file_name)
+
+        document = Document(
+            title="Document 6",
+            chapter_id=chapter_id,
+            doc_file=in_memory_doc_file,
         )
-        document1.save()
-        document_content = open(document_file_path, "rb").read()
-        document_content = b"document_content"
-        _file = SimpleUploadedFile("doc.pdf", document_content)
+        document.save()
+
+        # Document file
+        in_memory_doc_file = self._get_in_memory_file(doc_file_path, output_file_name)
+
         data = {
             "title": title,
-            "chapter": 1,
-            "doc_file": _file,
-            "description": "This is the doc description",
+            "chapter": chapter_id,
+            "doc_file": in_memory_doc_file,
+            "description": "This is the video description",
         }
-        url = reverse(
-            ("document:document-update-document"), kwargs={"pk": document1.id}
-        )
+
+        url = reverse(("document:document-update-document"), args=[document.id])
         response = self.client.put(url, data, format="multipart")
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
-            return_data = response.data
-            for k in ["created_on", "modified_on", "id", "doc_file", "section"]:
-                return_data.pop(k)
-            for k in ["doc_file"]:
-                data.pop(k)
-            self.assertEqual(return_data, data)
+            response_data = response.data
+            self.assertEqual(response_data["title"], data["title"])
+            self.assertEqual(response_data["description"], data["description"])
+            self.assertEqual(response_data["chapter"], data["chapter"])
 
-    def test_update_documents(self):
-        """
-        Ensure we can update an existing document object.
-        """
-        self.client.login(**self.ins_cred)
-        self.update_documents_helper("document78", status.HTTP_200_OK)
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.update_documents_helper("document79", status.HTTP_200_OK)
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.update_documents_helper("document80", status.HTTP_403_FORBIDDEN)
-        self.client.logout()
+    def test_update_document(self):
+        """Test to check: update a document."""
+        self.login(**ins_cred)
+        self._update_document_helper("Document 7", status.HTTP_200_OK)
+        self.logout()
+        self.login(**ta_cred)
+        self._update_document_helper("Document 8", status.HTTP_200_OK)
+        self.logout()
+        self.login(**stu_cred)
+        self._update_document_helper("Document 9", status.HTTP_403_FORBIDDEN)
+        self.logout()
 
-    def partial_update_helper(self, title, status_code):
-        document_file_path = "main/test_data/doc/eye-of-the-tiger-workout.pdf"
-        document_content = open(document_file_path, "rb").read()
-        _file = SimpleUploadedFile("doc.pdf", b"document_content")
-        document1 = Document(
-            title="document77",
-            chapter_id=1,
-            doc_file=_file,
+    def _partial_update_document_helper(self, title, status_code):
+        """Helper function to test partial update document functionality.
+
+        Args:
+            title (str): title of the document
+            status_code (int): expected status code of the API call
+        """
+        chapter_id = 1
+        # Document file
+        doc_file_path = "main/test_data/doc/eye-of-the-tiger-workout.pdf"
+        output_file_name = "doc.pdf"
+        in_memory_doc_file = self._get_in_memory_file(doc_file_path, output_file_name)
+
+        document = Document(
+            title="Document 6",
+            chapter_id=chapter_id,
+            doc_file=in_memory_doc_file,
         )
-        document1.save()
-        document_content = open(document_file_path, "rb").read()
-        document_content = b"document_content"
-        _file = SimpleUploadedFile("doc.pdf", document_content)
+        document.save()
+
         data = {
             "title": title,
-            "description": "This is the section description",
+            "description": "This is the video description",
         }
-        url = reverse(
-            ("document:document-update-document"), kwargs={"pk": document1.id}
-        )
-        response = self.client.put(url, data, format="multipart")
+
+        url = reverse(("document:document-update-document"), args=[document.id])
+        response = self.client.patch(url, data, format="multipart")
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
-            return_data = response.data
-            for k in [
-                "created_on",
-                "modified_on",
-                "id",
-                "doc_file",
-                "section",
-                "chapter",
-            ]:
-                return_data.pop(k)
-            self.assertEqual(return_data, data)
+            response_data = response.data
+            self.assertEqual(response_data["title"], data["title"])
+            self.assertEqual(response_data["description"], data["description"])
 
     def test_partial_update_document(self):
-        """
-        Ensure we can partially update an existing Document object.
-        """
-        self.client.login(**self.ins_cred)
-        self.partial_update_helper("Document78", status.HTTP_200_OK)
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.partial_update_helper("Document79", status.HTTP_200_OK)
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.partial_update_helper("Document80", status.HTTP_403_FORBIDDEN)
-        self.client.logout()
+        """Test to check: update a document."""
+        self.login(**ins_cred)
+        self._partial_update_document_helper("Document 10", status.HTTP_200_OK)
+        self.logout()
+        self.login(**ta_cred)
+        self._partial_update_document_helper("Document 11", status.HTTP_200_OK)
+        self.logout()
+        self.login(**stu_cred)
+        self._partial_update_document_helper("Document 12", status.HTTP_403_FORBIDDEN)
+        self.logout()
 
-    def delete_document_helper(self, title, status_code):
-        document_file_path = "main/test_data/doc/eye-of-the-tiger-workout.pdf"
-        document_content = open(document_file_path, "rb").read()
-        document_content = b"document_content"
-        _file = SimpleUploadedFile("doc.pdf", document_content)
-        document1 = Document(
-            title="document77",
-            chapter_id=1,
-            doc_file=_file,
+    def _delete_document_helper(self, title, status_code):
+        """Helper function to test delete document functionality
+
+        Args:
+            title (str): title of the document
+            status_code (int): expected status code of the API call
+        """
+        # Video file
+        chapter_id = 1
+        doc_file_path = "main/test_data/doc/eye-of-the-tiger-workout.pdf"
+        output_file_name = "doc.pdf"
+        in_memory_doc_file = self._get_in_memory_file(doc_file_path, output_file_name)
+
+        document = Document(
+            title="Document 6",
+            chapter_id=chapter_id,
+            doc_file=in_memory_doc_file,
         )
-        document1.save()
-        url = reverse(
-            ("document:document-delete-document"), kwargs={"pk": document1.id}
-        )
+        document.save()
+
+        url = reverse("document:document-delete-document", args=[document.id])
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
-        try:
-            Document.objects.get(id=document1.id)
-        except ObjectDoesNotExist:
-            self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_204_NO_CONTENT:
+            self.assertEqual(Document.objects.filter(id=document.id).count(), 0)
 
     def test_delete_document(self):
-        """
-        Ensure we can delete an existing document object.
-        """
-        self.client.login(**self.ins_cred)
-        self.delete_document_helper("document98", status.HTTP_204_NO_CONTENT)
-        self.client.logout()
-        self.client.login(**self.ta_cred)
-        self.delete_document_helper("document99", status.HTTP_204_NO_CONTENT)
-        self.client.logout()
-        self.client.login(**self.stu_cred)
-        self.delete_document_helper("document100", status.HTTP_403_FORBIDDEN)
-        self.client.logout()
+        """Test to check: delete the document."""
+        self.login(**ins_cred)
+        self._delete_document_helper("Document 13", status.HTTP_204_NO_CONTENT)
+        self.logout()
+        self.login(**ta_cred)
+        self._delete_document_helper("Document 14", status.HTTP_204_NO_CONTENT)
+        self.logout()
+        self.login(**stu_cred)
+        self._delete_document_helper("Document 15", status.HTTP_403_FORBIDDEN)
+        self.logout()

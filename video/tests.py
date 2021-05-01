@@ -157,7 +157,7 @@ class VideoViewSetTest(APITestCase):
         """Helper function to test update video functionality.
 
         Args:
-            title (str): title of the course
+            title (str): title of the video
             status_code (int): expected status code of the API call
         """
         chapter_id = 1
@@ -203,7 +203,7 @@ class VideoViewSetTest(APITestCase):
             self.assertEqual(response_data["description"], data["description"])
             self.assertEqual(response_data["chapter"], data["chapter"])
 
-    def test_update_videos(self):
+    def test_update_video(self):
         """Test to check: update a video."""
         self.login(**ins_cred)
         self._update_video_helper("Video 7", status.HTTP_200_OK)
@@ -267,7 +267,7 @@ class VideoViewSetTest(APITestCase):
         """Helper function to test delete video functionality
 
         Args:
-            title (str): title of the course
+            title (str): title of the video
             status_code (int): expected status code of the API call
         """
         # Video file

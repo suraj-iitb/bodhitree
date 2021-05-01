@@ -11,4 +11,30 @@
     created_on: 2021-04-30 06:38:34.243999+00:00
     modified_on: 2021-04-30 06:38:34.244026+00:00
     discussion_comment: 1
-    
+- model: discussion_forum.discussionreply
+  pk: 2
+  fields:
+    author: 2
+    author_category: T
+    description: Discussion reply description is here
+    pinned: false
+    anonymous_to_student: false
+    upvote: 0
+    downvote: 0
+    created_on: 2021-04-30 06:38:34.243999+00:00
+    modified_on: 2021-04-30 06:38:34.244026+00:00
+    discussion_comment: 1
+- model: discussion_forum.discussionreply
+  pk: 3
+  fields:
+    author: 3
+    author_category: S
+    description: Discussion reply description is here
+    pinned: false
+    anonymous_to_student: false
+    upvote: 0
+    downvote: 0
+    created_on: 2021-04-30 06:38:34.243999+00:00
+    modified_on: 2021-04-30 06:38:34.244026+00:00
+    discussion_comment: 1
+

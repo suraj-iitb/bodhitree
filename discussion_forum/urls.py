@@ -11,9 +11,9 @@ from .api import (
 app_name = "discussion_forum"
 
 router = routers.DefaultRouter()
-router.register(r"discussionthreads", DiscussionThreadViewSet)
-router.register(r"discussioncomments", DiscussionCommentViewSet)
-router.register(r"discussionreplies", DiscussionReplyViewSet)
+router.register(r"discussion_threads", DiscussionThreadViewSet)
+router.register(r"discussion_comments", DiscussionCommentViewSet)
+router.register(r"discussion_replies", DiscussionReplyViewSet)
 
 urlpatterns = [
     path("api/", include(router.urls)),

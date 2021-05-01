@@ -6,6 +6,8 @@ from .models import DiscussionComment, DiscussionReply, DiscussionThread
 
 
 ins_cred = {"email": "instructor@bodhitree.com", "password": "instructor"}
+ta_cred = {"email": "ta@bodhitree.com", "password": "ta"}
+stu_cred = {"email": "student@bodhitree.com", "password": "student"}
 
 
 class DiscussionThreadViewSetTest(APITestCase):
@@ -21,14 +23,13 @@ class DiscussionThreadViewSetTest(APITestCase):
 
     def _list_discussion_threads_helper(self):
         """helper function to test list discussion threads functionality."""
-
+        discussion_forum_id = 1
         url = reverse(
-            "discussion_forum:discussionthread-list-discussion-threads", args=[1]
+            "discussion_forum:discussionthread-list-discussion-threads", args=discussion_forum_id
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        length = DiscussionThread.objects.all().count()
-        self.assertEqual(len(response.data), length)
+        self.assertEqual(len(response.data), DiscussionThread.objects.all().count())
 
     def test_list_discussion_threads(self):
         """
@@ -37,13 +38,19 @@ class DiscussionThreadViewSetTest(APITestCase):
         self.client.login(**ins_cred)
         self._list_discussion_threads_helper()
         self.client.logout()
+        self.client.login(**ta_cred)
+        self._list_discussion_threads_helper()
+        self.client.logout()
+        self.client.login(**stu_cred)
+        self._list_discussion_threads_helper()
+        self.client.logout()
 
-    def _retrieve_discussion_thread_helper(self, discussion_thread_id):
+    def _retrieve_discussion_thread_helper(self):
         """helper function to test retrive discussion thread functionality."""
-
+        discussion_thread_id = 1
         url = reverse(
             "discussion_forum:discussionthread-retrieve-discussion-thread",
-            kwargs={"pk": discussion_thread_id},
+            args = [discussion_thread_id],
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -53,19 +60,23 @@ class DiscussionThreadViewSetTest(APITestCase):
         """
         Test to check: retrieve discussion_thread.
         """
-        discussion_thread_id = 1
         self.client.login(**ins_cred)
-        self._retrieve_discussion_thread_helper(discussion_thread_id)
+        self._retrieve_discussion_thread_helper()
+        self.client.logout()
+        self.client.login(**ta_cred)
+        self._retrieve_discussion_thread_helper()
+        self.client.logout()
+        self.client.login(**stu_cred)
+        self._retrieve_discussion_thread_helper()
         self.client.logout()
 
     def _create_discussion_thread_helper(self, title, status_code):
         """helper function to test create discussion thread functionality.
 
         Args:
-        title (str): title of the discussion thread
-        status_code (int): expected status code of the API call
+            title (str): title of the discussion thread
+            status_code (int): expected status code of the API call
         """
-
         data = {
             "discussion_forum": 1,
             "title": title,
@@ -84,40 +95,36 @@ class DiscussionThreadViewSetTest(APITestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_201_CREATED:
-            return_data = response.data
-            for k in [
+            response_data = response.data
+            for field in [
                 "created_on",
                 "modified_on",
                 "id",
                 "tag",
             ]:
-                return_data.pop(k)
-            self.assertEqual(return_data, data)
+                response_data.pop(k)
+            self.assertEqual(response_data, data)
 
     def test_create_discussion_thread(self):
-        """
-        test to check: create a discussion thread.
-        """
+        """Test to check: create a discussion thread."""
         self.client.login(**ins_cred)
-        self._create_discussion_thread_helper("Thread1", status.HTTP_201_CREATED)
+        self._create_discussion_thread_helper("DiscussionThread 1", status.HTTP_201_CREATED)
+        self.client.logout()
+        self.client.login(**ta_cred)
+        self._create_discussion_thread_helper("DiscussionThread 2", status.HTTP_201_CREATED)
+        self.client.logout()
+        self.client.login(**stu_cred)
+        self._create_discussion_thread_helper("DiscussionThread 3", status.HTTP_201_CREATED)
         self.client.logout()
 
-    def _update_discussion_thread_helper(self, title, status_code):
+    def _update_discussion_thread_helper(self, title, status_code, discussion_thread_id):
         """
         Helper function to test update discussion thread functionality.
 
         Args:
-        status_code (int): expected status code of the API call
-        title (str): title of the discussion thread
+            status_code (int): expected status code of the API call
+            title (str): title of the discussion thread
         """
-
-        discussion_thread1 = DiscussionThread(
-            title="DiscussionThread77",
-            discussion_forum_id=1,
-            author_id=1,
-            author_category="I",
-        )
-        discussion_thread1.save()
         data = {
             "discussion_forum": 1,
             "title": title,
@@ -132,28 +139,40 @@ class DiscussionThreadViewSetTest(APITestCase):
         }
         url = reverse(
             ("discussion_forum:discussionthread-update-discussion-thread"),
-            kwargs={"pk": discussion_thread1.id},
+            args=[discussion_thread_id],
         )
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
-            return_data = response.data
-            for k in [
+            response_data = response.data
+            for field in [
                 "created_on",
                 "modified_on",
                 "id",
                 "tag",
             ]:
-                return_data.pop(k)
-            self.assertEqual(return_data, data)
+                response_data.pop(k)
+            self.assertEqual(response_data, data)
 
     def test_update_discussion_thread(self):
         """
         Test to check: Update discussion thread functionality.
         """
-
+        discussion_thread1 = DiscussionThread(
+            title="DiscussionThread 4",
+            discussion_forum_id=1,
+            author_id=1,
+            author_category="I",
+        )
+        discussion_thread1.save()
         self.client.login(**ins_cred)
-        self._update_discussion_thread_helper("DiscussionThread78", status.HTTP_200_OK)
+        self._update_discussion_thread_helper("DiscussionThread 5", status.HTTP_200_OK, discussion_thread1.id)
+        self.client.logout()
+        self.client.login(**ta_cred)
+        self._update_discussion_thread_helper("DiscussionThread 6", status.HTTP_200_OK, discussion_thread1.id)
+        self.client.logout()
+        self.client.login(**stu_cred)
+        self._update_discussion_thread_helper("DiscussionThread 7", status.HTTP_200_OK, discussion_thread1.id)
         self.client.logout()
 
     def _partial_update_discussion_thread_helper(self, title, status_code):
@@ -161,12 +180,12 @@ class DiscussionThreadViewSetTest(APITestCase):
         Helper function to test partial update discussion thread functionality.
 
         Args:
-        status_code (int): expected status code of the API call
-        title (str): title of the discussion thread
+            status_code (int): expected status code of the API call
+            title (str): title of the discussion thread
         """
 
         discussion_thread1 = DiscussionThread(
-            title="DiscussionThread79",
+            title="DiscussionThread 8",
             discussion_forum_id=1,
             author_id=1,
             author_category="I",
@@ -183,23 +202,23 @@ class DiscussionThreadViewSetTest(APITestCase):
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
             return_data = response.data
-            for k in [
-                "discussion_forum",
-                "mark_as_important",
-                "author",
-                "author_category",
-                "description",
-                "pinned",
-                "anonymous_to_student",
-                "upvote",
-                "downvote",
-                "created_on",
-                "modified_on",
-                "id",
-                "tag",
-            ]:
-                return_data.pop(k)
-            self.assertEqual(return_data, data)
+            # for k in [
+            #     "discussion_forum",
+            #     "mark_as_important",
+            #     "author",
+            #     "author_category",
+            #     "description",
+            #     "pinned",
+            #     "anonymous_to_student",
+            #     "upvote",
+            #     "downvote",
+            #     "created_on",
+            #     "modified_on",
+            #     "id",
+            #     "tag",
+            # ]:
+            #     return_data.pop(k)
+            self.assertEqual(return_data["title"], data["title"])
 
     def test_partial_update_discussion_thread(self):
         """
@@ -207,7 +226,17 @@ class DiscussionThreadViewSetTest(APITestCase):
         """
         self.client.login(**ins_cred)
         self._partial_update_discussion_thread_helper(
-            "DiscussionThread78", status.HTTP_200_OK
+            "DiscussionThread 9", status.HTTP_200_OK
+        )
+        self.client.logout()
+        self.client.login(**ta_cred)
+        self._partial_update_discussion_thread_helper(
+            "DiscussionThread 10", status.HTTP_200_OK
+        )
+        self.client.logout()
+        self.client.login(**stu_cred)
+        self._partial_update_discussion_thread_helper(
+            "DiscussionThread 11", status.HTTP_200_OK
         )
         self.client.logout()
 

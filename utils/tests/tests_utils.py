@@ -52,18 +52,21 @@ class TestGetCourseFolder(TestCase):
 class TestGetAssignmentFolder(TestCase):
     """Test for `get_assignment_folder()` function"""
 
+    def setUp(self):
+        # Mocking of Assignment
+        self.assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
+        self.assignment_mock.id = 1
+        self.assignment_mock.name = "   Assignment 1 "
+
     def test_get_assignment_folder_for_programming(self):
         """Test for `get_assignment_folder()` function for programming"""
-        # Mocking of Assignment
-        assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
-        assignment_mock.id = 1
-        assignment_mock.name = "   Assignment 1 "
+        actual_assignment_folder = get_assignment_folder(
+            self.assignment_mock, "programming"
+        )
 
-        actual_assignment_folder = get_assignment_folder(assignment_mock, "programming")
-
-        assignment_mock.name = assignment_mock.name.strip().replace(" ", "_")
+        self.assignment_mock.name = self.assignment_mock.name.strip().replace(" ", "_")
         expected_assignment_folder = "{}.{}".format(
-            assignment_mock.id, assignment_mock.name
+            self.assignment_mock.id, self.assignment_mock.name
         )
         expected_assignment_folder = os.path.join(
             "programming_assignment", expected_assignment_folder
@@ -73,16 +76,13 @@ class TestGetAssignmentFolder(TestCase):
 
     def test_get_assignment_folder_for_subjective(self):
         """Test for `get_assignment_folder()` function for subjective"""
-        # Mocking of Assignment
-        assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
-        assignment_mock.id = 1
-        assignment_mock.name = "   Assignment 1    "
+        actual_assignment_folder = get_assignment_folder(
+            self.assignment_mock, "subjective"
+        )
 
-        actual_assignment_folder = get_assignment_folder(assignment_mock, "subjective")
-
-        assignment_mock.name = assignment_mock.name.strip().replace(" ", "_")
+        self.assignment_mock.name = self.assignment_mock.name.strip().replace(" ", "_")
         expected_assignment_folder = "{}.{}".format(
-            assignment_mock.id, assignment_mock.name
+            self.assignment_mock.id, self.assignment_mock.name
         )
         expected_assignment_folder = os.path.join(
             "subjective_assignment", expected_assignment_folder

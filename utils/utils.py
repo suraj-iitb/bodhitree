@@ -38,7 +38,7 @@ def get_assignment_folder(assignment, assignment_type):
         A assignment folder name.
     """
     assignment_id = assignment.id
-    assignment_name = assignment.name.replace(" ", "_")
+    assignment_name = assignment.name.strip().replace(" ", "_")
     assignment_folder = "{}.{}".format(assignment_id, assignment_name)
     if assignment_type == "programming":
         return os.path.join("programming_assignment", assignment_folder)

@@ -47,20 +47,22 @@ def get_assignment_folder(assignment, assignment_type):
 
 
 def get_assignment_file_upload_path(assignment, assignment_type, sub_folder, filename):
-    """Gives path to upload the assignment file (Both Programming & Subjective).
+    """Gets path to upload the assignment files (both programming & subjective).
 
     Args:
         assignment (Assignment): `Assignment` model instance
-        assignment_type (str): "programming" or "subjective"
+        assignment_type (str): Assignment type ("programming" or "subjective")
         sub_folder (str): "submission_files" or "question_files" or "testcase_files"
-        filename (str): name of the file
+        filename (str): name of a file
 
     Returns:
-        A path to upload the assignment file.
+        A path to upload a assignment file.
     """
     course_folder = get_course_folder(assignment.course)
     assignment_folder = get_assignment_folder(assignment, assignment_type)
-    return os.path.join(course_folder, assignment_folder, sub_folder, filename)
+    return os.path.join(
+        course_folder, assignment_folder, sub_folder.strip(), filename.strip()
+    )
 
 
 def check_course_registration(course_id, user):

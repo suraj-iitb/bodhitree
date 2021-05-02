@@ -5,7 +5,11 @@ from django.test import TestCase
 
 from course.models import Course
 from programming_assignments.models import Assignment
-from utils.utils import get_assignment_folder, get_course_folder
+from utils.utils import (
+    get_assignment_file_upload_path,
+    get_assignment_folder,
+    get_course_folder,
+)
 
 
 class TestGetCourseFolder(TestCase):
@@ -87,3 +91,71 @@ class TestGetAssignmentFolder(TestCase):
         )
 
         self.assertEqual(actual_assignment_folder, expected_assignment_folder)
+
+
+class TestGetAssignmentFileUploadPath(TestCase):
+    """Test for `get_assignment_file_upload_path()` function"""
+
+    def test_get_assignment_file_upload_path_for_programming(self):
+        """Test for `get_assignment_file_upload_path()` function for programming"""
+        assignment_type = "programming"
+        sub_folder = "   question_files"
+        filename = "file.pdf   "
+
+        # Mocking of Course
+        course_mock = mock.MagicMock(spec=Course, name="CourseMock")
+        course_mock.id = 1
+        course_mock.owner = 1
+        course_mock.code = " Code 1      "
+        course_mock.title = "Course  1 "
+        # Mocking of Assignment
+        assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
+        assignment_mock.id = 1
+        assignment_mock.name = "   Assignment 1 "
+        assignment_mock.course = course_mock
+
+        actual_assignment_file_upload_path = get_assignment_file_upload_path(
+            assignment_mock, assignment_type, sub_folder, filename
+        )
+
+        course_folder = get_course_folder(assignment_mock.course)
+        assignment_folder = get_assignment_folder(assignment_mock, assignment_type)
+        expected_assignment_file_upload_path = os.path.join(
+            course_folder, assignment_folder, sub_folder.strip(), filename.strip()
+        )
+
+        self.assertEqual(
+            actual_assignment_file_upload_path, expected_assignment_file_upload_path
+        )
+
+    def test_get_assignment_file_upload_path_for_subjective(self):
+        """Test for `get_assignment_file_upload_path()` function for subjective"""
+        assignment_type = "subjective"
+        sub_folder = "submission_files "
+        filename = " file.pdf"
+
+        # Mocking of Course
+        course_mock = mock.MagicMock(spec=Course, name="CourseMock")
+        course_mock.id = 1
+        course_mock.owner = 1
+        course_mock.code = " Code 1      "
+        course_mock.title = "Course  1 "
+        # Mocking of Assignment
+        assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
+        assignment_mock.id = 1
+        assignment_mock.name = "   Assignment 1 "
+        assignment_mock.course = course_mock
+
+        actual_assignment_file_upload_path = get_assignment_file_upload_path(
+            assignment_mock, assignment_type, sub_folder, filename
+        )
+
+        course_folder = get_course_folder(assignment_mock.course)
+        assignment_folder = get_assignment_folder(assignment_mock, assignment_type)
+        expected_assignment_file_upload_path = os.path.join(
+            course_folder, assignment_folder, sub_folder.strip(), filename.strip()
+        )
+
+        self.assertEqual(
+            actual_assignment_file_upload_path, expected_assignment_file_upload_path
+        )

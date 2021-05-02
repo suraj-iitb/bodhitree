@@ -11,13 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 def get_course_folder(course):
-    """Gives path to the course folder.
+    """Gets a course folder name
 
     Args:
         course (Course): `Course` model instance
 
     Returns:
-        A path to the course folder.
+        A course folder name
     """
     course_id = course.id
     course_code = course.code.replace(" ", "_")

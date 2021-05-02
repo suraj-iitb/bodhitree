@@ -4,12 +4,12 @@ from rest_framework.test import APITestCase
 
 from course.models import Chapter, Course, CourseHistory, Page, Section
 from discussion_forum.models import DiscussionForum
-from utils import test_creds
+from utils import credentials
 
 
-ins_cred = test_creds.ins_cred
-ta_cred = test_creds.ta_cred
-stu_cred = test_creds.stu_cred
+ins_cred = credentials.TEST_INSTRUCTOR_CREDENTIALS
+ta_cred = credentials.TEST_TA_CREDENTIALS
+stu_cred = credentials.TEST_STUDENT_CREDENTIALS
 
 
 class CourseViewSetTest(APITestCase):

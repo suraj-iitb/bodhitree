@@ -95,3 +95,9 @@ class IsInstructorOrTATest(APITestCase):
         self._permisison_helper(request, self.user_permissions)
         self.user_permissions[2][1] = False
         self._permisison_helper(request, self.user_permissions, self.chapter)
+
+    def test_get_course_from_object(self):
+        # TODO: For all possible objects do assertEqual
+        actual_course = self.permission_class._get_course_from_object(self.chapter)
+        expected_course = self.chapter.course
+        self.assertEqual(actual_course, expected_course)

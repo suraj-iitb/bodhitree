@@ -52,11 +52,13 @@ class TestGetCourseFolder(TestCase):
 class TestGetAssignmentFolder(TestCase):
     """Test for `get_assignment_folder()` function"""
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         # Mocking of Assignment
-        self.assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
-        self.assignment_mock.id = 1
-        self.assignment_mock.name = "   Assignment 1 "
+        cls.assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
+        cls.assignment_mock.id = 1
+        cls.assignment_mock.name = "   Assignment 1 "
 
     def test_get_assignment_folder_for_programming(self):
         """Test for `get_assignment_folder()` function for programming"""
@@ -94,30 +96,33 @@ class TestGetAssignmentFolder(TestCase):
 class TestGetAssignmentFileUploadPath(TestCase):
     """Test for `get_assignment_file_upload_path()` function"""
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Mocking of Course
+        cls.course_mock = mock.MagicMock(spec=Course, name="CourseMock")
+        cls.course_mock.id = 1
+        cls.course_mock.owner = 1
+        cls.course_mock.code = " Code 1      "
+        cls.course_mock.title = "Course  1 "
+        # Mocking of Assignment
+        cls.assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
+        cls.assignment_mock.id = 1
+        cls.assignment_mock.name = "   Assignment 1 "
+        cls.assignment_mock.course = cls.course_mock
+
     def test_get_assignment_file_upload_path_for_programming(self):
         """Test for `get_assignment_file_upload_path()` function for programming"""
         assignment_type = "programming"
         sub_folder = "   question_files"
         filename = "file.pdf   "
 
-        # Mocking of Course
-        course_mock = mock.MagicMock(spec=Course, name="CourseMock")
-        course_mock.id = 1
-        course_mock.owner = 1
-        course_mock.code = " Code 1      "
-        course_mock.title = "Course  1 "
-        # Mocking of Assignment
-        assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
-        assignment_mock.id = 1
-        assignment_mock.name = "   Assignment 1 "
-        assignment_mock.course = course_mock
-
         actual_assignment_file_upload_path = get_assignment_file_upload_path(
-            assignment_mock, assignment_type, sub_folder, filename
+            self.assignment_mock, assignment_type, sub_folder, filename
         )
 
-        course_folder = get_course_folder(assignment_mock.course)
-        assignment_folder = get_assignment_folder(assignment_mock, assignment_type)
+        course_folder = get_course_folder(self.assignment_mock.course)
+        assignment_folder = get_assignment_folder(self.assignment_mock, assignment_type)
         expected_assignment_file_upload_path = os.path.join(
             course_folder, assignment_folder, sub_folder.strip(), filename.strip()
         )
@@ -132,24 +137,12 @@ class TestGetAssignmentFileUploadPath(TestCase):
         sub_folder = "submission_files "
         filename = " file.pdf"
 
-        # Mocking of Course
-        course_mock = mock.MagicMock(spec=Course, name="CourseMock")
-        course_mock.id = 1
-        course_mock.owner = 1
-        course_mock.code = " Code 1      "
-        course_mock.title = "Course  1 "
-        # Mocking of Assignment
-        assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
-        assignment_mock.id = 1
-        assignment_mock.name = "   Assignment 1 "
-        assignment_mock.course = course_mock
-
         actual_assignment_file_upload_path = get_assignment_file_upload_path(
-            assignment_mock, assignment_type, sub_folder, filename
+            self.assignment_mock, assignment_type, sub_folder, filename
         )
 
-        course_folder = get_course_folder(assignment_mock.course)
-        assignment_folder = get_assignment_folder(assignment_mock, assignment_type)
+        course_folder = get_course_folder(self.assignment_mock.course)
+        assignment_folder = get_assignment_folder(self.assignment_mock, assignment_type)
         expected_assignment_file_upload_path = os.path.join(
             course_folder, assignment_folder, sub_folder.strip(), filename.strip()
         )

@@ -13,7 +13,7 @@
     discussion_forum: 1
     title: DiscussionThreadBegins
     mark_as_important: false
-    tag: [1]
+    tag: [1, 2]
 - model: discussion_forum.discussionthread
   pk: 2
   fields:

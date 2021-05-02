@@ -45,7 +45,7 @@ class DiscussionThreadViewSet(
 
     @action(detail=False, methods=["POST"])
     def create_discussion_thread(self, request):
-        """Adds a discussion thread to the discussion_forum with primary key as id.
+        """Adds a discussion thread to the discussion_forum.
 
         Args:
             request (Request): DRF `Request` object
@@ -56,20 +56,23 @@ class DiscussionThreadViewSet(
 
         Raises:
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                                    permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
+            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
         user = request.user
         discussion_forum = request.data["discussion_forum"]
-        course_id = DiscussionForum.objects.get(id=discussion_forum).course.id
+        course_id = (
+            DiscussionForum.objects.select_related("course")
+            .get(id=discussion_forum)
+            .course.id
+        )
         check = self._is_registered(course_id, user)
         if check is not True:
             return check
 
         serializer = self.get_serializer(data=request.data)
-
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -91,10 +94,10 @@ class DiscussionThreadViewSet(
              and status HTTP_200_OK
 
         Raises:
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                                               permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
+            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
         check = self._is_registered(pk, request.user)
         if check is not True:
@@ -105,7 +108,6 @@ class DiscussionThreadViewSet(
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-
         serializer = self.get_serializer(discussion_threads, many=True)
         return Response(serializer.data)
 
@@ -121,10 +123,10 @@ class DiscussionThreadViewSet(
             `Response` with the discussion_thread data and status HTTP_200_OK
 
         Raises:
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                                    permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
+            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
         discussion_thread = self.get_object()
         discussion_forum_id = discussion_thread.discussion_forum.id
@@ -157,11 +159,12 @@ class DiscussionThreadViewSet(
             `Response` with the updated discussion_thread data and status HTTP_200_OK
 
         Raises:
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                                    permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised if the discussion thread does not exist
+            HTTP_404_NOT_FOUND: Raised:
+                1. If the discussion thread does not exist
+                2. By `_is_registered()` method
         """
         serializer = self.get_serializer(
             self.get_object(), data=request.data, partial=True
@@ -169,7 +172,6 @@ class DiscussionThreadViewSet(
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-
         errors = serializer.errors
         logger.error(errors)
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)

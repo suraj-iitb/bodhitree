@@ -22,6 +22,7 @@ class DiscussionThreadViewSetTest(APITestCase):
         "documents.test.yaml",
         "courses.test.yaml",
         "coursehistories.test.yaml",
+        "videos.test.yaml",
         "discussionforum.tests.yaml",
         "tags.test.yaml",
         "discussionthread.tests.yaml",
@@ -84,7 +85,7 @@ class DiscussionThreadViewSetTest(APITestCase):
             title (str): title of the discussion thread
             status_code (int): expected status code of the API call
             author_id (int): user id
-            author_category (char): user category
+            author_category (char): user category(inst/stud/ta)
         """
         data = {
             "discussion_forum": 1,
@@ -140,21 +141,21 @@ class DiscussionThreadViewSetTest(APITestCase):
             status_code (int): expected status code of the API call
             title (str): title of the discussion thread
             author_id (int): user id
-            author_category (char): user category
+            author_category (char): user category(inst/stud/ta)
         """
-        discussion_thread1 = DiscussionThread(
+        discussion_thread = DiscussionThread(
             title="DiscussionThread 4",
             discussion_forum_id=1,
             author_id=author_id,
             author_category=author_category,
         )
-        discussion_thread1.save()
+        discussion_thread.save()
         data = {
             "discussion_forum": 1,
             "title": title,
             "mark_as_important": True,
-            "author": 1,
-            "author_category": "I",
+            "author": author_id,
+            "author_category": author_category,
             "description": "Description of discussion thread",
             "pinned": True,
             "anonymous_to_student": True,
@@ -163,7 +164,7 @@ class DiscussionThreadViewSetTest(APITestCase):
         }
         url = reverse(
             ("discussion_forum:discussionthread-update-discussion-thread"),
-            args=[discussion_thread1.id],
+            args=[discussion_thread.id],
         )
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
@@ -208,19 +209,19 @@ class DiscussionThreadViewSetTest(APITestCase):
             author_id (int): user id
             author_category (char): user category
         """
-        discussion_thread1 = DiscussionThread(
+        discussion_thread = DiscussionThread(
             title="DiscussionThread 8",
             discussion_forum_id=1,
             author_id=author_id,
             author_category=author_category,
         )
-        discussion_thread1.save()
+        discussion_thread.save()
         data = {
             "title": title,
         }
         url = reverse(
             ("discussion_forum:discussionthread-update-discussion-thread"),
-            kwargs={"pk": discussion_thread1.id},
+            kwargs={"pk": discussion_thread.id},
         )
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)

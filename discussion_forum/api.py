@@ -129,17 +129,7 @@ class DiscussionThreadViewSet(
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
         discussion_thread = self.get_object()
-        discussion_forum_id = discussion_thread.discussion_forum.id
-        try:
-            course_id = DiscussionForum.objects.get(id=discussion_forum_id).course.id
-        except DiscussionForum.DoesNotExist:
-            data = {
-                "error": "DiscussionForum with id: {} does not exist".format(
-                    discussion_forum_id
-                ),
-            }
-            return Response(data, status.HTTP_404_NOT_FOUND)
-
+        course_id = discussion_thread.discussion_forum.course.id
         check = self._is_registered(course_id, request.user)
         if check is not True:
             return check

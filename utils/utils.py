@@ -11,31 +11,31 @@ logger = logging.getLogger(__name__)
 
 
 def get_course_folder(course):
-    """Gets a course folder name
+    """Gets a course folder name.
 
     Args:
         course (Course): `Course` model instance
 
     Returns:
-        A course folder name
+        A course folder name.
     """
     course_id = course.id
-    course_code = course.code.replace(" ", "_")
-    course_title = course.title.replace(" ", "_")
+    course_code = course.code.strip().replace(" ", "_")
+    course_title = course.title.strip().replace(" ", "_")
     if course_code:
         return "{}.{}:{}".format(course_id, course_code, course_title)
     return "{}.{}".format(course_id, course_title)
 
 
 def get_assignment_folder(assignment, assignment_type):
-    """Gives path to assignment folder.
+    """Gets a assignment folder name.
 
     Args:
         assignment (Assignment): `Assignment` model instance
-        assignment_type (str): "programming" or "subjective"
+        assignment_type (str): Assignment type ("programming" or "subjective")
 
     Returns:
-        A path to the assignment folder.
+        A assignment folder name.
     """
     assignment_id = assignment.id
     assignment_name = assignment.name.replace(" ", "_")

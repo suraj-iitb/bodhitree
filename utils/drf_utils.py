@@ -332,7 +332,7 @@ class IsOwner(permissions.BasePermission):
             user = obj.user
         elif type(obj) == Course:
             user = obj.owner
-        elif type(obj) in (DiscussionThread, DiscussionComment):
+        elif type(obj) in (DiscussionThread, DiscussionComment, DiscussionReply):
             user = obj.author
         return user
 

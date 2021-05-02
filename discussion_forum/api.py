@@ -37,13 +37,10 @@ class DiscussionThreadViewSet(
     serializer_class = DiscussionThreadSerializer
     permission_classes = (IsInstructorOrTAOrStudent,)
     pagination_class = StandardResultsSetPagination
-    filterset_fields = ("title",)
-    search_fields = ("title",)
-    ordering_fields = ("id",)
 
     @action(detail=False, methods=["POST"])
     def create_discussion_thread(self, request):
-        """Adds a discussion thread to the discussion_forum.
+        """Adds a discussion thread to the discussion forum.
 
         Args:
             request (Request): DRF `Request` object
@@ -55,7 +52,7 @@ class DiscussionThreadViewSet(
         Raises:
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                                   permission class
+                permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
@@ -93,11 +90,16 @@ class DiscussionThreadViewSet(
 
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                                              permission class
+                permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        check = self._is_registered(pk, request.user)
+
+        discussion_threads = DiscussionThread.objects.select_related(
+            "discussion_forum__course"
+        ).filter(discussion_forum_id=pk)
+        course_id = discussion_threads[0].discussion_forum.course.id
+        check = self._is_registered(course_id, request.user)
         if check is not True:
             return check
 
@@ -111,22 +113,24 @@ class DiscussionThreadViewSet(
 
     @action(detail=True, methods=["GET"])
     def retrieve_discussion_thread(self, request, pk):
-        """Gets the discussion_thread with primary key as pk.
+        """Gets the discussion thread with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): Primary key of the discussion_thread
+            pk (int): Primary key of the discussion thread
 
         Returns:
             `Response` with the discussion_thread data and status HTTP_200_OK
 
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                                   permission class
+                permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        discussion_thread = self.get_object()
+        discussion_thread = DiscussionThread.objects.select_related(
+            "discussion_forum__course"
+        ).get(id=pk)
         course_id = discussion_thread.discussion_forum.course.id
         check = self._is_registered(course_id, request.user)
         if check is not True:
@@ -137,22 +141,21 @@ class DiscussionThreadViewSet(
 
     @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
     def update_discussion_thread(self, request, pk):
-        """Updates a discussion_thread with id as pk.
+        """Updates a discussion thread with id as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): Primary key of the discussion_thread
+            pk (int): Primary key of the discussion thread
 
         Returns:
-            `Response` with the updated discussion_thread data and status HTTP_200_OK
+            `Response` with the updated discussion thread data and status HTTP_200_OK
 
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                                   permission class
+                permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised:
-                1. If the discussion thread does not exist
-                2. By `_is_registered()` method
+                1. By `_is_registered()` method
         """
         serializer = self.get_serializer(
             self.get_object(), data=request.data, partial=True
@@ -174,11 +177,10 @@ class DiscussionCommentViewSet(
     queryset = DiscussionComment.objects.all()
     serializer_class = DiscussionCommentSerializer
     permission_classes = (IsInstructorOrTAOrStudent,)
-    ordering_fields = ("id",)
 
     @action(detail=False, methods=["POST"])
     def create_discussion_comment(self, request):
-        """Adds a discussion_comment to the discussion_thread.
+        """Adds a discussion_comment to the discussion thread.
 
         Args:
             request (Request): DRF `Request` object
@@ -190,18 +192,16 @@ class DiscussionCommentViewSet(
         Raises:
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                                   permission class
+                permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
         user = request.user
         discussion_thread = request.data["discussion_thread"]
-
-        course_id = (
-            DiscussionThread.objects.select_related("discussion_forum")
-            .get(id=discussion_thread)
-            .discussion_forum.course.id
-        )
+        discussion_thread = DiscussionThread.objects.select_related(
+            "discussion_forum__course"
+        ).get(id=discussion_thread)
+        course_id = discussion_thread.discussion_forum.course.id
         check = self._is_registered(course_id, user)
         if check is not True:
             return check
@@ -216,26 +216,29 @@ class DiscussionCommentViewSet(
 
     @action(detail=True, methods=["GET"])
     def list_discussion_comments(self, request, pk):
-        """Gets all the discussion_comment in the discussion_thread with primary key as pk.
+        """Gets all the discussion comments in the discussion thread with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): Primary key of the discussion_thread
+            pk (int): Primary key of the discussion thread
 
         Returns:
-            `Response` with all the discussion_comment data and status HTTP_200_OK
+            `Response` with all the discussion comment data and status HTTP_200_OK
 
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                                              permission class
+                permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        check = self._is_registered(pk, request.user)
+        discussion_comments = DiscussionComment.objects.select_related(
+            "discussion_thread__discussion_forum__course"
+        ).filter(discussion_thread_id=pk)
+        course_id = discussion_comments[0].discussion_thread.discussion_forum.course.id
+        check = self._is_registered(course_id, request.user)
         if check is not True:
             return check
 
-        discussion_comments = DiscussionComment.objects.filter(discussion_thread_id=pk)
         page = self.paginate_queryset(discussion_comments)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -245,22 +248,24 @@ class DiscussionCommentViewSet(
 
     @action(detail=True, methods=["GET"])
     def retrieve_discussion_comment(self, request, pk):
-        """Gets the discussion_comment with primary key as pk.
+        """Gets the discussion comment with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): Primary key of the discussion_comment
+            pk (int): Primary key of the discussion comment
 
         Returns:
-            `Response` with the discussion_comment data and status HTTP_200_OK
+            `Response` with the discussion comment data and status HTTP_200_OK
 
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                                   permission class
+                permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        discussion_comment = self.get_object()
+        discussion_comment = DiscussionComment.objects.select_related(
+            "discussion_thread__discussion_forum__course"
+        ).get(id=pk)
         course_id = discussion_comment.discussion_thread.discussion_forum.course.id
         check = self._is_registered(course_id, request.user)
         if check is not True:
@@ -271,27 +276,26 @@ class DiscussionCommentViewSet(
 
     @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
     def update_discussion_comment(self, request, pk):
-        """Updates a discussion_comment with id as pk.
+        """Updates a discussion comment with id as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): Primary key of the discussion_thread
+            pk (int): Primary key of the discussion thread
 
         Returns:
-            `Response` with the updated discussion_thread data and status HTTP_200_OK
+            `Response` with the updated discussion thread data and status HTTP_200_OK
 
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                                   permission class
+                permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised:
-                1. If the discussion comment does not exist
-                2. By `_is_registered()` method
+                1. By `_is_registered()` method
         """
         serializer = self.get_serializer(
             self.get_object(), data=request.data, partial=True
         )
-        if serializer.is_valid(raise_exception=True):
+        if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         errors = serializer.errors
@@ -309,23 +313,22 @@ class DiscussionReplyViewSet(
     serializer_class = DiscussionReplySerializer
     permission_classes = (IsInstructorOrTAOrStudent,)
     pagination_class = StandardResultsSetPagination
-    ordering_fields = ("id",)
 
     @action(detail=False, methods=["POST"])
     def create_discussion_reply(self, request):
-        """Adds a discussion_reply to the discussion_comment.
+        """Adds a discussion reply to the discussion comment.
 
         Args:
             request (Request): DRF `Request` object
 
         Returns:
-            `Response` with the created discussion_reply data and status
+            `Response` with the created discussion reply data and status
              HTTP_201_CREATED
 
         Raises:
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                                   permission class
+                permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
@@ -341,33 +344,40 @@ class DiscussionReplyViewSet(
             return check
 
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        errors = serializer.errors
+        logger.error(errors)
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=["GET"])
     def list_discussion_replies(self, request, pk):
-        """Gets all the discussion_replies in the discussion_comment with primary key as pk.
+        """Gets all the discussion replies in the discussion comment with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): Primary key of the discussion_comment
+            pk (int): Primary key of the discussion comment
 
         Returns:
-            `Response` with all the discussion_replies
-             data and status HTTP_200_OK
+            `Response` with all the discussion replies data and status HTTP_200_OK
 
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                                              permission class
+                permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        check = self._is_registered(pk, request.user)
+        discussion_replies = DiscussionReply.objects.select_related(
+            "discussion_comment__discussion_thread__discussion_forum__course"
+        ).filter(discussion_comment_id=pk)
+        course_id = discussion_replies[
+            0
+        ].discussion_comment.discussion_thread.discussion_forum.course.id
+        check = self._is_registered(course_id, request.user)
         if check is not True:
             return check
 
-        discussion_replies = DiscussionReply.objects.filter(discussion_comment_id=pk)
         page = self.paginate_queryset(discussion_replies)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -377,56 +387,55 @@ class DiscussionReplyViewSet(
 
     @action(detail=True, methods=["GET"])
     def retrieve_discussion_reply(self, request, pk):
-        """Gets the discussion_reply with primary key as pk.
+        """Gets the discussion reply with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): Primary key of the discussion_reply
+            pk (int): Primary key of the discussion reply
 
         Returns:
-            `Response` with the discussion_reply data and status HTTP_200_OK
+            `Response` with the discussion reply data and status HTTP_200_OK
 
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                                   permission class
+                permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        discussion_reply = self.get_object()
-        course_id = (
-            DiscussionComment.objects.select_related("discussion_thread")
-            .get(id=discussion_reply.discussion_comment.id)
-            .discussion_thread.discussion_forum.course.id
-        )
+        discussion_reply = DiscussionReply.objects.select_related(
+            "discussion_comment__discussion_thread__discussion_forum__course"
+        ).get(id=pk)
+        discussion_comment = discussion_reply.discussion_comment
+        course_id = discussion_comment.discussion_thread.discussion_forum.course.id
         check = self._is_registered(course_id, request.user)
         if check is not True:
             return check
+
         serializer = self.get_serializer(discussion_reply)
         return Response(serializer.data)
 
     @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
     def update_discussion_reply(self, request, pk):
-        """Updates a discussion_reply with id as pk.
+        """Updates a discussion reply with id as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): Primary key of the discussion_thread
+            pk (int): Primary key of the discussion thread
 
         Returns:
-            `Response` with the updated discussion_thread data and status HTTP_200_OK
+            `Response` with the updated discussion thread data and status HTTP_200_OK
 
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                                   permission class
+                permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised:
-                1. If the discussion reply does not exist
-                2. By `_is_registered()` method
+                1. By `_is_registered()` method
         """
         serializer = self.get_serializer(
             self.get_object(), data=request.data, partial=True
         )
-        if serializer.is_valid(raise_exception=True):
+        if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         errors = serializer.errors

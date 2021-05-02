@@ -1,6 +1,5 @@
 from django.db.models import Q
 from rest_framework import permissions
-from rest_framework.pagination import PageNumberPagination
 
 from course.models import (
     Announcement,
@@ -44,14 +43,6 @@ from subjective_assignments.models import (
 )
 from utils.utils import is_instructor_or_ta
 from video.models import QuizMarker, SectionMarker, Video
-
-
-class StandardResultsSetPagination(PageNumberPagination):
-    """Pagination class for viewsets."""
-
-    page_size = 10
-    page_size_query_param = "page_size"
-    max_page_size = 1000
 
 
 class IsInstructorOrTA(permissions.BasePermission):

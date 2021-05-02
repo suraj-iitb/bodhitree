@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from utils.drf_utils import UserPermission
+from utils.permissions import UserPermission
 
 from .models import User
 from .serializers import UserSerializer

@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from course.models import Chapter, Section
 from utils import mixins as custom_mixins
-from utils.drf_utils import IsInstructorOrTA
+from utils.permissions import IsInstructorOrTA
 from utils.utils import is_instructor_or_ta
 
 from .models import Document

@@ -15,37 +15,35 @@ from utils.utils import (
 class TestGetCourseFolder(TestCase):
     """Test for `get_course_folder()` function"""
 
+    def setUp(self):
+        # Mocking of Course
+        self.course_mock = mock.MagicMock(spec=Course, name="CourseMock")
+        self.course_mock.id = 1
+        self.course_mock.owner = 1
+        self.course_mock.code = ""
+        self.course_mock.title = "   Course 1 "
+
     def test_get_course_folder_without_code(self):
         """Test for `get_course_folder()` function without course code"""
-        # Mocking of Course
-        course_mock = mock.MagicMock(spec=Course, name="CourseMock")
-        course_mock.id = 1
-        course_mock.owner = 1
-        course_mock.code = ""
-        course_mock.title = "   Course 1 "
+        actual_course_folder = get_course_folder(self.course_mock)
 
-        actual_course_folder = get_course_folder(course_mock)
-
-        course_mock.title = course_mock.title.strip().replace(" ", "_")
-        expected_course_folder = "{}.{}".format(course_mock.id, course_mock.title)
+        self.course_mock.title = self.course_mock.title.strip().replace(" ", "_")
+        expected_course_folder = "{}.{}".format(
+            self.course_mock.id, self.course_mock.title
+        )
 
         self.assertEqual(actual_course_folder, expected_course_folder)
 
     def test_get_course_folder_with_code(self):
         """Test for `get_course_folder()` function with course code"""
-        # Mocking of Course
-        course_mock = mock.MagicMock(spec=Course, name="CourseMock")
-        course_mock.id = 1
-        course_mock.owner = 1
-        course_mock.code = " Code 1      "
-        course_mock.title = "Course  1 "
+        self.course_mock.code = "Code 1"
 
-        actual_course_folder = get_course_folder(course_mock)
+        actual_course_folder = get_course_folder(self.course_mock)
 
-        course_mock.code = course_mock.code.strip().replace(" ", "_")
-        course_mock.title = course_mock.title.strip().replace(" ", "_")
+        self.course_mock.code = self.course_mock.code.strip().replace(" ", "_")
+        self.course_mock.title = self.course_mock.title.strip().replace(" ", "_")
         expected_course_folder = "{}.{}:{}".format(
-            course_mock.id, course_mock.code, course_mock.title
+            self.course_mock.id, self.course_mock.code, self.course_mock.title
         )
 
         self.assertEqual(actual_course_folder, expected_course_folder)

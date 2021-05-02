@@ -4,14 +4,15 @@
 
 ## Clone repository
 ```bash
-https://github.com/suraj-iitb/bodhitree.git
+git clone https://github.com/suraj-iitb/bodhitree.git
 ```
 
 ## Create settings.ini file
 ```bash
-cp main/settings.ini.sample main/setings.ini
+cd bodhitree
+cp main/settings.ini.sample main/settings.ini
 ```
-Note: Modify settings.ini file configuration
+Note: Modify the settings.ini file configuration
 
 ## Containers up
 ```bash
@@ -19,12 +20,15 @@ docker-compose -f docker-compose.yml -f docker-compose.debug.yml up -d --build
 ```
 
 ## Run dev server (with debugger)
-1. Install **bodhitree extension pack by bodhitree-iitb** in VS Code
-2. Click on green traingle to run the dev server & start the debugger
+1. Install **bodhitree extension pack by bodhitree-iitb** in vs code
 
-    ![Debugger Image](.images/debug.png)
+    ![Extension Image](.images/bodhitree-ext-vs-code.png)
 
-2. Access API via http://localhost:8765/accounts in browser
+2. Click on green traingle in **run and debug sidebar panel** to run the dev server & start the debugger
+
+    ![Debugger Image](.images/debug-vs-code.png)
+
+2. Access API via http://localhost:8765/ in browser
 
 ## Run dev server (without debugger)
 1. Go to the bash of the backend container
@@ -35,7 +39,7 @@ docker exec -i -t bodhitree_backend_1 bash
 ```bash
 python manage.py runserver 0.0.0.0:8764
 ```
-3. Access API via http://localhost:8764/accounts in browser
+3. Access API via http://localhost:8764/ in browser
 
 # Setup pre-commit hooks (flake8, black, isort)
 1. Install python3.9
@@ -62,20 +66,21 @@ pre-commit install
 ```bash
 pre-commit run --all-files
 ```
-3. Hooks work only on tracked files.
+3. Hooks work only on tracked files (so make sure you do `git add` for untracked files.).
 
 # Commands for deployment
 
 ## Clone repository
 ```bash
-https://github.com/suraj-iitb/bodhitree.git
+ git clone https://github.com/suraj-iitb/bodhitree.git
 ```
 
 ## Create settings.ini file
 ```bash
-cp main/settings.ini.sample main/setings.ini
+cd bodhitree
+cp main/settings.ini.sample main/settings.ini
 ```
-Note: Modify settings.ini file configuration
+Note: Modify the settings.ini file configuration
 
 ## Containers up
 ```bash
@@ -84,4 +89,4 @@ docker stack deploy -c docker-compose.yml -c docker-compose.prod.yml <INSTANCE_N
 ```
 
 ## Access API
-Access API via http://0.0.0.0:8765/accounts in browser
+Access API via http://localhost:8765/ in browser

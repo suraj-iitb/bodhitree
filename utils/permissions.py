@@ -57,7 +57,7 @@ class IsInstructorOrTA(permissions.BasePermission):
 
     Allows:
         1. complete permissions to instructor/ta
-        2. list/retrieve permissions to students
+        2. list/retrieve permissions to students (exception is create)
     """
 
     def _get_course_from_object(self, obj):
@@ -143,7 +143,7 @@ class IsInstructorOrTA(permissions.BasePermission):
             )
             if instructor_or_ta:
                 return True
-            return False
+        return False
 
 
 class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
@@ -178,7 +178,7 @@ class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
             ).count()
             if course_histories:
                 return True
-            return False
+        return False
 
 
 class IsInstructorOrTAOrStudent(permissions.BasePermission):

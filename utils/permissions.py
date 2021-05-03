@@ -61,6 +61,7 @@ class IsInstructorOrTA(permissions.BasePermission):
     Allows:
         1. All permissions to instructor/ta
         2. Only `GET` permisision to student (`POST` is an exception)
+        3. No permissions to anonymous user
     """
 
     def _get_course_from_object(self, obj):
@@ -217,57 +218,76 @@ class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
 
 
 class IsInstructorOrTAOrStudent(permissions.BasePermission):
-    """Permission class for viewsets
+    """Permission class for viewsets.
 
-    Applicable for: VideoHistory, SingleCorrectQuestionHistory,
-                    MultipleCorrectQuestionHistory, FixedAnswerQuestionHistory,
-                    DescriptiveQuestionhistory, CourseHistory, Crib, CribReply,
-                    DiscussionThread, DiscussionComment, DiscussionReply,
-                    SimpleProgrammingAssignmentHistory,
-                    AdvancedProgrammingAssignmentHistory, TestcaseHistory,
-                    ExamHistory, SubjectiveAssignmentHistory,
-                    StudentProfile, InstructorProfile, Registration
+    Applicable for:
+        1. CourseHistory, VideoHistory
+        2. Registration
+        3. SingleCorrectQuestionHistory, MultipleCorrectQuestionHistory,
+           FixedAnswerQuestionHistory, DescriptiveQuestionhistory
+        4. DiscussionThread, DiscussionComment, DiscussionReply
+        5. Crib, CribReply
+        6. SimpleProgrammingAssignmentHistory, AdvancedProgrammingAssignmentHistory
+        7. TestcaseHistory, ExamHistory
+        8. SubjectiveAssignmentHistory
 
     Allows:
-        1. complete permissions to instructor/ta/students
+        1. All permissions to instructor/ta/student
+        2. No permissions to anonymous user
     """
 
     def _get_user_from_object(self, obj):
-        """get user from object instance
+        """Get user using obj.
 
         Args:
-            obj : Model objects (like VideoHistory)
+            obj (Model): `Model` object (`CourseHistory`, `DiscussionThread` etc.)
 
         Returns:
-            user: User model object
+            user (User): `User` model object
         """
-
-        if type(obj) == Crib:
-            user = obj.created_by
-        if type(obj) in (DiscussionComment, DiscussionThread, DiscussionReply):
-            user = obj.author
         if type(obj) in (
+            DiscussionThread,
+            DiscussionComment,
+            DiscussionReply,
+        ):
+            user = obj.author
+        elif type(obj) == Crib:
+            user = obj.created_by
+        elif type(obj) in (
             SimpleProgrammingAssignmentHistory,
             SubjectiveAssignmentHistory,
         ):
             user = obj.assignment_history.user
-        if type(obj) == AdvancedProgrammingAssignmentHistory:
+        elif type(obj) == AdvancedProgrammingAssignmentHistory:
             user = obj.simple_programming_assignment_history.assignment_history.user
         else:
             user = obj.user
         return user
 
     def has_permission(self, request, view):
-        """
-        Applicable at model level (GET, POST, PUT, PATCH, DELETE)
+        """Applicable at model level (GET, POST, PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (`DiscussionThreadViewSet` etc.)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
         if request.user.is_authenticated:
             return True
         return False
 
     def has_object_permission(self, request, view, obj):
-        """
-        Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
+        """Applicable at model instance level (GET(one object), PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (`DiscussionThreadViewSet` etc.)
+            obj (Model): `Model` object (`DiscussionThread`, `Crib` etc.)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
         if request.user.is_authenticated:
             if request.method in permissions.SAFE_METHODS:

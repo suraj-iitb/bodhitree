@@ -1,15 +1,20 @@
 import os
 from unittest import mock
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from course.models import Course
+from course.models import Course, CourseHistory
 from programming_assignments.models import Assignment
 from utils.utils import (
+    check_course_registration,
     get_assignment_file_upload_path,
     get_assignment_folder,
     get_course_folder,
 )
+
+
+User = get_user_model()
 
 
 class TestGetCourseFolder(TestCase):
@@ -19,7 +24,6 @@ class TestGetCourseFolder(TestCase):
         # Mocking of Course
         self.course_mock = mock.MagicMock(spec=Course, name="CourseMock")
         self.course_mock.id = 1
-        self.course_mock.owner = 1
         self.course_mock.code = ""
         self.course_mock.title = "   Course 1 "
 
@@ -98,7 +102,6 @@ class TestGetAssignmentFileUploadPath(TestCase):
         # Mocking of Course
         self.course_mock = mock.MagicMock(spec=Course, name="CourseMock")
         self.course_mock.id = 1
-        self.course_mock.owner = 1
         self.course_mock.code = " Code 1      "
         self.course_mock.title = "Course  1 "
         # Mocking of Assignment
@@ -146,3 +149,37 @@ class TestGetAssignmentFileUploadPath(TestCase):
         self.assertEqual(
             actual_assignment_file_upload_path, expected_assignment_file_upload_path
         )
+
+
+class TestCheckCourseRegistration(TestCase):
+    """Test for `check_course_registration()` function"""
+
+    fixtures = [
+        "users.test.yaml",
+        "departments.test.yaml",
+        "colleges.test.yaml",
+        "courses.test.yaml",
+        "coursehistories.test.yaml",
+    ]
+
+    def test_check_course_registration_if_registered(self):
+        """Test for `check_course_registration()` function if user is registered."""
+        course_id = 1
+        user = User.objects.get(id=1)
+        actual_registration = check_course_registration(course_id, user)
+        course_history = CourseHistory.objects.filter(
+            course_id=course_id, user=user
+        ).count()
+        expected_registration = True if course_history else False
+        self.assertEqual(actual_registration, expected_registration)
+
+    def test_check_course_registration_if_not_registered(self):
+        """Test for `check_course_registration()` function if user is not registered."""
+        course_id = 2
+        user = User.objects.get(id=1)
+        actual_registration = check_course_registration(course_id, user)
+        course_history = CourseHistory.objects.filter(
+            course_id=course_id, user=user
+        ).count()
+        expected_registration = True if course_history else False
+        self.assertEqual(actual_registration, expected_registration)

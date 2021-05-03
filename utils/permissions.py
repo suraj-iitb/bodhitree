@@ -382,27 +382,50 @@ class IsOwner(permissions.BasePermission):
     Applicable for: Course, CourseHistory
 
     Allows:
-        1. complete permissions to instructor
+        1. All permissions to owner
+        2. Only `GET` permisision to instructor/ta/student
+        3. No permissions to anonymous user
     """
 
     def _get_user_from_object(self, obj):
-        """get user from object instance
+        """Get user using obj.
 
         Args:
-            obj : Model objects (like CourseHistory)
+            obj (Model): `Model` object (`Course`, `CourseHistory`)
 
         Returns:
-            user: User model object
+            user (User): `User` model object
         """
-        if type(obj) == CourseHistory:
-            user = obj.user
-        elif type(obj) == Course:
+        if type(obj) == Course:
             user = obj.owner
+        elif type(obj) == CourseHistory:
+            user = obj.user
         return user
 
-    def has_object_permission(self, request, view, obj):
+    def has_permission(self, request, view):
+        """Applicable at model level (GET, POST, PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (`Course`, `CourseViewSet`)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
-        Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
+        if request.user.is_authenticated:
+            return True
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        """Applicable at model instance level (GET(one object), PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (`Course`, `CourseViewSet`)
+            obj (Model): `Model` object (`Course`, `CourseHistory`)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
         if request.user.is_authenticated:
             if request.method in permissions.SAFE_METHODS:

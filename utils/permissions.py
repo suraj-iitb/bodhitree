@@ -1,4 +1,3 @@
-from django.db.models import Q
 from rest_framework import permissions
 
 from course.models import (
@@ -60,8 +59,8 @@ class IsInstructorOrTA(permissions.BasePermission):
         8. Notification, Email
 
     Allows:
-        1. All permissions to instructor/ta.
-        2. Only `GET` permisision to student (`POST` is an exception).
+        1. All permissions to instructor/ta
+        2. Only `GET` permisision to student (`POST` is an exception)
     """
 
     def _get_course_from_object(self, obj):
@@ -139,7 +138,7 @@ class IsInstructorOrTA(permissions.BasePermission):
 
         Args:
             request (Request): DRF `Request` object
-            view (ViewSet): `ViewSet` object (ChapterViewSet, VideoViewSet etc.)
+            view (ViewSet): `ViewSet` object (`ChapterViewSet`, `VideoViewSet` etc.)
 
         Returns:
             A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
@@ -176,13 +175,20 @@ class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
     Applicable for: Course
 
     Allows:
-        1. complete permissions to instructor/ta
-        2. list/retrieve permissions to students/anonymous users
+        1. All permissions to instructor/ta.
+        2. Only `GET` permisision to student (`POST` is an exception)
+        3. Only `GET` permisision to anonymous user
     """
 
     def has_permission(self, request, view):
-        """
-        Applicable at model level (GET, POST, PUT, PATCH, DELETE)
+        """Applicable at model level (GET, POST, PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (`CourseViewSet`)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
         if request.method in permissions.SAFE_METHODS:
             return True
@@ -191,16 +197,21 @@ class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
         return False
 
     def has_object_permission(self, request, view, obj):
-        """
-        Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
+        """Applicable at model instance level (GET(one object), PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (`CourseViewSet`)
+            obj (Model): `Model` object (`Course`)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
         if request.method in permissions.SAFE_METHODS:
             return True
         if request.user.is_authenticated:
-            course_histories = CourseHistory.objects.filter(
-                Q(course=obj) & (Q(role="I") | Q(role="T")) & Q(user=request.user)
-            ).count()
-            if course_histories:
+            instructor_or_ta = is_instructor_or_ta(obj.id, request.user)
+            if instructor_or_ta:
                 return True
         return False
 

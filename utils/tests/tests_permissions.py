@@ -263,3 +263,12 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
         self._permisison_helper(
             request, self.user_permissions, self.course_history_inst
         )
+
+    def test_get_user_from_object(self):
+        """Test `_get_user_from_object()` method."""
+        # TODO: For all possible objects do assertEqual
+        actual_user = self.permission_class._get_user_from_object(
+            self.course_history_inst
+        )
+        expected_user = self.course_history_inst.user
+        self.assertEqual(actual_user, expected_user)

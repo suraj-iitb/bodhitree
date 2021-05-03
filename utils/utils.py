@@ -11,34 +11,34 @@ logger = logging.getLogger(__name__)
 
 
 def get_course_folder(course):
-    """Gives path to the course folder.
+    """Gets a course folder name.
 
     Args:
         course (Course): `Course` model instance
 
     Returns:
-        A path to the course folder.
+        A course folder name.
     """
     course_id = course.id
-    course_code = course.code.replace(" ", "_")
-    course_title = course.title.replace(" ", "_")
+    course_code = course.code.strip().replace(" ", "_")
+    course_title = course.title.strip().replace(" ", "_")
     if course_code:
         return "{}.{}:{}".format(course_id, course_code, course_title)
     return "{}.{}".format(course_id, course_title)
 
 
 def get_assignment_folder(assignment, assignment_type):
-    """Gives path to assignment folder.
+    """Gets a assignment folder name.
 
     Args:
         assignment (Assignment): `Assignment` model instance
-        assignment_type (str): "programming" or "subjective"
+        assignment_type (str): Assignment type ("programming" or "subjective")
 
     Returns:
-        A path to the assignment folder.
+        A assignment folder name.
     """
     assignment_id = assignment.id
-    assignment_name = assignment.name.replace(" ", "_")
+    assignment_name = assignment.name.strip().replace(" ", "_")
     assignment_folder = "{}.{}".format(assignment_id, assignment_name)
     if assignment_type == "programming":
         return os.path.join("programming_assignment", assignment_folder)
@@ -47,20 +47,22 @@ def get_assignment_folder(assignment, assignment_type):
 
 
 def get_assignment_file_upload_path(assignment, assignment_type, sub_folder, filename):
-    """Gives path to upload the assignment file (Both Programming & Subjective).
+    """Gets path to upload the assignment files (both programming & subjective).
 
     Args:
         assignment (Assignment): `Assignment` model instance
-        assignment_type (str): "programming" or "subjective"
+        assignment_type (str): Assignment type ("programming" or "subjective")
         sub_folder (str): "submission_files" or "question_files" or "testcase_files"
-        filename (str): name of the file
+        filename (str): name of a file
 
     Returns:
-        A path to upload the assignment file.
+        A path to upload a assignment file.
     """
     course_folder = get_course_folder(assignment.course)
     assignment_folder = get_assignment_folder(assignment, assignment_type)
-    return os.path.join(course_folder, assignment_folder, sub_folder, filename)
+    return os.path.join(
+        course_folder, assignment_folder, sub_folder.strip(), filename.strip()
+    )
 
 
 def check_course_registration(course_id, user):

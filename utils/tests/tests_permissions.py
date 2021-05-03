@@ -196,6 +196,8 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
         cls.student = User.objects.get(id=3)
 
         cls.course_history_inst = CourseHistory.objects.get(id=1)
+        cls.course_history_ta = CourseHistory.objects.get(id=2)
+        cls.course_history_stud = CourseHistory.objects.get(id=3)
 
     def setUp(self):
         """Allows the creation of initial data at the method level."""
@@ -208,9 +210,21 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
 
     def _helper(self, request):
         self._permisison_helper(request)
+        self.user_permissions[0][1] = True
         self.user_permissions[1][1] = False
         self.user_permissions[2][1] = False
+        self.user_permissions[3][1] = False
         self._permisison_helper(request, self.course_history_inst)
+        self.user_permissions[0][1] = False
+        self.user_permissions[1][1] = True
+        self.user_permissions[2][1] = False
+        self.user_permissions[3][1] = False
+        self._permisison_helper(request, self.course_history_ta)
+        self.user_permissions[0][1] = False
+        self.user_permissions[1][1] = False
+        self.user_permissions[2][1] = True
+        self.user_permissions[3][1] = False
+        self._permisison_helper(request, self.course_history_stud)
 
     def test_get(self):
         """Test `GET` for `has_permission()` & `has_object_permission()` method."""

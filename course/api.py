@@ -14,12 +14,8 @@ from utils.permissions import (
     IsInstructorOrTAOrStudent,
     IsOwner,
 )
-from utils.utils import (
-    check_course_registration,
-    has_valid_subscription,
-    is_course_limit_reached,
-    is_instructor_or_ta,
-)
+from utils.subscription import SubscriptionView
+from utils.utils import check_course_registration, is_instructor_or_ta
 
 from .models import Chapter, Course, CourseHistory, Page, Section
 from .serializers import (
@@ -74,7 +70,7 @@ class CourseViewSet(
                 2. The subscription plan does not exist.
         """
         try:
-            if not is_course_limit_reached(user):
+            if not SubscriptionView.is_course_limit_reached(user):
                 return True
             data = {
                 "error": "For user: {}, the limit of number of courses in "
@@ -108,7 +104,7 @@ class CourseViewSet(
             logger.exception(e)
             return Response(e, status.HTTP_404_NOT_FOUND)
 
-        if has_valid_subscription(course.owner):
+        if SubscriptionView.has_valid_subscription(course.owner):
             return True
         data = {
             "error": "User: {} is not permitted to update the course: {}.".format(

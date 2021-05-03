@@ -3,8 +3,7 @@ import os
 
 from django.db.models import Q
 
-from course.models import Course, CourseHistory
-from registration.models import SubscriptionHistory
+from course.models import CourseHistory
 
 
 logger = logging.getLogger(__name__)
@@ -99,47 +98,3 @@ def is_instructor_or_ta(course_id, user):
     if course_history:
         return True
     return False
-
-
-# TODO: Add date check for subscription_history
-def has_valid_subscription(user):
-    """Checks if the user has a subscription and is it valid?
-
-    Args:
-        user (User): `User` model intstance
-
-    Returns:
-        A bool value denoting if the user has a valid subscription or not.
-    """
-    subscription_history = SubscriptionHistory.objects.filter(user=user).count()
-    if subscription_history:
-        return True
-    return False
-
-
-# TODO: Add date check for subscription_history
-def is_course_limit_reached(user):
-    """Checks if the subscription course limit is exhausted for the user.
-
-    Args:
-        user (User): `User` model intstance
-
-    Returns:
-        A bool value denoting if the subscription course limit is exhausted for the
-        user or not.
-
-    Raises:
-        SubscriptionHistory.DoesNotExist: Raised if the subscription history does not
-            exist for the user.
-    """
-    no_of_courses = Course.objects.filter(owner=user).count()
-    try:
-        subscription_history = SubscriptionHistory.objects.select_related(
-            "subscription"
-        ).get(user=user)
-    except SubscriptionHistory.DoesNotExist as e:
-        logger.exception(e)
-        raise
-    if no_of_courses < subscription_history.subscription.no_of_courses:
-        return False
-    return True

@@ -347,19 +347,26 @@ class UserPermission(permissions.BasePermission):
         return False
 
 
-class IsAdminOrReadOnly(permissions.BasePermission):
-    """Permission class for viewsets
+class IsAdmin(permissions.BasePermission):
+    """Permission class for viewsets.
 
     Applicable for: SubscriptionHistory
 
     Allows:
-        1. all permission to admin users
-        2. list/retrieve to authenticated users
+        1. All permissions to admin users
+        2. Only `GET` permisision to instructor/ta/student
+        3. No permissions to anonymous user
     """
 
     def has_permission(self, request, view):
-        """
-        Applicable at model level (GET, POST, PUT, PATCH, DELETE)
+        """Applicable at model level (GET, POST, PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (`SubscriptionHistoryViewSet`)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
         if request.user.is_authenticated:
             if request.method in permissions.SAFE_METHODS:

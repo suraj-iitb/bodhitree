@@ -2,3 +2,7 @@
   pk: 1
   fields:
     name: Unlimited
+- model: registration.plantype
+  pk: 2
+  fields:
+    name: Trial

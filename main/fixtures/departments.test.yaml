@@ -2,3 +2,7 @@
   pk: 1
   fields:
     name: CSE
+- model: registration.department
+  pk: 2
+  fields:
+    name: CSRE

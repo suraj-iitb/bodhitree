@@ -3,13 +3,28 @@
   fields:
     plan_type: 1
     no_of_courses: 10
-    no_of_students_per_course: 25
+    no_of_students_per_course: 100
     prog_assign_enabled: true
     subjective_assign_enabled: true
     email_enabled: true
-    per_video_limit: 10000.0
+    per_video_limit: 1000.0
     per_video_limit_unit: MB
-    total_video_limit: 10000.0
+    total_video_limit: 100000.0
     total_video_limit_unit: MB
-    subjective_assign_submission_size_per_student: 10000.0
+    subjective_assign_submission_size_per_student: 100.0
+    subjective_assign_submission_size_per_student_unit: MB
+- model: registration.subscription
+  pk: 2
+  fields:
+    plan_type: 2
+    no_of_courses: 1
+    no_of_students_per_course: 5
+    prog_assign_enabled: false
+    subjective_assign_enabled: false
+    email_enabled: false
+    per_video_limit: 100.0
+    per_video_limit_unit: MB
+    total_video_limit: 1000.0
+    total_video_limit_unit: MB
+    subjective_assign_submission_size_per_student: 0.0
     subjective_assign_submission_size_per_student_unit: MB

@@ -53,7 +53,6 @@ class CourseViewSet(
         "title",
         "is_published",
     )
-    ordering_fields = ("id",)
 
     def _create_course_check(self, user):
         """Checks if the user can create a course.
@@ -324,7 +323,8 @@ class CourseHistoryViewSet(
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        course_history = self.get_object()
+        course_history = CourseHistory.objects.select_related("course").get(id=pk)
+        self.check_object_permissions(request, course_history)
         check = self._is_registered(course_history.course.id, request.user)
         if check is not True:
             return check
@@ -350,7 +350,8 @@ class CourseHistoryViewSet(
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        course_history = self.get_object()
+        course_history = CourseHistory.objects.select_related("course").get(id=pk)
+        self.check_object_permissions(request, course_history)
         check = self._is_registered(course_history.course.id, request.user)
         if check is not True:
             return check
@@ -366,48 +367,12 @@ class CourseHistoryViewSet(
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ChapterViewSet(viewsets.GenericViewSet):
+class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
     """Viewset for `Chapter`."""
 
     queryset = Chapter.objects.all()
     serializer_class = ChapterSerializer
     permission_classes = (IsInstructorOrTA,)
-    filterset_fields = ("title",)
-    search_fields = ("title",)
-    ordering_fields = ("id",)
-
-    def _is_registered(self, course_id, user):
-        """Checks if the user is registered in the given course.
-
-        Args:
-            course_id (int): course id
-            user (User): `User` model object
-
-        Returns:
-            A bool value representing whether the user is registered
-            in the course with id course_id.
-
-        Raises:
-            HTTP_404_NOT_FOUND: Raised if:
-                1. The course does not exist
-                2. The user is not registered in the course
-        """
-        try:
-            course = Course.objects.get(id=course_id)
-        except Course.DoesNotExist:
-            data = {
-                "error": "Course with id: {} does not exist".format(course_id),
-            }
-            return Response(data, status.HTTP_404_NOT_FOUND)
-
-        if not check_course_registration(course_id, user):
-            data = {
-                "error": "User: {} is not registered in the course: {}".format(
-                    user, course
-                ),
-            }
-            return Response(data, status.HTTP_404_NOT_FOUND)
-        return True
 
     @action(detail=False, methods=["POST"])
     def create_chapter(self, request):

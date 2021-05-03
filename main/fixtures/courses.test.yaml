@@ -24,3 +24,16 @@
     created_on: 2021-04-13 15:45:51.713995+00:00
     modified_on: 2021-04-13 15:45:51.714036+00:00
     chapters_sequence: '[]'
+- model: course.course
+  pk: 3
+  fields:
+    owner: 1
+    code: 111
+    title: Course
+    description: This is course
+    image: ''
+    is_published: true
+    course_type: O
+    created_on: 2021-04-13 15:45:51.713995+00:00
+    modified_on: 2021-04-13 15:45:51.714036+00:00
+    chapters_sequence: '[]'

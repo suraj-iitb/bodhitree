@@ -1,9 +1,11 @@
+from django.db import transaction
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
 from course.models import Chapter, Course, CourseHistory, Page, Section
 from discussion_forum.models import DiscussionForum
+from registration.models import SubscriptionHistory
 from utils import credentials
 
 
@@ -53,7 +55,7 @@ class CourseViewSetTest(APITestCase):
         Args:
             status_code (int): expected status code of the API call
             title (str): title of the course
-            owner_id (int): user id
+            owner_id (int): owner id
         """
         data = {
             "owner": owner_id,
@@ -81,12 +83,15 @@ class CourseViewSetTest(APITestCase):
 
     def test_create_course(self):
         """Test to check: create a course."""
+        # Normal creation
         self.login(**ins_cred)
         self._create_course_helper(status.HTTP_201_CREATED, "Course 1", 1)
         self.logout()
+        # The course limit of the subscription is reached
         self.login(**ta_cred)
         self._create_course_helper(status.HTTP_403_FORBIDDEN, "Course 2", 2)
         self.logout()
+        # The subscription plan does not exist
         self.login(**stu_cred)
         self._create_course_helper(status.HTTP_403_FORBIDDEN, "Course 3", 3)
         self.logout()
@@ -101,15 +106,14 @@ class CourseViewSetTest(APITestCase):
             user_id (int): user id
             role (str): role of the user (instructor/ta/student)
         """
-        course_history = CourseHistory(
+        CourseHistory.objects.get_or_create(
             user_id=user_id,
             course=course,
             role=role,
             status="E",
         )
-        course_history.save()
         data = {
-            "owner": 1,
+            "owner": user_id,
             "code": "111",
             "title": title,
             "description": "This is the description of the course",
@@ -142,19 +146,52 @@ class CourseViewSetTest(APITestCase):
         course.save()
         discussion_forum = DiscussionForum(
             course=course,
-            anonymous_to_instructor="True",
-            send_email_to_all="True",
+            anonymous_to_instructor=True,
+            send_email_to_all=True,
         )
         discussion_forum.save()
+
+        # Update by instructor
         self.login(**ins_cred)
         self._update_course_helper(course, status.HTTP_200_OK, "Course 5", 1, "I")
         self.logout()
+
+        # Update by ta
         self.login(**ta_cred)
         self._update_course_helper(course, status.HTTP_200_OK, "Course 6", 2, "T")
         self.logout()
+
+        # HTTP_403_FORBIDDEN due to IsInstructorOrTAOrReadOnly permission class
         self.login(**stu_cred)
         self._update_course_helper(
             course, status.HTTP_403_FORBIDDEN, "Course 7", 3, "S"
+        )
+        self.logout()
+
+        # HTTP_401_UNAUTHORIZED due to IsInstructorOrTAOrReadOnly permission class
+        self._update_course_helper(
+            course, status.HTTP_401_UNAUTHORIZED, "Course 8", 1, "I"
+        )
+
+        # IntegrityError of the database
+        self.login(**ins_cred)
+        with transaction.atomic():
+            self._update_course_helper(
+                course, status.HTTP_403_FORBIDDEN, "Course", 1, "I"
+            )
+        self.logout()
+
+        # HTTP_400_BAD_REQUEST due to serialization errors
+        self.login(**ins_cred)
+        self._update_course_helper(course, status.HTTP_400_BAD_REQUEST, "", 1, "I")
+        self.logout()
+
+        # HTTP_403_FORBIDDEN due to SubscriptionHistory expiry/does not exist
+        subscription_history = SubscriptionHistory.objects.get(id=2)
+        subscription_history.delete()
+        self.login(**ins_cred)
+        self._update_course_helper(
+            course, status.HTTP_403_FORBIDDEN, "Course 9", 1, "I"
         )
         self.logout()
 

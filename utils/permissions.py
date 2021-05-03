@@ -48,30 +48,53 @@ from video.models import QuizMarker, SectionMarker, Video
 class IsInstructorOrTA(permissions.BasePermission):
     """Permission class for viewsets.
 
-    Applicable for: Chapter, Section, Video, Document, Quiz, SectionMarker, QuizMarker,
-                    QuestionModule, SingleCorrectQuestion, MultipleCorrectQuestion,
-                    FixedAnswerQuestion, DescriptiveQuestion, Schedule, Page,
-                    Announcement, Notification, DiscussionForum,
-                    SimpleProgrammingAssignment, AdvancedProgrammingAssignment,
-                    AssignmentSection, Testcase, Exam, SubjectiveAssignment
+    Applicable for:
+        1. Chapter, Section, Video, Document
+        2. Quiz, QuestionModule, SectionMarker, QuizMarker
+        3. SingleCorrectQuestion, MultipleCorrectQuestion, FixedAnswerQuestion,
+           DescriptiveQuestion
+        4. Schedule, Page, Announcement, DiscussionForum
+        5. SimpleProgrammingAssignment, AdvancedProgrammingAssignment
+        6. AssignmentSection, Testcase, Exam
+        7. SubjectiveAssignment
+        8. Notification, Email
 
     Allows:
-        1. complete permissions to instructor/ta
-        2. list/retrieve permissions to students (exception is create)
+        1. All permissions to instructor/ta.
+        2. Only `GET` permisision to student (`POST` is an exception).
     """
 
     def _get_course_from_object(self, obj):
-        """get course using obj instance
+        """Get course using obj.
 
         Args:
-            obj : Model object (like Chapter, Quiz)
+            obj (Model): `Model` object (`Chapter`, `Quiz` etc.)
 
         Returns:
-            course: Course model object
+            course (Course): `Course` model object
         """
-        if type(obj) in (Video, Document, Quiz):
+        if type(obj) in (
+            Chapter,
+            Schedule,
+            Announcement,
+            Page,
+            Notification,
+            DiscussionForum,
+            Email,
+        ):
+            course = obj.course
+        elif type(obj) == Section:
+            course = obj.chapter.course
+        elif type(obj) in (
+            Video,
+            Document,
+            Quiz,
+        ):
             course = obj.chapter.course if obj.chapter else obj.section.chapter.course
-        elif type(obj) in (SectionMarker, QuizMarker):
+        elif type(obj) in (
+            SectionMarker,
+            QuizMarker,
+        ):
             course = (
                 obj.video.chapter.course
                 if obj.video.chapter
@@ -95,18 +118,6 @@ class IsInstructorOrTA(permissions.BasePermission):
                 else obj.question_module.quiz.section.chapter.course
             )
         elif type(obj) in (
-            Chapter,
-            Schedule,
-            Announcement,
-            Page,
-            Notification,
-            DiscussionForum,
-            Email,
-        ):
-            course = obj.course
-        elif type(obj) == Section:
-            course = obj.chapter.course
-        elif type(obj) in (
             SimpleProgrammingAssignment,
             AssignmentSection,
             Exam,
@@ -124,16 +135,29 @@ class IsInstructorOrTA(permissions.BasePermission):
         return course
 
     def has_permission(self, request, view):
-        """
-        Applicable at model level (GET, POST, PUT, PATCH, DELETE)
+        """Applicable at model level (GET, POST, PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (ChapterViewSet, VideoViewSet etc.)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
         if request.user.is_authenticated:
             return True
         return False
 
     def has_object_permission(self, request, view, obj):
-        """
-        Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
+        """Applicable at model instance level (GET(one object), PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (`ChapterViewSet`, `QuizViewSet` etc.)
+            obj (Model): `Model` object (`Chapter`, `Quiz` etc.)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
         if request.user.is_authenticated:
             if request.method in permissions.SAFE_METHODS:

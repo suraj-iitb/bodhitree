@@ -14,17 +14,15 @@ from utils.permissions import (
 class PermissionHelperMixin:
     """Helper class for permision class tests."""
 
-    def _permisison_helper(self, request, user_permissions, obj=None):
+    def _permisison_helper(self, request, obj=None):
         """Helper method for `has_permission()` & `has_object_permission()` method.
 
         Args:
             request (Request): DRF `Request` object
-            user_permissions (tuple): A 2-dimensional tuple where first column is
-                `User` instance & second column is its permission.
             obj (Model, optional): `Model` instance (`Course`, 'Chapter` etc.).
                 Defaults to None.
         """
-        for user, assert_true in user_permissions:
+        for user, assert_true in self.user_permissions:
             request.user = user
             print(user, assert_true)
             if obj is None:
@@ -72,39 +70,36 @@ class IsInstructorOrTATest(APITestCase, PermissionHelperMixin):
             [AnonymousUser(), False],
         ]
 
+    def _helper(self, request):
+        self._permisison_helper(request)
+        self.user_permissions[2][1] = False
+        self._permisison_helper(request, self.chapter)
+
     def test_get(self):
         """Test `GET` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.get("/")
-        self._permisison_helper(request, self.user_permissions)
-        self._permisison_helper(request, self.user_permissions, self.chapter)
+        self._permisison_helper(request)
+        self._permisison_helper(request, self.chapter)
 
     def test_post(self):
         """Test `POST` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.post("/")
-        self._permisison_helper(request, self.user_permissions)
-        self.user_permissions[2][1] = False
-        self._permisison_helper(request, self.user_permissions, self.chapter)
+        self._helper(request)
 
     def test_put(self):
         """Test `PUT` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.put("/")
-        self._permisison_helper(request, self.user_permissions)
-        self.user_permissions[2][1] = False
-        self._permisison_helper(request, self.user_permissions, self.chapter)
+        self._helper(request)
 
     def test_patch(self):
         """Test `PATCH` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.patch("/")
-        self._permisison_helper(request, self.user_permissions)
-        self.user_permissions[2][1] = False
-        self._permisison_helper(request, self.user_permissions, self.chapter)
+        self._helper(request)
 
     def test_delete(self):
         """Test `DELETE` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.delete("/")
-        self._permisison_helper(request, self.user_permissions)
-        self.user_permissions[2][1] = False
-        self._permisison_helper(request, self.user_permissions, self.chapter)
+        self._helper(request)
 
     def test_get_course_from_object(self):
         """Test `_get_course_from_object()` method."""
@@ -146,43 +141,37 @@ class IsInstructorOrTAOrReadOnlyTest(APITestCase, PermissionHelperMixin):
             [AnonymousUser(), True],
         ]
 
+    def _helper(self, request):
+        self.user_permissions[3][1] = False
+        self._permisison_helper(request)
+        self.user_permissions[2][1] = False
+        self._permisison_helper(request, self.course)
+
     def test_get(self):
         """Test `GET` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.get("/")
-        self._permisison_helper(request, self.user_permissions)
-        self._permisison_helper(request, self.user_permissions, self.course)
+        self._permisison_helper(request)
+        self._permisison_helper(request, self.course)
 
     def test_post(self):
         """Test `POST` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.post("/")
-        self.user_permissions[3][1] = False
-        self._permisison_helper(request, self.user_permissions)
-        self.user_permissions[2][1] = False
-        self._permisison_helper(request, self.user_permissions, self.course)
+        self._helper(request)
 
     def test_put(self):
         """Test `PUT` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.put("/")
-        self.user_permissions[3][1] = False
-        self._permisison_helper(request, self.user_permissions)
-        self.user_permissions[2][1] = False
-        self._permisison_helper(request, self.user_permissions, self.course)
+        self._helper(request)
 
     def test_patch(self):
         """Test `PATCH` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.patch("/")
-        self.user_permissions[3][1] = False
-        self._permisison_helper(request, self.user_permissions)
-        self.user_permissions[2][1] = False
-        self._permisison_helper(request, self.user_permissions, self.course)
+        self._helper(request)
 
     def test_delete(self):
         """Test `DELETE` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.delete("/")
-        self.user_permissions[3][1] = False
-        self._permisison_helper(request, self.user_permissions)
-        self.user_permissions[2][1] = False
-        self._permisison_helper(request, self.user_permissions, self.course)
+        self._helper(request)
 
 
 class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
@@ -217,53 +206,37 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
             [AnonymousUser(), False],
         ]
 
+    def _helper(self, request):
+        self._permisison_helper(request)
+        self.user_permissions[1][1] = False
+        self.user_permissions[2][1] = False
+        self._permisison_helper(request, self.course_history_inst)
+
     def test_get(self):
         """Test `GET` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.get("/")
-        self._permisison_helper(request, self.user_permissions)
-        self._permisison_helper(
-            request, self.user_permissions, self.course_history_inst
-        )
+        self._permisison_helper(request)
+        self._permisison_helper(request, self.course_history_inst)
 
     def test_post(self):
         """Test `POST` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.post("/")
-        self._permisison_helper(request, self.user_permissions)
-        self.user_permissions[1][1] = False
-        self.user_permissions[2][1] = False
-        self._permisison_helper(
-            request, self.user_permissions, self.course_history_inst
-        )
+        self._helper(request)
 
     def test_put(self):
         """Test `PUT` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.put("/")
-        self._permisison_helper(request, self.user_permissions)
-        self.user_permissions[1][1] = False
-        self.user_permissions[2][1] = False
-        self._permisison_helper(
-            request, self.user_permissions, self.course_history_inst
-        )
+        self._helper(request)
 
     def test_patch(self):
         """Test `PATCH` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.patch("/")
-        self._permisison_helper(request, self.user_permissions)
-        self.user_permissions[1][1] = False
-        self.user_permissions[2][1] = False
-        self._permisison_helper(
-            request, self.user_permissions, self.course_history_inst
-        )
+        self._helper(request)
 
     def test_delete(self):
         """Test `DELETE` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.delete("/")
-        self._permisison_helper(request, self.user_permissions)
-        self.user_permissions[1][1] = False
-        self.user_permissions[2][1] = False
-        self._permisison_helper(
-            request, self.user_permissions, self.course_history_inst
-        )
+        self._helper(request)
 
     def test_get_user_from_object(self):
         """Test `_get_user_from_object()` method."""
@@ -302,30 +275,30 @@ class UserPermissionTest(APITestCase, PermissionHelperMixin):
         ]
 
     def _helper(self, request):
-        self._permisison_helper(request, self.user_permissions)
+        self._permisison_helper(request)
         self.user_permissions[0][1] = True
         self.user_permissions[1][1] = False
         self.user_permissions[2][1] = False
         self.user_permissions[3][1] = False
-        self._permisison_helper(request, self.user_permissions, self.instructor)
+        self._permisison_helper(request, self.instructor)
         self.user_permissions[0][1] = False
         self.user_permissions[1][1] = True
         self.user_permissions[2][1] = False
         self.user_permissions[3][1] = False
-        self._permisison_helper(request, self.user_permissions, self.ta)
+        self._permisison_helper(request, self.ta)
         self.user_permissions[0][1] = False
         self.user_permissions[1][1] = False
         self.user_permissions[2][1] = True
         self.user_permissions[3][1] = False
-        self._permisison_helper(request, self.user_permissions, self.student)
+        self._permisison_helper(request, self.student)
 
     def test_get(self):
         """Test `GET` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.get("/")
-        self._permisison_helper(request, self.user_permissions)
-        self._permisison_helper(request, self.user_permissions, self.instructor)
-        self._permisison_helper(request, self.user_permissions, self.ta)
-        self._permisison_helper(request, self.user_permissions, self.student)
+        self._permisison_helper(request)
+        self._permisison_helper(request, self.instructor)
+        self._permisison_helper(request, self.ta)
+        self._permisison_helper(request, self.student)
 
     def test_post(self):
         """Test `POST` for `has_permission()` & `has_object_permission()` method."""

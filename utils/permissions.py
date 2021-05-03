@@ -293,7 +293,7 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
             if request.method in permissions.SAFE_METHODS:
                 return True
 
-            if self._get_user_from_object(obj).email == request.user.email:
+            if self._get_user_from_object(obj) == request.user:
                 return True
             return False
 
@@ -304,32 +304,45 @@ class UserPermission(permissions.BasePermission):
     Applicable for: User
 
     Allows:
-        1. create permission to anonymous users
-        2. list/retrieve permission to authenticated users
-        3. update/partial_update/destroy to authenticated owners only
+        1. `POST` permission to anonymous user
+        2. `GET` permission to authenticated user
+        3. `PUT/PATCH/DELETE` permission to authenticated owner
     """
 
     def has_permission(self, request, view):
-        """
-        Applicable at model level (GET, POST, PUT, PATCH, DELETE)
+        """Applicable at model level (GET, POST, PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (`UserViewSet`)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
         if request.method in permissions.SAFE_METHODS:
             if request.user.is_authenticated:
                 return True
         elif request.method == "POST":
             return True
-        if request.user.is_authenticated:
+        elif request.user.is_authenticated:
             return True
         return False
 
     def has_object_permission(self, request, view, obj):
-        """
-        Applicable at model instance level (GET(one object), PUT, PATCH, DELETE)
+        """Applicable at model instance level (GET(one object), PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (`UserViewSet`)
+            obj (Model): `Model` object (`User`)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
         if request.method in permissions.SAFE_METHODS:
             if request.user.is_authenticated:
                 return True
-        if request.user.is_authenticated and obj.email == request.user.email:
+        elif request.user.is_authenticated and obj == request.user:
             return True
         return False
 

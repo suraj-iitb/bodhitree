@@ -2,6 +2,7 @@ import os
 from unittest import mock
 
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.test import TestCase
 
 from course.models import Course, CourseHistory
@@ -11,6 +12,7 @@ from utils.utils import (
     get_assignment_file_upload_path,
     get_assignment_folder,
     get_course_folder,
+    is_instructor_or_ta,
 )
 
 
@@ -162,10 +164,8 @@ class TestCheckCourseRegistration(TestCase):
         "coursehistories.test.yaml",
     ]
 
-    def test_check_course_registration_if_registered(self):
-        """Test for `check_course_registration()` function if user is registered."""
-        course_id = 1
-        user = User.objects.get(id=1)
+    def _helper(self, course_id, user_id):
+        user = User.objects.get(id=user_id)
         actual_registration = check_course_registration(course_id, user)
         course_history = CourseHistory.objects.filter(
             course_id=course_id, user=user
@@ -173,13 +173,59 @@ class TestCheckCourseRegistration(TestCase):
         expected_registration = True if course_history else False
         self.assertEqual(actual_registration, expected_registration)
 
+    def test_check_course_registration_if_registered(self):
+        """Test for `check_course_registration()` function if user is registered."""
+        course_id = 1
+        user_id = 1
+        self._helper(course_id, user_id)
+
     def test_check_course_registration_if_not_registered(self):
         """Test for `check_course_registration()` function if user is not registered."""
         course_id = 2
-        user = User.objects.get(id=1)
-        actual_registration = check_course_registration(course_id, user)
+        user_id = 1
+        self._helper(course_id, user_id)
+
+
+class TestIsInstructorOrTa(TestCase):
+    """Test for `is_instructor_or_ta()` function"""
+
+    fixtures = [
+        "users.test.yaml",
+        "departments.test.yaml",
+        "colleges.test.yaml",
+        "courses.test.yaml",
+        "coursehistories.test.yaml",
+    ]
+
+    def _helper(self, course_id, user_id):
+        user = User.objects.get(id=user_id)
+        actual_role = is_instructor_or_ta(course_id, user)
         course_history = CourseHistory.objects.filter(
-            course_id=course_id, user=user
+            Q(course_id=course_id) & (Q(role="I") | Q(role="T")) & Q(user=user)
         ).count()
-        expected_registration = True if course_history else False
-        self.assertEqual(actual_registration, expected_registration)
+        expected_role = True if course_history else False
+        self.assertEqual(actual_role, expected_role)
+
+    def test_is_instructor_or_ta_if_user_is_instructor(self):
+        """Test for `is_instructor_or_ta()` function if user is instructor."""
+        course_id = 1
+        user_id = 1
+        self._helper(course_id, user_id)
+
+    def test_is_instructor_or_ta_if_user_is_ta(self):
+        """Test for `is_instructor_or_ta()` function if user is ta."""
+        course_id = 1
+        user_id = 2
+        self._helper(course_id, user_id)
+
+    def test_is_instructor_or_ta_if_user_is_student(self):
+        """Test for `is_instructor_or_ta()` function if user is student."""
+        course_id = 1
+        user_id = 3
+        self._helper(course_id, user_id)
+
+    def test_is_instructor_or_ta_if_user_is_not_registered(self):
+        """Test for `is_instructor_or_ta()` function if user is not registered."""
+        course_id = 2
+        user_id = 1
+        self._helper(course_id, user_id)

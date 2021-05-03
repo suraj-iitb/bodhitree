@@ -52,13 +52,11 @@ class TestGetCourseFolder(TestCase):
 class TestGetAssignmentFolder(TestCase):
     """Test for `get_assignment_folder()` function"""
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
         # Mocking of Assignment
-        cls.assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
-        cls.assignment_mock.id = 1
-        cls.assignment_mock.name = "   Assignment 1 "
+        self.assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
+        self.assignment_mock.id = 1
+        self.assignment_mock.name = "   Assignment 1 "
 
     def test_get_assignment_folder_for_programming(self):
         """Test for `get_assignment_folder()` function for programming"""
@@ -96,20 +94,18 @@ class TestGetAssignmentFolder(TestCase):
 class TestGetAssignmentFileUploadPath(TestCase):
     """Test for `get_assignment_file_upload_path()` function"""
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUp(self):
         # Mocking of Course
-        cls.course_mock = mock.MagicMock(spec=Course, name="CourseMock")
-        cls.course_mock.id = 1
-        cls.course_mock.owner = 1
-        cls.course_mock.code = " Code 1      "
-        cls.course_mock.title = "Course  1 "
+        self.course_mock = mock.MagicMock(spec=Course, name="CourseMock")
+        self.course_mock.id = 1
+        self.course_mock.owner = 1
+        self.course_mock.code = " Code 1      "
+        self.course_mock.title = "Course  1 "
         # Mocking of Assignment
-        cls.assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
-        cls.assignment_mock.id = 1
-        cls.assignment_mock.name = "   Assignment 1 "
-        cls.assignment_mock.course = cls.course_mock
+        self.assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
+        self.assignment_mock.id = 1
+        self.assignment_mock.name = "   Assignment 1 "
+        self.assignment_mock.course = self.course_mock
 
     def test_get_assignment_file_upload_path_for_programming(self):
         """Test for `get_assignment_file_upload_path()` function for programming"""

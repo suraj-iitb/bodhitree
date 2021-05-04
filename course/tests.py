@@ -368,73 +368,109 @@ class CourseHistoryViewSetTest(APITestCase):
     def logout(self):
         self.client.logout()
 
-    def _list_course_histories_helper(self, status_code):
+    def _list_course_histories_helper(self, status_code, course_id):
         """Helper function to test list all course histories functionality.
 
         Args:
-            status_code (int): expected status code of the API call
+            status_code (int): Expected status code of the API call
+            course_id (int): Course id
         """
-        course_id = 1  # course with id 1 is created by django fixture
-        url = reverse(
-            "course:coursehistory-list-course-histories", kwargs={"pk": course_id}
-        )
+        url = reverse("course:coursehistory-list-course-histories", args=[course_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status_code)
         if response.status_code == status.HTTP_200_OK:
             self.assertEqual(
-                len(response.data["results"]), CourseHistory.objects.all().count()
+                len(response.data["results"]),
+                CourseHistory.objects.filter(course_id=course_id).count(),
             )
 
     def test_list_course_histories(self):
         """Test to check: list all courses histories."""
+        course_id = 1  # course with id 1 is created by django fixture
+
+        # List by instructor
         self.login(**ins_cred)
-        self._list_course_histories_helper(status.HTTP_200_OK)
-        self.logout()
-        self.login(**ta_cred)
-        self._list_course_histories_helper(status.HTTP_200_OK)
-        self.logout()
-        self.login(**stu_cred)
-        self._list_course_histories_helper(status.HTTP_200_OK)
+        self._list_course_histories_helper(status.HTTP_200_OK, course_id)
         self.logout()
 
-    def _retrieve_course_history_helper(self, status_code, user_id):
+        # List by ta
+        self.login(**ta_cred)
+        self._list_course_histories_helper(status.HTTP_200_OK, course_id)
+        self.logout()
+
+        # List by student
+        self.login(**stu_cred)
+        self._list_course_histories_helper(status.HTTP_200_OK, course_id)
+        self.logout()
+
+        # HTTP_401_UNAUTHORIZED due to IsInstructorOrTAOrStudent/IsOwner
+        # permission class
+        self._list_course_histories_helper(status.HTTP_401_UNAUTHORIZED, course_id)
+
+        # HTTP_403_FORBIDDEN due to IsInstructorOrTAOrStudent/IsOwner permission class
+        course_id = 4  # course with id 4 is created by django fixture
+        self.login(**ins_cred)
+        self._list_course_histories_helper(status.HTTP_404_NOT_FOUND, course_id)
+        self.logout()
+
+    def _retrieve_course_history_helper(self, status_code, course_history_id):
         """Helper function to test retrieve the course history functionality.
 
         Args:
-            status_code (int): expected status code of the API call
-            user_id (int): user id
+            status_code (int): Expected status code of the API call
+            course_history_id (int): Course history id
         """
-        course_history_id = user_id
         url = reverse(
             "course:coursehistory-retrieve-course-history",
-            kwargs={"pk": course_history_id},
+            args=[course_history_id],
         )
         response = self.client.get(url)
         self.assertEqual(response.status_code, status_code)
         if response.status_code == status.HTTP_200_OK:
-            self.assertEqual(response.data["id"], user_id)
+            self.assertEqual(response.data["id"], course_history_id)
 
     def test_retrieve_course_history(self):
         """Test to check: retrieve the courses history."""
+        # Retrieve by instructor
+        course_history_id = 1
         self.login(**ins_cred)
-        self._retrieve_course_history_helper(status.HTTP_200_OK, 1)
+        self._retrieve_course_history_helper(status.HTTP_200_OK, course_history_id)
         self.logout()
+
+        # Retrieve by ta
+        course_history_id = 2
         self.login(**ta_cred)
-        self._retrieve_course_history_helper(status.HTTP_200_OK, 2)
+        self._retrieve_course_history_helper(status.HTTP_200_OK, course_history_id)
         self.logout()
+
+        # Retrieve by student
+        course_history_id = 3
         self.login(**stu_cred)
-        self._retrieve_course_history_helper(status.HTTP_200_OK, 3)
+        self._retrieve_course_history_helper(status.HTTP_200_OK, course_history_id)
+        self.logout()
+
+        # HTTP_401_UNAUTHORIZED due to IsInstructorOrTAOrStudent permission class
+        self._retrieve_course_history_helper(
+            status.HTTP_401_UNAUTHORIZED, course_history_id
+        )
+
+        # HTTP_404_NOT_FOUND due to CourseHistory object does not exist
+        course_history_id = 60
+        self.login(**ins_cred)
+        self._retrieve_course_history_helper(
+            status.HTTP_404_NOT_FOUND, course_history_id
+        )
         self.logout()
 
     def _create_course_history_helper(self, status_code, user_id, role):
         """Helper function to test create course history functionality
 
         Args:
-            status_code (int): expected status code of the API call
-            user_id (int): user id
-            role (str): user role (instructor/ta/student)
+            status_code (int): Expected status code of the API call
+            user_id (int): User id
+            role (str): User role (instructor/ta/student)
         """
-        course_id = 2  # course with id 2 is created by django fixture
+        course_id = 4  # course with id 4 is created by django fixture
         data = {
             "user": user_id,
             "course": course_id,
@@ -452,41 +488,63 @@ class CourseHistoryViewSetTest(APITestCase):
 
     def test_create_course_history(self):
         """Test to check: create the course history."""
+        # Created by instructor
         self.login(**ins_cred)
         self._create_course_history_helper(status.HTTP_201_CREATED, 1, "I")
         self.logout()
+
+        # Created by ta
         self.login(**ta_cred)
         self._create_course_history_helper(status.HTTP_201_CREATED, 2, "T")
         self.logout()
+
+        # Created by student
         self.login(**stu_cred)
         self._create_course_history_helper(status.HTTP_201_CREATED, 3, "S")
         self.logout()
 
-    def _update_course_history_helper(self, status_code, user_id, role):
+        # HTTP_401_UNAUTHORIZED due to IsInstructorOrTAOrStudent/IsOwner
+        # permission class
+        self._create_course_history_helper(status.HTTP_401_UNAUTHORIZED, 1, "I")
+
+        # HTTP_403_FORBIDDEN due to IntegrityError of the database
+        self.login(**ins_cred)
+        with transaction.atomic():
+            self._create_course_history_helper(status.HTTP_403_FORBIDDEN, 1, "I")
+        self.logout()
+
+        # HTTP_400_BAD_REQUEST due to serialization errors
+        self.login(**ins_cred)
+        self._create_course_history_helper(status.HTTP_400_BAD_REQUEST, 1, "INSTRUCTOR")
+        self.logout()
+
+    def _update_course_history_helper(
+        self, status_code, user_id, role, user_status="U"
+    ):
         """Helper function to test update course functionality
 
         Args:
-            status_code (int): expected status code of the API call
-            user_id (int): user id
-            role (str): role of the user (instructor/ta/student)
+            status_code (int): Expected status code of the API call
+            user_id (int): User id
+            role (str): Role of the user (instructor/ta/student)
+            user_status (str): Status of user (enrolled/unerolled/pending)
         """
-        course_id = 2  # course with id 2 is created by django fixture
-        course_history = CourseHistory(
+        course_id = 4  # course with id 4 is created by django fixture
+        course_history, _ = CourseHistory.objects.get_or_create(
             user_id=user_id,
             course_id=course_id,
             role=role,
             status="E",
         )
-        course_history.save()
         data = {
             "user": user_id,
             "course": course_id,
             "role": role,
-            "status": "U",
+            "status": user_status,
         }
         url = reverse(
             "course:coursehistory-update-course-history",
-            kwargs={"pk": course_history.id},
+            args=[course_history.id],
         )
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
@@ -495,57 +553,93 @@ class CourseHistoryViewSetTest(APITestCase):
             for field in ["id", "created_on", "modified_on"]:
                 response_data.pop(field)
             self.assertEqual(response_data, data)
+        course_history.delete()
 
     def test_update_course_history(self):
         """Test to check: update the course history."""
+        # Updated by instructor
         self.login(**ins_cred)
         self._update_course_history_helper(status.HTTP_200_OK, 1, "I")
         self.logout()
+
+        # Updated by ta
         self.login(**ta_cred)
         self._update_course_history_helper(status.HTTP_200_OK, 2, "T")
         self.logout()
+
+        # Updated by student
         self.login(**stu_cred)
         self._update_course_history_helper(status.HTTP_200_OK, 3, "S")
         self.logout()
 
-    def _partial_update_course_history_helper(self, status_code, user_id, role):
+        # HTTP_401_UNAUTHORIZED due to IsInstructorOrTAOrStudent/IsOwner
+        # permission class
+        self._update_course_history_helper(status.HTTP_401_UNAUTHORIZED, 1, "I")
+
+        # HTTP_400_BAD_REQUEST due to serialization errors
+        self.login(**ins_cred)
+        self._update_course_history_helper(
+            status.HTTP_400_BAD_REQUEST, 1, "I", "Enrolled"
+        )
+        self.logout()
+
+    def _partial_update_course_history_helper(
+        self, status_code, user_id, role, user_status="U"
+    ):
         """Helper function to test partial update course functionality
 
         Args:
             status_code (int): expected status code of the API call
             user_id (int): user id
             role (str): role of the user (instructor/ta/student)
+            user_status (str): Status of user (enrolled/unerolled/pending)
         """
-        course_id = 2  # course with id 2 is created by django fixture
-        course_history = CourseHistory(
+        course_id = 4  # course with id 4 is created by django fixture
+        course_history, _ = CourseHistory.objects.get_or_create(
             user_id=user_id,
             course_id=course_id,
             role=role,
             status="E",
         )
-        course_history.save()
         data = {
-            "status": "U",
+            "status": user_status,
         }
         url = reverse(
             "course:coursehistory-update-course-history",
-            kwargs={"pk": course_history.id},
+            args=[course_history.id],
         )
         response = self.client.patch(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
             self.assertEqual(response.data["status"], data["status"])
+        course_history.delete()
 
     def test_partial_update_course_history(self):
         """Test to check: partial update the course history."""
+        # Updated by instructor
         self.login(**ins_cred)
         self._partial_update_course_history_helper(status.HTTP_200_OK, 1, "I")
         self.logout()
+
+        # Updated by ta
         self.login(**ta_cred)
         self._partial_update_course_history_helper(status.HTTP_200_OK, 2, "T")
         self.logout()
+
+        # Updated by student
         self.login(**stu_cred)
         self._partial_update_course_history_helper(status.HTTP_200_OK, 3, "S")
+        self.logout()
+
+        # HTTP_401_UNAUTHORIZED due to IsInstructorOrTAOrStudent/IsOwner
+        # permission class
+        self._partial_update_course_history_helper(status.HTTP_401_UNAUTHORIZED, 1, "I")
+
+        # HTTP_400_BAD_REQUEST due to serialization errors
+        self.login(**ins_cred)
+        self._partial_update_course_history_helper(
+            status.HTTP_400_BAD_REQUEST, 1, "I", "Enrolled"
+        )
         self.logout()
 
 

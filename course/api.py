@@ -249,11 +249,13 @@ class CourseHistoryViewSet(
 
         Raises:
             HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                permission class
+            HTTP_401_UNAUTHORIZED: Raised by:
+                1. `IsInstructorOrTAOrStudent` permission class
+                2. `IsOwner` permission class
             HTTP_403_FORBIDDEN: Raised by:
                 1. `IsInstructorOrTAOrStudent` permission class
-                2. `IntegrityError` of the database
+                2. `IsOwner` permission class
+                3. `IntegrityError` of the database
         """
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -276,22 +278,22 @@ class CourseHistoryViewSet(
 
     @action(detail=True, methods=["GET"])
     def list_course_histories(self, request, pk):
-        """Gets all the course history in the course with id as pk.
+        """Gets all the course history in the course with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): course id
+            pk (int): Course id
 
         Returns:
             `Response` with all the course histories data and status HTTP_200_OK.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                permission class
-            HTTP_403_FORBIDDEN: Raised by:
+            HTTP_401_UNAUTHORIZED: Can be raised by:
                 1. `IsInstructorOrTAOrStudent` permission class
-                2. `_is_registered()` method
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+                2. `IsOwner` permission class
+            HTTP_403_FORBIDDEN: Can be raised by:
+                1. `IsInstructorOrTAOrStudent` permission class
+                2. `IsOwner` permission class
         """
         check = self._is_registered(pk, request.user)
 
@@ -321,9 +323,16 @@ class CourseHistoryViewSet(
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_404_NOT_FOUND: Raised by:
+                1. `_is_registered()` method
+                2. CourseHistory object does not exist
         """
-        course_history = CourseHistory.objects.select_related("course").get(id=pk)
+        try:
+            course_history = CourseHistory.objects.select_related("course").get(id=pk)
+        except CourseHistory.DoesNotExist as e:
+            logger.exception(e)
+            data = {"error": "Course history with id: {} does not exists.".format(pk)}
+            return Response(data["error"], status.HTTP_404_NOT_FOUND)
         self.check_object_permissions(request, course_history)
         check = self._is_registered(course_history.course.id, request.user)
         if check is not True:

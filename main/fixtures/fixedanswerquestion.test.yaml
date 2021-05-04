@@ -1,0 +1,8 @@
+- model: quiz.fixedanswerquestion
+  pk: 5
+  fields:
+    answer: answer-i
+- model: quiz.fixedanswerquestion
+  pk: 6
+  fields:
+    answer: answer-ii

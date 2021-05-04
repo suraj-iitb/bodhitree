@@ -1,0 +1,26 @@
+- model: programming_assignments.testcase
+  pk: 1
+  fields:
+    assignment: 1
+    assignment_section: 1
+    name: Testcase 1
+    cmd_line_args: '[]'
+    marks: 3.0
+    input_file: ''
+    output_file: ''
+    is_published: false
+    created_on: 2021-05-03 13:42:38.508952+00:00
+    modified_on: 2021-05-03 13:42:38.508967+00:00
+- model: programming_assignments.testcase
+  pk: 2
+  fields:
+    assignment: 2
+    assignment_section: 2
+    name: Testcase 2
+    cmd_line_args: '[]'
+    marks: 4.0
+    input_file: ''
+    output_file: ''
+    is_published: false
+    created_on: 2021-05-03 13:42:52.237926+00:00
+    modified_on: 2021-05-03 13:42:52.237952+00:00

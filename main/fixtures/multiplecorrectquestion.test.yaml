@@ -1,0 +1,10 @@
+- model: quiz.multiplecorrectquestion
+  pk: 3
+  fields:
+    options: '["1", "2", "3", "4"]'
+    correct_options: '["2"]'
+- model: quiz.multiplecorrectquestion
+  pk: 4
+  fields:
+    options: '["6", "7", "8", "9"]'
+    correct_options: '["8"]'

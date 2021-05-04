@@ -1,0 +1,18 @@
+- model: programming_assignments.advancedprogrammingassignmenthistory
+  pk: 1
+  fields:
+    simple_programming_assignment_history: 1
+    execution_time: null
+    indentation_percentage: null
+- model: programming_assignments.advancedprogrammingassignmenthistory
+  pk: 2
+  fields:
+    simple_programming_assignment_history: 2
+    execution_time: null
+    indentation_percentage: null
+- model: programming_assignments.advancedprogrammingassignmenthistory
+  pk: 3
+  fields:
+    simple_programming_assignment_history: 3
+    execution_time: null
+    indentation_percentage: null

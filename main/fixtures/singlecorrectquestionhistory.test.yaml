@@ -1,0 +1,12 @@
+- model: quiz.singlecorrectquestionhistory
+  pk: 1
+  fields:
+    option_selected: 1
+- model: quiz.singlecorrectquestionhistory
+  pk: 2
+  fields:
+    option_selected: 2
+- model: quiz.singlecorrectquestionhistory
+  pk: 3
+  fields:
+    option_selected: 3

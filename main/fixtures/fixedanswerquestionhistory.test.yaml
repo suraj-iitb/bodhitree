@@ -1,0 +1,12 @@
+- model: quiz.fixedcorrectquestionhistory
+  pk: 7
+  fields:
+    answer_submitted: '1'
+- model: quiz.fixedcorrectquestionhistory
+  pk: 8
+  fields:
+    answer_submitted: '2'
+- model: quiz.fixedcorrectquestionhistory
+  pk: 9
+  fields:
+    answer_submitted: '4'

@@ -11,26 +11,43 @@ from course.models import (
     Schedule,
     Section,
 )
-from discussion_forum.models import DiscussionForum
+from cribs.models import Crib, CribReply
+from discussion_forum.models import (
+    DiscussionComment,
+    DiscussionForum,
+    DiscussionReply,
+    DiscussionThread,
+)
 from document.models import Document
 from email_notices.models import Email
 from programming_assignments.models import (
     AdvancedProgrammingAssignment,
+    AdvancedProgrammingAssignmentHistory,
     AssignmentSection,
     Exam,
+    ExamHistory,
     SimpleProgrammingAssignment,
+    SimpleProgrammingAssignmentHistory,
     Testcase,
+    TestcaseHistory,
 )
 from quiz.models import (
     DescriptiveQuestion,
+    DescriptiveQuestionHistory,
     FixedAnswerQuestion,
+    FixedCorrectQuestionHistory,
+    MulitpleCorrectQuestionHistory,
     MultipleCorrectQuestion,
     QuestionModule,
     Quiz,
     SingleCorrectQuestion,
+    SingleCorrectQuestionHistory,
 )
-from registration.models import User
-from subjective_assignments.models import SubjectiveAssignment
+from registration.models import Registration, User
+from subjective_assignments.models import (
+    SubjectiveAssignment,
+    SubjectiveAssignmentHistory,
+)
 from utils.permissions import (
     IsAdmin,
     IsInstructorOrTA,
@@ -39,7 +56,7 @@ from utils.permissions import (
     IsOwner,
     UserPermission,
 )
-from video.models import QuizMarker, SectionMarker, Video
+from video.models import QuizMarker, SectionMarker, Video, VideoHistory
 
 
 class PermissionHelperMixin:
@@ -427,6 +444,50 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
         "colleges.test.yaml",
         "courses.test.yaml",
         "coursehistories.test.yaml",
+        "chapters.test.yaml",
+        "sections.test.yaml",
+        "videos.test.yaml",
+        "videohistories.test.yaml",
+        "registration.test.yaml",
+        "quiz.test.yaml",
+        "question.test.yaml",
+        "questionmodule.test.yaml",
+        "sectionmarker.test.yaml",
+        "quizmarker.test.yaml",
+        "singlecorrectquestion.test.yaml",
+        "multiplecorrectquestion.test.yaml",
+        "fixedanswerquestion.test.yaml",
+        "descriptivequestion.test.yaml",
+        "questionhistory.test.yaml",
+        "singlecorrectquestionhistory.test.yaml",
+        "multiplecorrectquestionhistory.test.yaml",
+        "fixedanswerquestionhistory.test.yaml",
+        "descriptivequestionhistory.test.yaml",
+        "schedule.test.yaml",
+        "pages.test.yaml",
+        "announcement.test.yaml",
+        "discussionforum.test.yaml",
+        "discussionthread.test.yaml",
+        "discussioncomment.test.yaml",
+        "discussionreply.test.yaml",
+        "crib.test.yaml",
+        "cribreply.test.yaml",
+        "assignment.test.yaml",
+        "simpleprogrammingassignment.test.yaml",
+        "advancedprogrammingassignment.test.yaml",
+        "assignmentsection.test.yaml",
+        "testcase.test.yaml",
+        "exam.test.yaml",
+        "subjectiveassignment.test.yaml",
+        "notification.test.yaml",
+        "email.test.yaml",
+        "assignmenthistory.test.yaml",
+        "simpleprogrammingassignmenthistory.test.yaml",
+        "advancedprogrammingassignmenthistory.test.yaml",
+        "testcasehistory.test.yaml",
+        "examhistory.test.yaml",
+        "subjectiveassignmentteam.test.yaml",
+        "subjectiveassignmenthistory.test.yaml",
     ]
 
     @classmethod
@@ -442,6 +503,36 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
         cls.course_history_inst = CourseHistory.objects.get(id=1)
         cls.course_history_ta = CourseHistory.objects.get(id=2)
         cls.course_history_stud = CourseHistory.objects.get(id=3)
+        cls.video_history_inst = VideoHistory.objects.get(id=1)
+        cls.registration_inst = Registration.objects.get(id=1)
+        cls.single_correct_question_history_inst = (
+            SingleCorrectQuestionHistory.objects.get(id=1)
+        )
+        cls.multiple_correct_question_history_inst = (
+            MulitpleCorrectQuestionHistory.objects.get(id=4)
+        )
+        cls.fixed_answer_question_history_inst = (
+            FixedCorrectQuestionHistory.objects.get(id=7)
+        )
+        cls.descriptive_question_history_inst = DescriptiveQuestionHistory.objects.get(
+            id=10
+        )
+        cls.discussion_thread = DiscussionThread.objects.get(id=1)
+        cls.discussion_comment = DiscussionComment.objects.get(id=1)
+        cls.discussion_reply = DiscussionReply.objects.get(id=1)
+        cls.crib = Crib.objects.get(id=1)
+        cls.crib_reply = CribReply.objects.get(id=1)
+        cls.simple_programming_assignment_history = (
+            SimpleProgrammingAssignmentHistory.objects.get(id=1)
+        )
+        cls.advanced_programming_assignment_history = (
+            AdvancedProgrammingAssignmentHistory.objects.get(id=1)
+        )
+        cls.testcase_history = TestcaseHistory.objects.get(id=1)
+        cls.exam_history = ExamHistory.objects.get(id=1)
+        cls.subjective_assignment_history = SubjectiveAssignmentHistory.objects.get(
+            id=1
+        )
 
     def setUp(self):
         """Allows the creation of initial data at the method level."""
@@ -503,6 +594,100 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
             self.course_history_inst
         )
         expected_user = self.course_history_inst.user
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(
+            self.video_history_inst
+        )
+        expected_user = self.video_history_inst.user
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(
+            self.registration_inst
+        )
+        expected_user = self.registration_inst.user
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(
+            self.single_correct_question_history_inst
+        )
+        expected_user = self.single_correct_question_history_inst.user
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(
+            self.multiple_correct_question_history_inst
+        )
+        expected_user = self.multiple_correct_question_history_inst.user
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(
+            self.fixed_answer_question_history_inst
+        )
+        expected_user = self.fixed_answer_question_history_inst.user
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(
+            self.descriptive_question_history_inst
+        )
+        expected_user = self.descriptive_question_history_inst.user
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(
+            self.discussion_thread
+        )
+        expected_user = self.discussion_thread.author
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(
+            self.discussion_comment
+        )
+        expected_user = self.discussion_comment.discussion_thread.author
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(self.discussion_reply)
+        expected_user = (
+            self.discussion_reply.discussion_comment.discussion_thread.author
+        )
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(self.crib)
+        expected_user = self.crib.created_by
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(self.crib_reply)
+        expected_user = self.crib_reply.user
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(
+            self.simple_programming_assignment_history
+        )
+        expected_user = (
+            self.simple_programming_assignment_history.assignment_history.user
+        )
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(
+            self.advanced_programming_assignment_history
+        )
+        adv_prog_assign_hist = self.advanced_programming_assignment_history
+        sim_prog_assign_hist = (
+            adv_prog_assign_hist.simple_programming_assignment_history
+        )
+        expected_user = sim_prog_assign_hist.assignment_history.user
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(self.testcase_history)
+        expected_user = self.testcase_history.user
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(self.exam_history)
+        expected_user = self.exam_history.user
+        self.assertEqual(actual_user, expected_user)
+
+        actual_user = self.permission_class._get_user_from_object(
+            self.subjective_assignment_history
+        )
+        expected_user = self.subjective_assignment_history.assignment_history.user
         self.assertEqual(actual_user, expected_user)
 
 

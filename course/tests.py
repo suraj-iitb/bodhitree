@@ -801,7 +801,7 @@ class ChapterViewSetTest(APITestCase):
         # HTTP_401_UNAUTHORIZED due to IsInstructorOrTA
         self._retrieve_chapter_helper(chapter_id, status.HTTP_401_UNAUTHORIZED)
 
-        # HTTP_401_UNAUTHORIZED due to _is_registered()
+        # HTTP_403_FORBIDDEN due to IsInstructorOrTA
         chapter_id = 3  # chapter with id 3 is created by django fixture
         self.login(**ins_cred)
         self._list_chapters_helper(chapter_id, status.HTTP_403_FORBIDDEN)

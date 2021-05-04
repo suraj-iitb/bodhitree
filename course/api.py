@@ -463,15 +463,10 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
             `Response` with the chapter data and status HTTP_200_OK.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by:
-                1. `IsInstructorOrTA` permission class
-                2. `_is_registered()` method
+            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
         """
         chapter = self.get_object()
-        check = self._is_registered(chapter.course_id, request.user)
-        if check is not True:
-            return check
-
         serializer = self.get_serializer(chapter)
         return Response(serializer.data)
 

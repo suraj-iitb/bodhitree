@@ -16,10 +16,7 @@ from .serializers import VideoSerializer
 logger = logging.getLogger(__name__)
 
 
-class VideoViewSet(
-    viewsets.GenericViewSet,
-    custom_mixins.IsRegisteredMixins,
-):
+class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
     """Viewset for Video."""
 
     queryset = Video.objects.all()

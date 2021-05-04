@@ -435,14 +435,7 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
-            HTTP_404_NOT_FOUND: Raised if the course does not exist
         """
-        try:
-            Course.objects.get(id=pk)
-        except Course.DoesNotExist as e:
-            logger.exception(e)
-            return Response(str(e), status.HTTP_404_NOT_FOUND)
-
         check = self._is_registered(pk, request.user)
         if check is not True:
             return check

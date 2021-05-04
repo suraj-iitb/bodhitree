@@ -759,12 +759,6 @@ class ChapterViewSetTest(APITestCase):
         self._list_chapters_helper(course_id, status.HTTP_403_FORBIDDEN)
         self.logout()
 
-        # HTTP_404_NOT_FOUND due to the course does not exist
-        course_id = 100
-        self.login(**ins_cred)
-        self._list_chapters_helper(course_id, status.HTTP_404_NOT_FOUND)
-        self.logout()
-
     def _retrieve_chapter_helper(self, chapter_id, status_code):
         """Helper function for `test_retrieve_chapter()`.
 

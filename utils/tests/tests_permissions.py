@@ -1,8 +1,8 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from rest_framework.test import APIRequestFactory, APITestCase
 
 from course.models import Chapter, Course, CourseHistory
-from registration.models import User
 from utils.permissions import (
     IsAdmin,
     IsInstructorOrTA,
@@ -11,6 +11,9 @@ from utils.permissions import (
     IsOwner,
     UserPermission,
 )
+
+
+User = get_user_model()
 
 
 class PermissionHelperMixin:

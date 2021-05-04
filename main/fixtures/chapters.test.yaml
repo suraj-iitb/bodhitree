@@ -2,8 +2,8 @@
   pk: 1
   fields:
     course: 1
-    title: Chapter1
-    description: ''
+    title: Chapter-1
+    description: This is chapter 1
     content_sequence: null
     created_on: 2021-04-13 16:19:17.145450+00:00
     modified_on: 2021-04-13 16:19:17.145490+00:00
@@ -11,7 +11,16 @@
   pk: 2
   fields:
     course: 1
-    title: Chapter2
+    title: Chapter-2
+    description: ''
+    content_sequence: null
+    created_on: 2021-04-13 16:19:40.616368+00:00
+    modified_on: 2021-04-13 16:19:40.616407+00:00
+- model: course.chapter
+  pk: 3
+  fields:
+    course: 3
+    title: Chapter-3
     description: ''
     content_sequence: null
     created_on: 2021-04-13 16:19:40.616368+00:00

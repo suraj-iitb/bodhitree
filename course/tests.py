@@ -44,7 +44,7 @@ class CourseViewSetTest(APITestCase):
     def test_retrieve_course(self):
         """Test to check: retrieve a course."""
         course_id = 1  # course with id 1 is created by django fixture
-        url = reverse("course:course-detail", kwargs={"pk": course_id})
+        url = reverse("course:course-detail", args=[course_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["id"], course_id)
@@ -53,9 +53,9 @@ class CourseViewSetTest(APITestCase):
         """Helper function to test create course functionality.
 
         Args:
-            status_code (int): expected status code of the API call
-            title (str): title of the course
-            owner_id (int): owner id
+            status_code (int): Expected status code of the API call
+            title (str): Title of the course
+            owner_id (int): Owner id
         """
         data = {
             "owner": owner_id,
@@ -72,6 +72,7 @@ class CourseViewSetTest(APITestCase):
                 "send_email_to_all": False,
             },
         }
+
         url = reverse("course:course-create-course")
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status_code)
@@ -87,10 +88,12 @@ class CourseViewSetTest(APITestCase):
         self.login(**ins_cred)
         self._create_course_helper(status.HTTP_201_CREATED, "Course 1", 1)
         self.logout()
+
         # The course limit of the subscription is reached
         self.login(**ta_cred)
         self._create_course_helper(status.HTTP_403_FORBIDDEN, "Course 2", 2)
         self.logout()
+
         # The subscription plan does not exist
         self.login(**stu_cred)
         self._create_course_helper(status.HTTP_403_FORBIDDEN, "Course 3", 3)
@@ -101,10 +104,10 @@ class CourseViewSetTest(APITestCase):
 
         Args:
             course (Course): `Course` model instance
-            status_code (int): expected status code of the API call
-            title (str): title of the course
-            user_id (int): user id
-            role (str): role of the user (instructor/ta/student)
+            status_code (int): Expected status code of the API call
+            title (str): Title of the course
+            user_id (int): User id
+            role (str): Role of the user (instructor/ta/student)
         """
         CourseHistory.objects.get_or_create(
             user_id=user_id,
@@ -117,17 +120,18 @@ class CourseViewSetTest(APITestCase):
             "code": "111",
             "title": title,
             "description": "This is the description of the course",
-            "is_published": False,
+            "is_published": True,
             "course_type": "O",
             "chapters_sequence": [],
             "institute": 1,
             "department": 1,
             "df_settings": {
                 "anonymous_to_instructor": False,
-                "send_email_to_all": False,
+                "send_email_to_all": True,
             },
         }
-        url = reverse("course:course-update-course", kwargs={"pk": course.id})
+
+        url = reverse("course:course-update-course", args=[course.id])
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
@@ -137,7 +141,7 @@ class CourseViewSetTest(APITestCase):
             self.assertEqual(response_data, data)
 
     def test_update_course(self):
-        """Test to check: update the course."""
+        """Test to check: update of the course."""
         course = Course(
             owner_id=1,
             title="Course 4",
@@ -173,7 +177,7 @@ class CourseViewSetTest(APITestCase):
             course, status.HTTP_401_UNAUTHORIZED, "Course 8", 1, "I"
         )
 
-        # IntegrityError of the database
+        # HTTP_403_FORBIDDEN due to IntegrityError of the database
         self.login(**ins_cred)
         with transaction.atomic():
             self._update_course_helper(
@@ -187,7 +191,7 @@ class CourseViewSetTest(APITestCase):
         self.logout()
 
         # HTTP_403_FORBIDDEN due to SubscriptionHistory expiry/does not exist
-        subscription_history = SubscriptionHistory.objects.get(id=2)
+        subscription_history = SubscriptionHistory.objects.get(user_id=2)
         subscription_history.delete()
         self.login(**ins_cred)
         self._update_course_helper(
@@ -200,57 +204,94 @@ class CourseViewSetTest(APITestCase):
 
         Args:
             course (Course): `Course` model instance
-            status_code (int): expected status code of the API call
-            title (str): title of the course
-            user_id (int): user id
-            role (str): role of the user (instructor/ta/student)
+            status_code (int): Expected status code of the API call
+            title (str): Title of the course
+            user_id (int): User id
+            role (str): Role of the user (instructor/ta/student)
         """
-        course_history = CourseHistory(
+        CourseHistory.objects.get_or_create(
             user_id=user_id,
             course=course,
             role=role,
             status="E",
         )
-        course_history.save()
         data = {
+            "owner": user_id,
+            "code": "111",
             "title": title,
-            "course_type": "M",
         }
-        url = reverse("course:course-update-course", kwargs={"pk": course.id})
+
+        url = reverse("course:course-update-course", args=[course.id])
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
             return_data = response.data
             self.assertEqual(return_data["title"], data["title"])
-            self.assertEqual(return_data["course_type"], data["course_type"])
+            self.assertEqual(return_data["code"], data["code"])
+            self.assertEqual(return_data["owner"], data["owner"])
 
     def test_partial_update_course(self):
-        """Test to check: partial update the course."""
+        """Test to check: partial update of the course."""
         course = Course(
             owner_id=1,
-            title="Course 8",
+            title="Course 10",
             course_type="O",
         )
         course.save()
         discussion_forum = DiscussionForum(
             course=course,
-            anonymous_to_instructor="True",
-            send_email_to_all="True",
+            anonymous_to_instructor=True,
+            send_email_to_all=True,
         )
         discussion_forum.save()
+
+        # Update by instructor
         self.login(**ins_cred)
         self._partial_update_course_helper(
-            course, status.HTTP_200_OK, "Course 9", 1, "I"
+            course, status.HTTP_200_OK, "Course 11", 1, "I"
         )
         self.logout()
+
+        # Update by ta
         self.login(**ta_cred)
         self._partial_update_course_helper(
-            course, status.HTTP_200_OK, "Course 10", 2, "T"
+            course, status.HTTP_200_OK, "Course 12", 2, "T"
         )
         self.logout()
+
+        # HTTP_403_FORBIDDEN due to IsInstructorOrTAOrReadOnly permission class
         self.login(**stu_cred)
         self._partial_update_course_helper(
-            course, status.HTTP_403_FORBIDDEN, "Course 11", 3, "S"
+            course, status.HTTP_403_FORBIDDEN, "Course 13", 3, "S"
+        )
+        self.logout()
+
+        # HTTP_401_UNAUTHORIZED due to IsInstructorOrTAOrReadOnly permission class
+        self._partial_update_course_helper(
+            course, status.HTTP_401_UNAUTHORIZED, "Course 14", 1, "I"
+        )
+
+        # HTTP_403_FORBIDDEN due to IntegrityError of the database
+        self.login(**ins_cred)
+        with transaction.atomic():
+            self._partial_update_course_helper(
+                course, status.HTTP_403_FORBIDDEN, "Course", 1, "I"
+            )
+        self.logout()
+
+        # HTTP_400_BAD_REQUEST due to serialization errors
+        self.login(**ins_cred)
+        self._partial_update_course_helper(
+            course, status.HTTP_400_BAD_REQUEST, "", 1, "I"
+        )
+        self.logout()
+
+        # HTTP_403_FORBIDDEN due to SubscriptionHistory expiry/does not exist
+        subscription_history = SubscriptionHistory.objects.get(user_id=2)
+        subscription_history.delete()
+        self.login(**ins_cred)
+        self._partial_update_course_helper(
+            course, status.HTTP_403_FORBIDDEN, "Course 15", 1, "I"
         )
         self.logout()
 
@@ -258,10 +299,10 @@ class CourseViewSetTest(APITestCase):
         """Helper function to test delete course functionality
 
         Args:
-            status_code (int): expected status code of the API call
-            title (str): title of the course
-            user_id (int): user id
-            role (str): role of the user (instructor/ta/student)
+            status_code (int): Expected status code of the API call
+            title (str): Title of the course
+            user_id (int): User id
+            role (str): Role of the user (instructor/ta/student)
         """
         course = Course(
             owner_id=1,
@@ -282,7 +323,8 @@ class CourseViewSetTest(APITestCase):
             status="E",
         )
         course_history.save()
-        url = reverse(("course:course-delete-course"), kwargs={"pk": course.id})
+
+        url = reverse(("course:course-delete-course"), args=[course.id])
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_204_NO_CONTENT:
@@ -290,15 +332,23 @@ class CourseViewSetTest(APITestCase):
 
     def test_delete_course(self):
         """Test to check: delete the course."""
+        # Delete by owner
         self.login(**ins_cred)
-        self._delete_course_helper(status.HTTP_204_NO_CONTENT, "Course 12", 1, "I")
+        self._delete_course_helper(status.HTTP_204_NO_CONTENT, "Course 17", 1, "I")
         self.logout()
+
+        # HTTP_403_FORBIDDEN due to IsOwner permissioon class (delete by ta)
         self.login(**ta_cred)
-        self._delete_course_helper(status.HTTP_403_FORBIDDEN, "Course 13", 2, "T")
+        self._delete_course_helper(status.HTTP_403_FORBIDDEN, "Course 18", 2, "T")
         self.logout()
+
+        # HTTP_403_FORBIDDEN due to IsOwner permissioon class (delete by student)
         self.login(**stu_cred)
-        self._delete_course_helper(status.HTTP_403_FORBIDDEN, "Course 14", 3, "S")
+        self._delete_course_helper(status.HTTP_403_FORBIDDEN, "Course 19", 3, "S")
         self.logout()
+
+        # HTTP_401_UNAUTHORIZED due to IsOwner permissioon class
+        self._delete_course_helper(status.HTTP_401_UNAUTHORIZED, "Course 16", 1, "I")
 
 
 class CourseHistoryViewSetTest(APITestCase):

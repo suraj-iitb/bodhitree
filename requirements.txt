@@ -16,3 +16,5 @@ django-cors-headers==3.7.0
 djangorestframework-simplejwt==4.6.0
 # Python YAML (YAML file support for django loaddata & dumpdata)
 PyYAML==5.4.1
+# Date
+python-dateutil==2.8.1

@@ -1,4 +1,8 @@
 - model: registration.college
   pk: 1
   fields:
-    name: bmsce
+    name: IIT Delhi
+- model: registration.college
+  pk: 2
+  fields:
+    name: IIT Bombay

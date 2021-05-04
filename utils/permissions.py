@@ -40,7 +40,7 @@ from subjective_assignments.models import (
     SubjectiveAssignment,
     SubjectiveAssignmentHistory,
 )
-from utils.utils import is_instructor_or_ta
+from utils.utils import check_course_registration, check_is_instructor_or_ta
 from video.models import QuizMarker, SectionMarker, Video
 
 
@@ -160,11 +160,15 @@ class IsInstructorOrTA(permissions.BasePermission):
             A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
         if request.user.is_authenticated:
+            course_id = self._get_course_from_object(obj).id
+            user = request.user
+
             if request.method in permissions.SAFE_METHODS:
-                return True
-            instructor_or_ta = is_instructor_or_ta(
-                self._get_course_from_object(obj).id, request.user
-            )
+                course_registration = check_course_registration(course_id, user)
+                if course_registration:
+                    return True
+                return False
+            instructor_or_ta = check_is_instructor_or_ta(course_id, user)
             if instructor_or_ta:
                 return True
         return False
@@ -211,7 +215,7 @@ class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         if request.user.is_authenticated:
-            instructor_or_ta = is_instructor_or_ta(obj.id, request.user)
+            instructor_or_ta = check_is_instructor_or_ta(obj.id, request.user)
             if instructor_or_ta:
                 return True
         return False

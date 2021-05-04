@@ -7,12 +7,12 @@ from rest_framework.response import Response
 
 from registration.models import SubscriptionHistory
 from utils import mixins as custom_mixins
-from utils.drf_utils import (
+from utils.pagination import StandardResultsSetPagination
+from utils.permissions import (
     IsInstructorOrTA,
     IsInstructorOrTAOrReadOnly,
     IsInstructorOrTAOrStudent,
     IsOwner,
-    StandardResultsSetPagination,
 )
 from utils.utils import (
     check_course_registration,

@@ -37,7 +37,7 @@ class Course(models.Model):
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to="course_images", null=True, blank=True)
     is_published = models.BooleanField(default=False)
-    course_type = models.CharField(max_length=1, choices=COURSE_TYPES)
+    course_type = models.CharField(max_length=1, choices=COURSE_TYPES, default="M")
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
     chapters_sequence = ArrayField(models.IntegerField(), null=True, blank=True)

@@ -5,4 +5,4 @@
 - model: registration.department
   pk: 2
   fields:
-    name: CSRE
+    name: EE

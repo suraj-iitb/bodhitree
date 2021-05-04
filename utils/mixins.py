@@ -3,8 +3,8 @@ import logging
 from rest_framework import status
 from rest_framework.response import Response
 
-from course.models import Chapter, Course, Section
-from utils.utils import check_course_registration
+from course.models import Chapter, Section
+from utils.utils import check_course_registration, check_is_instructor_or_ta
 
 
 logger = logging.getLogger(__name__)
@@ -15,36 +15,47 @@ class IsRegisteredMixins:
         """Checks if the user is registered in the given course.
 
         Args:
-            course_id (int): course id
+            course_id (int): Course id
             user (User): `User` model object
 
         Returns:
-            A bool value representing whether the user is registered
-            in the course with id course_id.
+            A bool value representing whether the user is registered in the course.
 
         Raises:
-            HTTP_404_NOT_FOUND: Raised if:
-                1. The course does not exist
-                2. The user is not registered in the course
+            HTTP_403_FORBIDDEN: Raised if the user is not registered in the course
         """
-        try:
-            course = Course.objects.get(id=course_id)
-        except Course.DoesNotExist as e:
-            logger.exception(e)
-            data = {
-                "error": "Course with id: {} does not exist".format(course_id),
-            }
-            return Response(data, status.HTTP_404_NOT_FOUND)
+        if check_course_registration(course_id, user):
+            return True
 
-        if not check_course_registration(course_id, user):
-            data = {
-                "error": "User: {} is not registered in the course: {}".format(
-                    user, course
-                ),
-            }
-            logger.warning(data["error"])
-            return Response(data, status.HTTP_404_NOT_FOUND)
-        return True
+        error = "The user `{}` is not registered in the course with id: `{}`.".format(
+            user, course_id
+        )
+        logger.error(error)
+        return Response(error, status.HTTP_403_FORBIDDEN)
+
+    def _is_instructor_or_ta(self, course_id, user):
+        """Checks if the user is instructor/ta in the given course.
+
+        Args:
+            course_id (int): Course id
+            user (User): `User` model object
+
+        Returns:
+            A bool value representing whether the user is instructor/ta in the course.
+
+        Raises:
+            HTTP_403_FORBIDDEN: Raised if the user is not instructor/ta in the course
+        """
+        if check_is_instructor_or_ta(course_id, user):
+            return True
+
+        error = (
+            "The user `{}` is not instructor/ta in the course with id: `{}`.".format(
+                user, course_id
+            )
+        )
+        logger.error(error)
+        return Response(error, status.HTTP_403_FORBIDDEN)
 
     def _is_registered_using_chapter_id(self, chapter_id, user):
         """Checks if the user is registered in the given course.

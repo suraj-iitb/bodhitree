@@ -82,7 +82,7 @@ def check_course_registration(course_id, user):
     return False
 
 
-def is_instructor_or_ta(course_id, user):
+def check_is_instructor_or_ta(course_id, user):
     """Checks if the user is instructor/ta in a course.
 
     Args:

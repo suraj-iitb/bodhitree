@@ -40,7 +40,7 @@ from subjective_assignments.models import (
     SubjectiveAssignment,
     SubjectiveAssignmentHistory,
 )
-from utils.utils import is_instructor_or_ta
+from utils.utils import check_is_instructor_or_ta
 from video.models import QuizMarker, SectionMarker, Video
 
 
@@ -162,7 +162,7 @@ class IsInstructorOrTA(permissions.BasePermission):
         if request.user.is_authenticated:
             if request.method in permissions.SAFE_METHODS:
                 return True
-            instructor_or_ta = is_instructor_or_ta(
+            instructor_or_ta = check_is_instructor_or_ta(
                 self._get_course_from_object(obj).id, request.user
             )
             if instructor_or_ta:
@@ -211,7 +211,7 @@ class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         if request.user.is_authenticated:
-            instructor_or_ta = is_instructor_or_ta(obj.id, request.user)
+            instructor_or_ta = check_is_instructor_or_ta(obj.id, request.user)
             if instructor_or_ta:
                 return True
         return False

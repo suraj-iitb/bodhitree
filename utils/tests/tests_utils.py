@@ -9,10 +9,10 @@ from course.models import Course, CourseHistory
 from programming_assignments.models import Assignment
 from utils.utils import (
     check_course_registration,
+    check_is_instructor_or_ta,
     get_assignment_file_upload_path,
     get_assignment_folder,
     get_course_folder,
-    is_instructor_or_ta,
 )
 
 
@@ -187,7 +187,7 @@ class TestCheckCourseRegistration(TestCase):
 
 
 class TestIsInstructorOrTa(TestCase):
-    """Test for `is_instructor_or_ta()` function"""
+    """Test for `check_is_instructor_or_ta()` function"""
 
     fixtures = [
         "users.test.yaml",
@@ -199,7 +199,7 @@ class TestIsInstructorOrTa(TestCase):
 
     def _helper(self, course_id, user_id):
         user = User.objects.get(id=user_id)
-        actual_role = is_instructor_or_ta(course_id, user)
+        actual_role = check_is_instructor_or_ta(course_id, user)
         course_history = CourseHistory.objects.filter(
             Q(course_id=course_id) & (Q(role="I") | Q(role="T")) & Q(user=user)
         ).count()
@@ -207,25 +207,25 @@ class TestIsInstructorOrTa(TestCase):
         self.assertEqual(actual_role, expected_role)
 
     def test_is_instructor_or_ta_if_user_is_instructor(self):
-        """Test for `is_instructor_or_ta()` function if user is instructor."""
+        """Test for `check_is_instructor_or_ta()` function if user is instructor."""
         course_id = 1
         user_id = 1
         self._helper(course_id, user_id)
 
     def test_is_instructor_or_ta_if_user_is_ta(self):
-        """Test for `is_instructor_or_ta()` function if user is ta."""
+        """Test for `check_is_instructor_or_ta()` function if user is ta."""
         course_id = 1
         user_id = 2
         self._helper(course_id, user_id)
 
     def test_is_instructor_or_ta_if_user_is_student(self):
-        """Test for `is_instructor_or_ta()` function if user is student."""
+        """Test for `check_is_instructor_or_ta()` function if user is student."""
         course_id = 1
         user_id = 3
         self._helper(course_id, user_id)
 
     def test_is_instructor_or_ta_if_user_is_not_registered(self):
-        """Test for `is_instructor_or_ta()` function if user is not registered."""
+        """Test for `check_is_instructor_or_ta()` function if user is not registered."""
         course_id = 2
         user_id = 1
         self._helper(course_id, user_id)

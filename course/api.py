@@ -15,7 +15,7 @@ from utils.permissions import (
     IsOwner,
 )
 from utils.subscription import SubscriptionView
-from utils.utils import check_course_registration, is_instructor_or_ta
+from utils.utils import check_course_registration, check_is_instructor_or_ta
 
 from .models import Chapter, Course, CourseHistory, Page, Section
 from .serializers import (
@@ -385,7 +385,7 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
 
     @action(detail=False, methods=["POST"])
     def create_chapter(self, request):
-        """Adds a chapter to the course with id as pk.
+        """Adds a chapter to the course.
 
         Args:
             request (Request): DRF `Request` object
@@ -397,28 +397,18 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by:
-                1. If the user is not the instructor/ta of the course
-                2. `IsInstructorOrTA` permission class
-                3. `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+                1. `IsInstructorOrTA` permission class
+                2. `IntegrityError` of the database
+                3. `_is_instructor_or_ta()` method
         """
         user = request.user
         course_id = request.data["course"]
-        check = self._is_registered(course_id, user)
-        if check is not True:
-            return check
 
         # This is specifically done during chapter creation (not during updation or
         # deletion) because it can't be handled by IsInstructorOrTA permission class
-        if not is_instructor_or_ta(course_id, user):
-            data = {
-                "error": "User: {} is not the instructor/ta"
-                " of course with id: {}".format(
-                    user,
-                    course_id,
-                ),
-            }
-            return Response(data, status.HTTP_403_FORBIDDEN)
+        check = self._is_instructor_or_ta(course_id, user)
+        if check is not True:
+            return check
 
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -426,12 +416,7 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
                 serializer.save()
             except IntegrityError as e:
                 logger.exception(e)
-                data = {
-                    "error": "Chapter with title '{}' already exists.".format(
-                        serializer.initial_data["title"]
-                    )
-                }
-                return Response(data, status=status.HTTP_403_FORBIDDEN)
+                return Response(e.message, status=status.HTTP_403_FORBIDDEN)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         errors = serializer.errors
         logger.error(errors)
@@ -623,7 +608,7 @@ class SectionViewSet(viewsets.GenericViewSet):
 
         # This is specifically done during section creation (not during updation or
         # deletion) because it can't be handled by IsInstructorOrTA permission class
-        if not is_instructor_or_ta(course_id, user):
+        if not check_is_instructor_or_ta(course_id, user):
             data = {
                 "error": "User: {} is not the instructor/ta of"
                 " the course with id: {}.".format(user, course_id),
@@ -831,7 +816,7 @@ class PageViewSet(viewsets.GenericViewSet):
 
         # This is specifically done during page creation (not during updation or
         # deletion) because it can't be handled by IsInstructorOrTA permission class
-        if not is_instructor_or_ta(course_id, user):
+        if not check_is_instructor_or_ta(course_id, user):
             data = {
                 "error": "User: {} is not the instructor/ta of"
                 " the course with id: {}.".format(user, course_id),

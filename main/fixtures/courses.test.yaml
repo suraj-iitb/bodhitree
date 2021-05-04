@@ -11,34 +11,25 @@
     created_on: 2021-04-13 15:45:51.713995+00:00
     modified_on: 2021-04-13 15:45:51.714036+00:00
     chapters_sequence: '[]'
+    institute: 1
+    department: 1
 - model: course.course
   pk: 2
-  fields:
-    owner: 1
-    code: CS725
-    title: Machine Learning
-    description: Machine Learning for 1st Year Students
-    image: ''
-    is_published: false
-    course_type: O
-    created_on: 2021-04-13 15:45:51.713995+00:00
-    modified_on: 2021-04-13 15:45:51.714036+00:00
-    chapters_sequence: '[]'
-- model: course.course
-  pk: 3
   fields:
     owner: 1
     code: 111
     title: Course
     description: This is course
     image: ''
-    is_published: true
+    is_published: false
     course_type: O
     created_on: 2021-04-13 15:45:51.713995+00:00
     modified_on: 2021-04-13 15:45:51.714036+00:00
     chapters_sequence: '[]'
+    institute: 1
+    department: 1
 - model: course.course
-  pk: 4
+  pk: 3
   fields:
     owner: 2
     code: 111
@@ -46,7 +37,9 @@
     description: This is course 2
     image: ''
     is_published: true
-    course_type: O
+    course_type: M
     created_on: 2021-04-13 15:45:51.713995+00:00
     modified_on: 2021-04-13 15:45:51.714036+00:00
     chapters_sequence: '[]'
+    institute: 2
+    department: 1

@@ -37,7 +37,7 @@
 - model: course.coursehistory
   pk: 5
   fields:
-    user: 1
+    user: 2
     course: 3
     role: I
     status: E

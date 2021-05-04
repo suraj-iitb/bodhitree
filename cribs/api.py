@@ -33,18 +33,21 @@ class CribViewSet(
 
     @action(detail=False, methods=["POST"])
     def create_crib(self, request):
-        """.
+        """Adds a crib to the course.
+
         Args:
             request (Request): DRF `Request` object
+
         Returns:
             `Response` with the created crib data and
              status HTTP_201_CREATED
+
         Raises:
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by:
+                . `_is_instructor_or_ta()` method
         """
         user = request.user
         course_id = request.data["course"]
@@ -62,14 +65,16 @@ class CribViewSet(
 
     @action(detail=True, methods=["GET"], permission_classes=[IsInstructorOrTA])
     def list_cribs(self, request, pk):
-        """Gets all the cribs in the current course
-           with primary key as pk.
+        """Gets all the cribs in the current course.
+
         Args:
             request (Request): DRF `Request` object
-            pk (int): Primary key of the course
+            pk (int): Course id
+
         Returns:
             `Response` with all the cribs data
              and status HTTP_200_OK
+
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class

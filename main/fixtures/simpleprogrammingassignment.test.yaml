@@ -1,0 +1,12 @@
+- model: programming_assignments.simpleprogrammingassignment
+  pk: 1
+  fields:
+    assignment: 1
+    programming_language: C
+    document: ''
+- model: programming_assignments.simpleprogrammingassignment
+  pk: 2
+  fields:
+    assignment: 2
+    programming_language: C++
+    document: ''

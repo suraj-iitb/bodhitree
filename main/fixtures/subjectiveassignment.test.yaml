@@ -1,0 +1,16 @@
+- model: subjective_assignments.subjectiveassignment
+  pk: 1
+  fields:
+    assignment: 1
+    team_size: 4
+    question_file: 2.123:new_course2/subjective_assignment/1.Assignment_1/question_files/eye-of-the-tiger-workout.pdf
+    helper_file: ''
+    files_to_be_submitted: '[]'
+- model: subjective_assignments.subjectiveassignment
+  pk: 2
+  fields:
+    assignment: 2
+    team_size: 6
+    question_file: 2.123:new_course2/subjective_assignment/2.Assignment_2/question_files/eye-of-the-tiger-workout.pdf
+    helper_file: ''
+    files_to_be_submitted: '[]'

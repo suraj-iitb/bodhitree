@@ -1,0 +1,18 @@
+- model: video.videohistory
+  pk: 1
+  fields:
+    video: 1
+    user: 1
+    video_watched_duration: 00:10:00
+- model: video.videohistory
+  pk: 2
+  fields:
+    video: 1
+    user: 2
+    video_watched_duration: 00:10:00
+- model: video.videohistory
+  pk: 3
+  fields:
+    video: 1
+    user: 3
+    video_watched_duration: 00:10:00

@@ -306,7 +306,7 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
             user = obj.created_by
         elif type(obj) == CribReply:
             course = obj.crib.course
-            user = obj.created_by
+            user = obj.user
         elif type(obj) in (
             SimpleProgrammingAssignmentHistory,
             SubjectiveAssignmentHistory,
@@ -326,6 +326,7 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
                 if obj.testcase.assignment
                 else obj.testcase.assignment_section.assignment.course
             )
+            user = obj.user
         return (course, user)
 
     def has_permission(self, request, view):

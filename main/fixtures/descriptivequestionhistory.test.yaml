@@ -1,0 +1,12 @@
+- model: quiz.descriptivequestionhistory
+  pk: 10
+  fields:
+    answer_submitted: '1'
+- model: quiz.descriptivequestionhistory
+  pk: 11
+  fields:
+    answer_submitted: '2'
+- model: quiz.descriptivequestionhistory
+  pk: 12
+  fields:
+    answer_submitted: '1'

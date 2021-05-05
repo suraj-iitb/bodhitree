@@ -1,0 +1,104 @@
+- model: quiz.question
+  pk: 1
+  fields:
+    question_module: 1
+    question_description: This is question description-i
+    answer_description: Answer description-i
+    hint: ''
+    max_no_of_attempts: 3
+    marks: 1
+    gradable: false
+    is_published: false
+    created_on: 2021-05-03 12:22:11.476619+00:00
+    modified_on: 2021-05-03 12:22:11.476637+00:00
+- model: quiz.question
+  pk: 2
+  fields:
+    question_module: 1
+    question_description: This is question description-ii
+    answer_description: Answer description-ii
+    hint: ''
+    max_no_of_attempts: 5
+    marks: 1
+    gradable: false
+    is_published: false
+    created_on: 2021-05-03 12:23:43.289155+00:00
+    modified_on: 2021-05-03 12:23:43.289184+00:00
+- model: quiz.question
+  pk: 3
+  fields:
+    question_module: 1
+    question_description: Multiple correct question
+    answer_description: Multiple correct answer
+    hint: ''
+    max_no_of_attempts: 4
+    marks: 3
+    gradable: false
+    is_published: false
+    created_on: 2021-05-03 12:27:31.574862+00:00
+    modified_on: 2021-05-03 12:27:31.574881+00:00
+- model: quiz.question
+  pk: 4
+  fields:
+    question_module: 2
+    question_description: Question description-ii
+    answer_description: answer description
+    hint: ''
+    max_no_of_attempts: 5
+    marks: 8
+    gradable: false
+    is_published: false
+    created_on: 2021-05-03 12:28:04.283771+00:00
+    modified_on: 2021-05-03 12:28:04.283796+00:00
+- model: quiz.question
+  pk: 5
+  fields:
+    question_module: 1
+    question_description: Fixed answer question
+    answer_description: Answer des
+    hint: ''
+    max_no_of_attempts: 4
+    marks: 4
+    gradable: false
+    is_published: false
+    created_on: 2021-05-03 12:36:16.305141+00:00
+    modified_on: 2021-05-03 12:36:16.305163+00:00
+- model: quiz.question
+  pk: 6
+  fields:
+    question_module: 2
+    question_description: Fixed answer question-ii
+    answer_description: answer-ii
+    hint: ''
+    max_no_of_attempts: 5
+    marks: 8
+    gradable: false
+    is_published: false
+    created_on: 2021-05-03 12:36:45.504739+00:00
+    modified_on: 2021-05-03 12:36:45.504759+00:00
+- model: quiz.question
+  pk: 7
+  fields:
+    question_module: 1
+    question_description: Descriptive question -i
+    answer_description: Answer description-i
+    hint: ''
+    max_no_of_attempts: 4
+    marks: 6
+    gradable: false
+    is_published: false
+    created_on: 2021-05-03 12:41:11.757526+00:00
+    modified_on: 2021-05-03 12:41:11.757559+00:00
+- model: quiz.question
+  pk: 8
+  fields:
+    question_module: 2
+    question_description: Question des-ii
+    answer_description: answer des-ii
+    hint: ''
+    max_no_of_attempts: 5
+    marks: 4
+    gradable: false
+    is_published: false
+    created_on: 2021-05-03 12:42:33.513440+00:00
+    modified_on: 2021-05-03 12:42:33.513458+00:00

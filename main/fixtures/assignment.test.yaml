@@ -1,0 +1,24 @@
+- model: programming_assignments.assignment
+  pk: 1
+  fields:
+    course: 2
+    name: Assignment 1
+    description: ''
+    is_published: false
+    start_date: 2021-05-10 13:32:03+00:00
+    end_date: 2021-05-19 06:30:00+00:00
+    extended_date: 2021-05-12 13:32:16+00:00
+    created_on: 2021-05-03 13:32:18.139623+00:00
+    modified_on: 2021-05-03 13:32:18.139634+00:00
+- model: programming_assignments.assignment
+  pk: 2
+  fields:
+    course: 2
+    name: Assignment 2
+    description: ''
+    is_published: false
+    start_date: 2021-05-10 13:32:03+00:00
+    end_date: 2021-05-11 13:33:19+00:00
+    extended_date: 2021-05-19 06:30:00+00:00
+    created_on: 2021-05-03 13:33:31.968867+00:00
+    modified_on: 2021-05-03 13:33:31.968884+00:00

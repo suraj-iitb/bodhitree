@@ -1,0 +1,20 @@
+- model: quiz.quiz
+  pk: 1
+  fields:
+    section: 1
+    chapter: null
+    title: Quiz 1
+    description: quiz description
+    question_module_sequence: '[]'
+    created_on: 2021-05-03 11:31:41.964993+00:00
+    modified_on: 2021-05-03 11:31:41.965024+00:00
+- model: quiz.quiz
+  pk: 2
+  fields:
+    section: null
+    chapter: 1
+    title: Quiz 2
+    description: quiz description - ii
+    question_module_sequence: '[]'
+    created_on: 2021-05-03 11:32:17.231260+00:00
+    modified_on: 2021-05-03 11:32:17.231295+00:00

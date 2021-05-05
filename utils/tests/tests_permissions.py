@@ -89,7 +89,7 @@ class IsInstructorOrTATest(APITestCase, PermissionHelperMixin):
     def test_post(self):
         """Test `POST` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.post("/")
-        self._helper(request)
+        self._permisison_helper(request)
 
     def test_put(self):
         """Test `PUT` for `has_permission()` & `has_object_permission()` method."""
@@ -108,7 +108,6 @@ class IsInstructorOrTATest(APITestCase, PermissionHelperMixin):
 
     def test_get_course_from_object(self):
         """Test `_get_course_from_object()` method."""
-        # TODO: For all possible objects do assertEqual
         actual_course = self.permission_class._get_course_from_object(self.chapter)
         expected_course = self.chapter.course
         self.assertEqual(actual_course, expected_course)
@@ -161,7 +160,8 @@ class IsInstructorOrTAOrReadOnlyTest(APITestCase, PermissionHelperMixin):
     def test_post(self):
         """Test `POST` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.post("/")
-        self._helper(request)
+        self.user_permissions[3][1] = False
+        self._permisison_helper(request)
 
     def test_put(self):
         """Test `PUT` for `has_permission()` & `has_object_permission()` method."""

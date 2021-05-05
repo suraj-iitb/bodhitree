@@ -66,9 +66,11 @@ class IsInstructorOrTA(permissions.BasePermission):
 
     Allows:
         1. `GET (list)` permission to instructor/ta/student
-            (check `is_registered()` in api.py)
+            (If above is not desirable, then one way is: check `is_registered()`
+                in api.py)
         2  `POST` permission to instructor/ta/student
-            (check `is_instructor_or_ta()` in api.py)
+            (If above is not desirable, then one way is: check `is_instructor_or_ta()`
+                in api.py)
         3. `GET (retrieve)` permission to registered instructor/ta/student
         4. `PUT` permision to registered instructor/ta
         5. `PATCH` permision to registered instructor/ta
@@ -163,8 +165,8 @@ class IsInstructorOrTA(permissions.BasePermission):
 
         Args:
             request (Request): DRF `Request` object
-            view (ViewSet): `ViewSet` object (`ChapterViewSet`, `QuizViewSet` etc.)
-            obj (Model): `Model` object (`Chapter`, `Quiz` etc.)
+            view (ViewSet): `ViewSet` object (`ChapterViewSet`, `VideoViewSet` etc.)
+            obj (Model): `Model` object (`Chapter`, `Video` etc.)
 
         Returns:
             A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.

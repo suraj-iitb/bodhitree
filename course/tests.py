@@ -946,7 +946,9 @@ class PageViewSetTest(APITestCase):
         url = reverse("course:page-list-pages", args=[course_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), Page.objects.all().count())
+        self.assertEqual(
+            len(response.data), Page.objects.filter(course_id=course_id).count()
+        )
 
     def test_list_pages(self):
         """Test to check: list all pages."""
@@ -1133,7 +1135,9 @@ class SectionViewSetTest(APITestCase):
         url = reverse("course:section-list-sections", args=[chapter_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), Section.objects.all().count())
+        self.assertEqual(
+            len(response.data), Section.objects.filter(chapter_id=chapter_id).count()
+        )
 
     def test_list_sections(self):
         """Test to check: list all sections."""

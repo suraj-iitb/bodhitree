@@ -363,7 +363,7 @@ class UserPermission(permissions.BasePermission):
 
     Allows:
         1. `GET (list)` permission to any authenticated user
-            (don't provide a `list()` method)
+            (If above is not desirable, then one way is: don't provide `list()` method)
         2  `POST` permisison to authenticated/not_authenticated user
         3. `GET (retrieve)` permission to owner or admin user
         4. `PUT` permision to owner or admin user

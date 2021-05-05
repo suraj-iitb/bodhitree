@@ -223,6 +223,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "main/data/")
 # User model
 AUTH_USER_MODEL = "registration.User"
 
+# Type of auto-created primary keys
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
 # Max charfield limit
 MAX_CHARFIELD_LENGTH = 100
 

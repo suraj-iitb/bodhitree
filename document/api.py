@@ -6,8 +6,8 @@ from rest_framework.response import Response
 
 from course.models import Chapter, Section
 from utils import mixins as custom_mixins
-from utils.drf_utils import IsInstructorOrTA
-from utils.utils import is_instructor_or_ta
+from utils.permissions import IsInstructorOrTA
+from utils.utils import check_is_instructor_or_ta
 
 from .models import Document
 from .serializers import DocumentSerializer
@@ -89,7 +89,7 @@ class DocumentViewSet(
 
         # This is specifically done during document creation (not during updation or
         # deletion) because it can't be handled by IsInstructorOrTA permission class
-        if not is_instructor_or_ta(course_id, user):
+        if not check_is_instructor_or_ta(course_id, user):
             data = {
                 "error": "User: {} is not the instructor/ta of the "
                 "course with id: {}".format(user, course_id),

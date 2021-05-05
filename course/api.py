@@ -7,19 +7,15 @@ from rest_framework.response import Response
 
 from registration.models import SubscriptionHistory
 from utils import mixins as custom_mixins
-from utils.drf_utils import (
+from utils.pagination import StandardResultsSetPagination
+from utils.permissions import (
     IsInstructorOrTA,
     IsInstructorOrTAOrReadOnly,
     IsInstructorOrTAOrStudent,
     IsOwner,
-    StandardResultsSetPagination,
 )
-from utils.utils import (
-    check_course_registration,
-    has_valid_subscription,
-    is_course_limit_reached,
-    is_instructor_or_ta,
-)
+from utils.subscription import SubscriptionView
+from utils.utils import check_course_registration, check_is_instructor_or_ta
 
 from .models import Chapter, Course, CourseHistory, Page, Section
 from .serializers import (
@@ -57,7 +53,6 @@ class CourseViewSet(
         "title",
         "is_published",
     )
-    ordering_fields = ("id",)
 
     def _create_course_check(self, user):
         """Checks if the user can create a course.
@@ -74,7 +69,7 @@ class CourseViewSet(
                 2. The subscription plan does not exist.
         """
         try:
-            if not is_course_limit_reached(user):
+            if not SubscriptionView.is_course_limit_reached(user):
                 return True
             data = {
                 "error": "For user: {}, the limit of number of courses in "
@@ -108,7 +103,7 @@ class CourseViewSet(
             logger.exception(e)
             return Response(e, status.HTTP_404_NOT_FOUND)
 
-        if has_valid_subscription(course.owner):
+        if SubscriptionView.has_valid_subscription(course.owner):
             return True
         data = {
             "error": "User: {} is not permitted to update the course: {}.".format(
@@ -254,11 +249,13 @@ class CourseHistoryViewSet(
 
         Raises:
             HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                permission class
+            HTTP_401_UNAUTHORIZED: Raised by:
+                1. `IsInstructorOrTAOrStudent` permission class
+                2. `IsOwner` permission class
             HTTP_403_FORBIDDEN: Raised by:
                 1. `IsInstructorOrTAOrStudent` permission class
-                2. `IntegrityError` of the database
+                2. `IsOwner` permission class
+                3. `IntegrityError` of the database
         """
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -281,22 +278,22 @@ class CourseHistoryViewSet(
 
     @action(detail=True, methods=["GET"])
     def list_course_histories(self, request, pk):
-        """Gets all the course history in the course with id as pk.
+        """Gets all the course history in the course with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): course id
+            pk (int): Course id
 
         Returns:
             `Response` with all the course histories data and status HTTP_200_OK.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                permission class
-            HTTP_403_FORBIDDEN: Raised by:
+            HTTP_401_UNAUTHORIZED: Can be raised by:
                 1. `IsInstructorOrTAOrStudent` permission class
-                2. `_is_registered()` method
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+                2. `IsOwner` permission class
+            HTTP_403_FORBIDDEN: Can be raised by:
+                1. `IsInstructorOrTAOrStudent` permission class
+                2. `IsOwner` permission class
         """
         check = self._is_registered(pk, request.user)
 
@@ -326,9 +323,17 @@ class CourseHistoryViewSet(
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_404_NOT_FOUND: Raised by:
+                1. `_is_registered()` method
+                2. CourseHistory object does not exist
         """
-        course_history = self.get_object()
+        try:
+            course_history = CourseHistory.objects.select_related("course").get(id=pk)
+        except CourseHistory.DoesNotExist as e:
+            logger.exception(e)
+            data = {"error": "Course history with id: {} does not exists.".format(pk)}
+            return Response(data["error"], status.HTTP_404_NOT_FOUND)
+        self.check_object_permissions(request, course_history)
         check = self._is_registered(course_history.course.id, request.user)
         if check is not True:
             return check
@@ -354,7 +359,8 @@ class CourseHistoryViewSet(
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        course_history = self.get_object()
+        course_history = CourseHistory.objects.select_related("course").get(id=pk)
+        self.check_object_permissions(request, course_history)
         check = self._is_registered(course_history.course.id, request.user)
         if check is not True:
             return check
@@ -370,52 +376,16 @@ class CourseHistoryViewSet(
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ChapterViewSet(viewsets.GenericViewSet):
+class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
     """Viewset for `Chapter`."""
 
     queryset = Chapter.objects.all()
     serializer_class = ChapterSerializer
     permission_classes = (IsInstructorOrTA,)
-    filterset_fields = ("title",)
-    search_fields = ("title",)
-    ordering_fields = ("id",)
-
-    def _is_registered(self, course_id, user):
-        """Checks if the user is registered in the given course.
-
-        Args:
-            course_id (int): course id
-            user (User): `User` model object
-
-        Returns:
-            A bool value representing whether the user is registered
-            in the course with id course_id.
-
-        Raises:
-            HTTP_404_NOT_FOUND: Raised if:
-                1. The course does not exist
-                2. The user is not registered in the course
-        """
-        try:
-            course = Course.objects.get(id=course_id)
-        except Course.DoesNotExist:
-            data = {
-                "error": "Course with id: {} does not exist".format(course_id),
-            }
-            return Response(data, status.HTTP_404_NOT_FOUND)
-
-        if not check_course_registration(course_id, user):
-            data = {
-                "error": "User: {} is not registered in the course: {}".format(
-                    user, course
-                ),
-            }
-            return Response(data, status.HTTP_404_NOT_FOUND)
-        return True
 
     @action(detail=False, methods=["POST"])
     def create_chapter(self, request):
-        """Adds a chapter to the course with id as pk.
+        """Adds a chapter to the course.
 
         Args:
             request (Request): DRF `Request` object
@@ -427,28 +397,17 @@ class ChapterViewSet(viewsets.GenericViewSet):
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by:
-                1. If the user is not the instructor/ta of the course
-                2. `IsInstructorOrTA` permission class
-                3. `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+                1. `IntegrityError` of the database
+                2. `_is_instructor_or_ta()` method
         """
         user = request.user
         course_id = request.data["course"]
-        check = self._is_registered(course_id, user)
-        if check is not True:
-            return check
 
         # This is specifically done during chapter creation (not during updation or
         # deletion) because it can't be handled by IsInstructorOrTA permission class
-        if not is_instructor_or_ta(course_id, user):
-            data = {
-                "error": "User: {} is not the instructor/ta"
-                " of course with id: {}".format(
-                    user,
-                    course_id,
-                ),
-            }
-            return Response(data, status.HTTP_403_FORBIDDEN)
+        check = self._is_instructor_or_ta(course_id, user)
+        if check is not True:
+            return check
 
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -456,12 +415,7 @@ class ChapterViewSet(viewsets.GenericViewSet):
                 serializer.save()
             except IntegrityError as e:
                 logger.exception(e)
-                data = {
-                    "error": "Chapter with title '{}' already exists.".format(
-                        serializer.initial_data["title"]
-                    )
-                }
-                return Response(data, status=status.HTTP_403_FORBIDDEN)
+                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         errors = serializer.errors
         logger.error(errors)
@@ -469,19 +423,18 @@ class ChapterViewSet(viewsets.GenericViewSet):
 
     @action(detail=True, methods=["GET"])
     def list_chapters(self, request, pk):
-        """Gets all the chapters in the course with id as pk.
+        """Gets all the chapters in the course.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): course id
+            pk (int): Course id
 
         Returns:
             `Response` with all the chapter data and status HTTP_200_OK.
 
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
         """
         check = self._is_registered(pk, request.user)
         if check is not True:
@@ -493,11 +446,11 @@ class ChapterViewSet(viewsets.GenericViewSet):
 
     @action(detail=True, methods=["GET"])
     def retrieve_chapter(self, request, pk):
-        """Gets the chapter with id as pk.
+        """Gets the chapter.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): chapter id
+            pk (int): Chapter id
 
         Returns:
             `Response` with the chapter data and status HTTP_200_OK.
@@ -505,23 +458,18 @@ class ChapterViewSet(viewsets.GenericViewSet):
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
         chapter = self.get_object()
-        check = self._is_registered(chapter.course.id, request.user)
-        if check is not True:
-            return check
-
         serializer = self.get_serializer(chapter)
         return Response(serializer.data)
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_chapter(self, request, pk):
-        """Updates the chapter with id as pk.
+        """Updates the chapter.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): chapter id
+            pk (int): Chapter id
 
         Returns:
             `Response` with the updated chapter data and status HTTP_200_OK.
@@ -529,15 +477,11 @@ class ChapterViewSet(viewsets.GenericViewSet):
         Raises:
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by
+            HTTP_403_FORBIDDEN: Raised by:
                 1. `IsInstructorOrTA` permission class
                 2. `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
         chapter = self.get_object()
-        check = self._is_registered(chapter.course.id, request.user)
-        if check is not True:
-            return check
 
         serializer = self.get_serializer(chapter, data=request.data, partial=True)
         if serializer.is_valid():
@@ -545,12 +489,7 @@ class ChapterViewSet(viewsets.GenericViewSet):
                 serializer.save()
             except IntegrityError as e:
                 logger.exception(e)
-                data = {
-                    "error": "Chapter with title '{}' already exists.".format(
-                        serializer.initial_data["title"]
-                    )
-                }
-                return Response(data, status=status.HTTP_403_FORBIDDEN)
+                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
             return Response(serializer.data)
         errors = serializer.errors
         logger.error(errors)
@@ -558,11 +497,11 @@ class ChapterViewSet(viewsets.GenericViewSet):
 
     @action(detail=True, methods=["DELETE"])
     def delete_chapter(self, request, pk):
-        """Deletes the chapter with id as pk.
+        """Deletes the chapter.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): chapter id
+            pk (int): Chapter id
 
         Returns:
             `Response` with no data and status HTTP_204_NO_CONTENT.
@@ -570,13 +509,8 @@ class ChapterViewSet(viewsets.GenericViewSet):
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
         chapter = self.get_object()
-        check = self._is_registered(chapter.course.id, request.user)
-        if check is not True:
-            return check
-
         chapter.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -653,7 +587,7 @@ class SectionViewSet(viewsets.GenericViewSet):
 
         # This is specifically done during section creation (not during updation or
         # deletion) because it can't be handled by IsInstructorOrTA permission class
-        if not is_instructor_or_ta(course_id, user):
+        if not check_is_instructor_or_ta(course_id, user):
             data = {
                 "error": "User: {} is not the instructor/ta of"
                 " the course with id: {}.".format(user, course_id),
@@ -861,7 +795,7 @@ class PageViewSet(viewsets.GenericViewSet):
 
         # This is specifically done during page creation (not during updation or
         # deletion) because it can't be handled by IsInstructorOrTA permission class
-        if not is_instructor_or_ta(course_id, user):
+        if not check_is_instructor_or_ta(course_id, user):
             data = {
                 "error": "User: {} is not the instructor/ta of"
                 " the course with id: {}.".format(user, course_id),

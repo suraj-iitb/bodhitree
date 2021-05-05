@@ -1,18 +1,19 @@
 import logging
 
+from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from utils.drf_utils import UserPermission
+from utils.permissions import UserPermission
 
-from .models import User
 from .serializers import UserSerializer
 
 
 logger = logging.getLogger(__name__)
+User = get_user_model()
 
 
 class UserViewSet(viewsets.GenericViewSet):

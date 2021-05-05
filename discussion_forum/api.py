@@ -5,11 +5,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from utils import mixins as custom_mixins
-from utils.drf_utils import (
-    IsInstructorOrTAOrStudent,
-    IsOwner,
-    StandardResultsSetPagination,
-)
+from utils.pagination import StandardResultsSetPagination
+from utils.permissions import IsInstructorOrTAOrStudent
 
 from .models import (
     DiscussionComment,
@@ -139,7 +136,7 @@ class DiscussionThreadViewSet(
         serializer = self.get_serializer(discussion_thread)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
+    @action(detail=True, methods=["PUT", "PATCH"])
     def update_discussion_thread(self, request, pk):
         """Updates a discussion thread with id as pk.
 
@@ -274,7 +271,7 @@ class DiscussionCommentViewSet(
         serializer = self.get_serializer(discussion_comment)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
+    @action(detail=True, methods=["PUT", "PATCH"])
     def update_discussion_comment(self, request, pk):
         """Updates a discussion comment with id as pk.
 
@@ -414,7 +411,7 @@ class DiscussionReplyViewSet(
         serializer = self.get_serializer(discussion_reply)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
+    @action(detail=True, methods=["PUT", "PATCH"])
     def update_discussion_reply(self, request, pk):
         """Updates a discussion reply with id as pk.
 

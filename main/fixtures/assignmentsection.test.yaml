@@ -1,0 +1,22 @@
+- model: programming_assignments.assignmentsection
+  pk: 1
+  fields:
+    assignment: 1
+    name: Section 1
+    description: ''
+    section_type: V
+    compiler_command: ''
+    execution_command: ''
+    created_on: 2021-05-03 13:40:13.733629+00:00
+    modified_on: 2021-05-03 13:40:13.733656+00:00
+- model: programming_assignments.assignmentsection
+  pk: 2
+  fields:
+    assignment: 2
+    name: Section 2
+    description: ''
+    section_type: H
+    compiler_command: ''
+    execution_command: ''
+    created_on: 2021-05-03 13:40:26.803717+00:00
+    modified_on: 2021-05-03 13:40:26.803748+00:00

@@ -140,7 +140,7 @@ class AdvancedProgrammingAssignmentHistory(models.Model):
     indentation_percentage = models.FloatField(null=True, blank=True)
 
     def __str__(self):
-        assign_history = self.simple_programming_assignment_history
+        assign_history = self.simple_programming_assignment_history.assignment_history
         return "{}: {}".format(
             assign_history.user.email, assign_history.assignment.name
         )

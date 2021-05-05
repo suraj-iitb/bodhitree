@@ -1,0 +1,26 @@
+- model: programming_assignments.advancedprogrammingassignment
+  pk: 1
+  fields:
+    simple_programming_assignment: 1
+    helper_code: ''
+    instructor_solution_code: ''
+    files_to_be_submitted: '[]'
+    ta_allocation_file: ''
+    ta_allocation: null
+    policy: A
+    execution_time_calculate: false
+    ignore_whitespaces_in_output: false
+    indentation_percentage_calculate: false
+- model: programming_assignments.advancedprogrammingassignment
+  pk: 2
+  fields:
+    simple_programming_assignment: 2
+    helper_code: ''
+    instructor_solution_code: ''
+    files_to_be_submitted: '[]'
+    ta_allocation_file: ''
+    ta_allocation: null
+    policy: P
+    execution_time_calculate: false
+    ignore_whitespaces_in_output: false
+    indentation_percentage_calculate: false

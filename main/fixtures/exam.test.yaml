@@ -1,0 +1,18 @@
+- model: programming_assignments.exam
+  pk: 1
+  fields:
+    assignment: 1
+    duration: 00:03:00
+    late_duration: 00:10:00
+    allowed_ip_range: '[10.129.22.534]'
+    created_on: 2021-05-03 13:46:08.448569+00:00
+    modified_on: 2021-05-03 13:46:08.448589+00:00
+- model: programming_assignments.exam
+  pk: 2
+  fields:
+    assignment: 2
+    duration: 00:03:00
+    late_duration: 00:10:00
+    allowed_ip_range: '[10.129.22.524]'
+    created_on: 2021-05-03 13:46:41.317049+00:00
+    modified_on: 2021-05-03 13:46:41.317075+00:00

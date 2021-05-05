@@ -247,9 +247,11 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
 
     Allows:
         1. `GET (list)` permission to instructor/ta/student
-            (check `is_registered()` in api.py)
+            (If above is not desirable, then one way is: check `is_registered()`
+                in api.py)
         2  `POST` permission to instructor/ta/student
-            (check `is_registered()` in api.py)
+            (If above is not desirable, then one way is: check `is_registered()`
+                in api.py)
         3. `GET (retrieve)` permission to registered instructor/ta/student
         4. `PUT` permision to owner
         5. `PATCH` permision to owner
@@ -287,6 +289,7 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
                 if obj.question.question_module.quiz.chapter
                 else obj.question.question_module.quiz.section.chapter.course
             )
+            user = obj.user
         elif type(obj) == DiscussionThread:
             course = obj.discussion_forum.course
             user = obj.author
@@ -309,8 +312,8 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
             course = obj.assignment_history.assignment.course
             user = obj.assignment_history.user
         elif type(obj) == AdvancedProgrammingAssignmentHistory:
-            sim_assign = obj.simple_programming_assignment_history
-            course = sim_assign.assignment_history.assignment.course
+            simple_assign_hist = obj.simple_programming_assignment_history
+            course = simple_assign_hist.assignment_history.assignment.course
             user = obj.simple_programming_assignment_history.assignment_history.user
         elif type(obj) == ExamHistory:
             course = obj.exam.assignment.course

@@ -1,0 +1,40 @@
+- model: cribs.crib
+  pk: 1
+  fields:
+    course: 1
+    created_by: 1
+    assigned_to: 3
+    title: crib title
+    description: ''
+    status: U
+    created_on: 2021-05-04 07:34:56.891927+00:00
+- model: cribs.crib
+  pk: 2
+  fields:
+    course: 1
+    created_by: 2
+    assigned_to: 3
+    title: crib title 2
+    description: ''
+    status: U
+    created_on: 2021-05-04 07:35:11.908927+00:00
+- model: cribs.crib
+  pk: 3
+  fields:
+    course: 1
+    created_by: 3
+    assigned_to: 3
+    title: crib title 3
+    description: ''
+    status: U
+    created_on: 2021-05-04 07:35:32.781203+00:00
+- model: cribs.crib
+  pk: 4
+  fields:
+    course: 2
+    created_by: 3
+    assigned_to: 3
+    title: Cribs title
+    description: ''
+    status: R
+    created_on: 2021-05-04 17:42:58.814614+00:00

@@ -174,6 +174,50 @@ class IsInstructorOrTA(permissions.BasePermission):
         return False
 
 
+class StrictIsInstructorOrTA(permissions.BasePermission):
+    """Permission class for viewsets.
+
+    Applicable for:
+        1. Crib
+
+    Allows:
+        1. All permissions to instructor/ta
+        2. No permissions to student (GET(list) and POST are exceptions)
+        3. No permissions to anonymous user
+    """
+
+    def has_permission(self, request, view):
+        """Applicable at model level (GET, POST, PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (`CribViewSet`)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
+        """
+        if request.user.is_authenticated:
+            return True
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        """Applicable at model instance level (GET(one object), PUT, PATCH, DELETE).
+
+        Args:
+            request (Request): DRF `Request` object
+            view (ViewSet): `ViewSet` object (`ChapterViewSet`, `QuizViewSet` etc.)
+            obj (Model): `Model` object (`Chapter`, `Quiz` etc.)
+
+        Returns:
+            A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
+        """
+        if request.user.is_authenticated:
+            instructor_or_ta = check_is_instructor_or_ta(obj.course_id, request.user)
+            if instructor_or_ta:
+                return True
+        return False
+
+
 class IsInstructorOrTAOrReadOnly(permissions.BasePermission):
     """Permission class for viewsets.
 
@@ -404,6 +448,8 @@ class IsOwner(permissions.BasePermission):
             user = obj.owner
         elif type(obj) == CourseHistory:
             user = obj.user
+        elif type(obj) == Crib:
+            user = obj.created_by
         return user
 
     def has_permission(self, request, view):
@@ -431,9 +477,9 @@ class IsOwner(permissions.BasePermission):
         Returns:
             A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
-        if request.user.is_authenticated:
-            if request.method in permissions.SAFE_METHODS:
-                return True
-            elif self._get_user_from_object(obj) == request.user:
-                return True
+        if (
+            request.user.is_authenticated
+            and self._get_user_from_object(obj) == request.user
+        ):
+            return True
         return False

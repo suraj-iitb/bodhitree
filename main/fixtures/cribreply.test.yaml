@@ -1,0 +1,21 @@
+- model: cribs.cribreply
+  pk: 1
+  fields:
+    crib: 1
+    user: 1
+    description: ''
+    created_on: 2021-05-04 07:35:51.039105+00:00
+- model: cribs.cribreply
+  pk: 2
+  fields:
+    crib: 1
+    user: 2
+    description: ''
+    created_on: 2021-05-04 07:36:06.243367+00:00
+- model: cribs.cribreply
+  pk: 3
+  fields:
+    crib: 1
+    user: 3
+    description: ''
+    created_on: 2021-05-04 07:36:15.113840+00:00

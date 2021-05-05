@@ -4,14 +4,9 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from course.models import CourseHistory
 from utils import mixins as custom_mixins
-from utils.drf_utils import (
-    IsInstructorOrTA,
-    IsInstructorOrTAOrStudent,
-    IsOwner,
-    StandardResultsSetPagination,
-)
+from utils.pagination import StandardResultsSetPagination
+from utils.permissions import IsInstructorOrTAOrStudent, IsOwner, StrictIsInstructorOrTA
 
 from .models import Crib
 from .serializers import CribSerializer
@@ -47,7 +42,7 @@ class CribViewSet(
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
             HTTP_403_FORBIDDEN: Raised by:
-                . `_is_instructor_or_ta()` method
+                . `_is_registered()` method
         """
         user = request.user
         course_id = request.data["course"]
@@ -63,7 +58,7 @@ class CribViewSet(
         logger.error(errors)
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=["GET"], permission_classes=[IsInstructorOrTA])
+    @action(detail=True, methods=["GET"])
     def list_cribs(self, request, pk):
         """Gets all the cribs in the current course.
 
@@ -78,15 +73,13 @@ class CribViewSet(
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `_is_instructor_or_ta` method
         """
-        cribs = Crib.objects.select_related("course").filter(course_id=pk)
-        course_id = cribs[0].course.id
-        check = self._is_registered(course_id, request.user)
+        check = self._is_instructor_or_ta(pk, request.user)
         if check is not True:
             return check
 
+        cribs = Crib.objects.filter(course_id=pk)
         page = self.paginate_queryset(cribs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -94,58 +87,47 @@ class CribViewSet(
         serializer = self.get_serializer(cribs, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["GET"])
+    @action(
+        detail=True,
+        methods=["GET"],
+        permission_classes=[StrictIsInstructorOrTA | IsOwner],
+    )
     def retrieve_crib(self, request, pk):
         """Gets the crib with primary key as pk.
+
         Args:
             request (Request): DRF `Request` object
             pk (int): Primary key of the crib
+
         Returns:
             `Response` with the crib data and status HTTP_200_OK
+
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_401_UNAUTHORIZED: Raised by:
+                1.`IsInstructorOrTAOrStudent` permission class
+                2. `IsOwner` permission class
+            HTTP_403_FORBIDDEN: Raised by `IsOwner` permission class
         """
-        crib = Crib.objects.select_related("course").get(id=pk)
-        course_id = crib.course.id
-        check = self._is_registered(course_id, request.user)
-        if check is not True:
-            return check
-        else:
-            try:
-                course_history = CourseHistory.objects.select_related("role").get(
-                    user=crib.created_by
-                )
-            except CourseHistory.DoesNotExist:
-                if course_history.role != "S":
-                    pass
-                else:
-                    data = {
-                        "error": "User: {} is not the creator of the crib: {}".format(
-                            course_history.user, course_history.course
-                        ),
-                    }
-                    logger.error(data["errors"])
-                    return Response(data, status.HTTP_403_FORBIDDEN)
+        crib = self.get_object()
         serializer = self.get_serializer(crib)
         return Response(serializer.data)
 
     @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
     def update_crib(self, request, pk):
-        """Updates a crib with id as pk.
+        """Updates a crib.
+
         Args:
             request (Request): DRF `Request` object
             pk (int): Primary key of the crib
+
         Returns:
             `Response` with the updated crib data and status HTTP_200_OK
+
         Raises:
+            HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised:
-                1. By `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `IsOwner` permission class
         """
         serializer = self.get_serializer(
             self.get_object(), data=request.data, partial=True

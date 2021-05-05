@@ -34,4 +34,5 @@ urlpatterns = [
     path("courses/", include("course.urls")),
     path("documents/", include("document.urls")),
     path("videos/", include("video.urls")),
+    path("discussion_forum/", include("discussion_forum.urls")),
 ]

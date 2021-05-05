@@ -409,7 +409,7 @@ class IsAdmin(permissions.BasePermission):
 
     Allows:
         1. `GET (list)` permission to any authenticated user
-            (don't provide a `list()` method)
+            (If above is not desirable, then one way is: don't provide `list()` method)
         2  `POST` permisison to any admin user
         3. `GET (retrieve)` permission to owner or admin user
         4. `PUT` permision to admin user
@@ -459,14 +459,15 @@ class IsOwner(permissions.BasePermission):
     """Permission class for viewsets.
 
     Applicable for:
-        1. Course, CourseHistory
+        1. Course
         2. Crib
 
     Allows:
         1. `GET (list)` permission to any authenticated user
-            (don't provide a `list()` method)
+            (If above is not desirable, then one way is: don't provide `list()` method)
         2  `POST` permisison to any authenticated user
-            (don't provide a `create()` method)
+            (If above is not desirable, then one way is: don't provide `create()`
+                method)
         3. `GET (retrieve)` permission to owner
         4. `PUT` permision to owner
         5. `PATCH` permision to owner
@@ -477,15 +478,13 @@ class IsOwner(permissions.BasePermission):
         """Get user using obj.
 
         Args:
-            obj (Model): `Model` object (`Course`, `CourseHistory` etc.)
+            obj (Model): `Model` object (`Course`, `Crib` etc.)
 
         Returns:
             user (User): `User` model object
         """
         if type(obj) == Course:
             user = obj.owner
-        elif type(obj) == CourseHistory:
-            user = obj.user
         elif type(obj) == Crib:
             user = obj.created_by
         return user
@@ -504,7 +503,7 @@ class IsOwner(permissions.BasePermission):
         return bool(user and user.is_authenticated)
 
     def has_object_permission(self, request, view, obj):
-        """Applicable at model instance level (GET(one object), PUT, PATCH, DELETE).
+        """Applicable at model instance level (GET(retrieve), PUT, PATCH, DELETE).
 
         Args:
             request (Request): DRF `Request` object

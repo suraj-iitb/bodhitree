@@ -3,6 +3,7 @@ from django.contrib.auth.models import AnonymousUser
 from rest_framework.test import APIRequestFactory, APITestCase
 
 from course.models import Chapter, Course, CourseHistory
+from registration.models import SubscriptionHistory
 from utils.permissions import (
     IsAdmin,
     IsInstructorOrTA,
@@ -348,6 +349,9 @@ class IsAdminTest(APITestCase, PermissionHelperMixin):
 
     fixtures = [
         "users.test.yaml",
+        "plans.test.yaml",
+        "subscriptions.test.yaml",
+        "subscriptionhistories.test.yaml",
     ]
 
     @classmethod
@@ -362,6 +366,8 @@ class IsAdminTest(APITestCase, PermissionHelperMixin):
         cls.instructor = User.objects.get(id=1)
         cls.ta = User.objects.get(id=2)
         cls.student = User.objects.get(id=3)
+
+        cls.subscription_history = SubscriptionHistory.objects.get(id=1)
 
     def setUp(self):
         """Allows the creation of initial data at the method level."""
@@ -380,16 +386,28 @@ class IsAdminTest(APITestCase, PermissionHelperMixin):
         self.user_permissions[3][1] = False
         self.user_permissions[4][1] = False
         self._permisison_helper(request)
+        self._permisison_helper(request, self.subscription_history)
 
     def test_get(self):
         """Test `GET` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.get("/")
         self._permisison_helper(request)
+        self.user_permissions[0][1] = True
+        self.user_permissions[1][1] = True
+        self.user_permissions[2][1] = False
+        self.user_permissions[3][1] = False
+        self.user_permissions[4][1] = False
+        self._permisison_helper(request, self.subscription_history)
 
     def test_post(self):
         """Test `POST` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.post("/")
-        self._helper(request)
+        self.user_permissions[0][1] = True
+        self.user_permissions[1][1] = False
+        self.user_permissions[2][1] = False
+        self.user_permissions[3][1] = False
+        self.user_permissions[4][1] = False
+        self._permisison_helper(request)
 
     def test_put(self):
         """Test `PUT` for `has_permission()` & `has_object_permission()` method."""
@@ -429,7 +447,6 @@ class IsOwnerTest(APITestCase, PermissionHelperMixin):
         cls.student = User.objects.get(id=3)
 
         cls.course = Course.objects.get(id=1)
-        cls.course_history = CourseHistory.objects.get(id=1)
 
     def setUp(self):
         """Allows the creation of initial data at the method level."""
@@ -451,13 +468,12 @@ class IsOwnerTest(APITestCase, PermissionHelperMixin):
     def test_get(self):
         """Test `GET` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.get("/")
-        self._permisison_helper(request)
-        # self._permisison_helper(request, self.course)
+        self._helper(request)
 
     def test_post(self):
         """Test `POST` for `has_permission()` & `has_object_permission()` method."""
         request = self.factory.post("/")
-        self._helper(request)
+        self._permisison_helper(request)
 
     def test_put(self):
         """Test `PUT` for `has_permission()` & `has_object_permission()` method."""
@@ -476,7 +492,7 @@ class IsOwnerTest(APITestCase, PermissionHelperMixin):
 
     def test_get_user_from_object(self):
         """Test `_get_user_from_object()` method."""
-        for obj in [self.course, self.course_history]:
+        for obj in [self.course]:
             actual_user = self.permission_class._get_user_from_object(obj)
-            expected_user = obj.owner if type(obj) == Course else obj.user
+            expected_user = obj.owner
             self.assertEqual(actual_user, expected_user)

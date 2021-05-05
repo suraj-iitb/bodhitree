@@ -50,8 +50,7 @@ class DiscussionThreadViewSet(
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
         """
         user = request.user
         discussion_forum = request.data["discussion_forum"]
@@ -88,10 +87,8 @@ class DiscussionThreadViewSet(
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
         """
-
         discussion_threads = DiscussionThread.objects.select_related(
             "discussion_forum__course"
         ).filter(discussion_forum_id=pk)
@@ -123,16 +120,8 @@ class DiscussionThreadViewSet(
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        discussion_thread = DiscussionThread.objects.select_related(
-            "discussion_forum__course"
-        ).get(id=pk)
-        course_id = discussion_thread.discussion_forum.course.id
-        check = self._is_registered(course_id, request.user)
-        if check is not True:
-            return check
-
+        discussion_thread = self.get_object()
         serializer = self.get_serializer(discussion_thread)
         return Response(serializer.data)
 
@@ -151,8 +140,6 @@ class DiscussionThreadViewSet(
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised:
-                1. By `_is_registered()` method
         """
         serializer = self.get_serializer(
             self.get_object(), data=request.data, partial=True
@@ -190,8 +177,7 @@ class DiscussionCommentViewSet(
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
         """
         user = request.user
         discussion_thread = request.data["discussion_thread"]
@@ -225,8 +211,7 @@ class DiscussionCommentViewSet(
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
         """
         discussion_comments = DiscussionComment.objects.select_related(
             "discussion_thread__discussion_forum__course"
@@ -258,16 +243,8 @@ class DiscussionCommentViewSet(
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        discussion_comment = DiscussionComment.objects.select_related(
-            "discussion_thread__discussion_forum__course"
-        ).get(id=pk)
-        course_id = discussion_comment.discussion_thread.discussion_forum.course.id
-        check = self._is_registered(course_id, request.user)
-        if check is not True:
-            return check
-
+        discussion_comment = self.get_object()
         serializer = self.get_serializer(discussion_comment)
         return Response(serializer.data)
 
@@ -283,11 +260,10 @@ class DiscussionCommentViewSet(
             `Response` with the updated discussion thread data and status HTTP_200_OK
 
         Raises:
+            HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised:
-                1. By `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
         """
         serializer = self.get_serializer(
             self.get_object(), data=request.data, partial=True
@@ -326,8 +302,7 @@ class DiscussionReplyViewSet(
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
         """
         user = request.user
         discussion_comment = request.data["discussion_comment"]
@@ -362,8 +337,7 @@ class DiscussionReplyViewSet(
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
         """
         discussion_replies = DiscussionReply.objects.select_related(
             "discussion_comment__discussion_thread__discussion_forum__course"
@@ -399,15 +373,7 @@ class DiscussionReplyViewSet(
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
             HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
         """
-        discussion_reply = DiscussionReply.objects.select_related(
-            "discussion_comment__discussion_thread__discussion_forum__course"
-        ).get(id=pk)
-        discussion_comment = discussion_reply.discussion_comment
-        course_id = discussion_comment.discussion_thread.discussion_forum.course.id
-        check = self._is_registered(course_id, request.user)
-        if check is not True:
-            return check
-
+        discussion_reply = self.get_object()
         serializer = self.get_serializer(discussion_reply)
         return Response(serializer.data)
 
@@ -423,11 +389,10 @@ class DiscussionReplyViewSet(
             `Response` with the updated discussion thread data and status HTTP_200_OK
 
         Raises:
+            HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised:
-                1. By `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
         """
         serializer = self.get_serializer(
             self.get_object(), data=request.data, partial=True

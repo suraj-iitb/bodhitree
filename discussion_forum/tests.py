@@ -37,7 +37,7 @@ class DiscussionThreadViewSetTest(APITestCase):
         self.client.logout()
 
     def _list_discussion_threads_helper(self, discussion_forum_id, status_code):
-        """Helper function to test list discussion threads functionality.
+        """Helper function for `test_list_discussion_threads()`.
 
         Args:
             discussion_forum_id (int): Discussion forum id
@@ -61,6 +61,7 @@ class DiscussionThreadViewSetTest(APITestCase):
     def test_list_discussion_threads(self):
         """Test: list all discussion_threads."""
         discussion_forum_id = 1
+
         # List by instructor
         self.login(**ins_cred)
         self._list_discussion_threads_helper(discussion_forum_id, status.HTTP_200_OK)
@@ -76,12 +77,12 @@ class DiscussionThreadViewSetTest(APITestCase):
         self._list_discussion_threads_helper(discussion_forum_id, status.HTTP_200_OK)
         self.logout()
 
-        # HTTP_401_UNAUTHORIZED due to `IsInstructorOrTAOrStudent`
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTAOrStudent`
         self._list_discussion_threads_helper(
             discussion_forum_id, status.HTTP_401_UNAUTHORIZED
         )
 
-        # HTTP_403_FORBIDDEN due to `_is_registered()` method
+        # `HTTP_403_FORBIDDEN` due to `_is_registered()` method
         discussion_forum_id = 2
         self.login(**stu_cred)
         self._list_discussion_threads_helper(
@@ -90,7 +91,7 @@ class DiscussionThreadViewSetTest(APITestCase):
         self.logout()
 
     def _retrieve_discussion_thread_helper(self, discussion_thread_id, status_code):
-        """Helper function to test retrieve discussion thread functionality.
+        """Helper function for `test_retrieve_discussion_thread()`.
 
         Args:
             discussion_thread_id (int): Discussion thread id
@@ -109,6 +110,7 @@ class DiscussionThreadViewSetTest(APITestCase):
     def test_retrieve_discussion_thread(self):
         """Test: retrieve discussion_thread."""
         discussion_thread_id = 1
+
         # Retrieve by instructor
         self.login(**ins_cred)
         self._retrieve_discussion_thread_helper(
@@ -130,12 +132,12 @@ class DiscussionThreadViewSetTest(APITestCase):
         )
         self.logout()
 
-        # HTTP_401_UNAUTHORIZED due to `IsInstructorOrTAOrStudent`
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTAOrStudent` permission class
         self._retrieve_discussion_thread_helper(
             discussion_thread_id, status.HTTP_401_UNAUTHORIZED
         )
 
-        # HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent`
+        # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTAOrStudent` permission class
         discussion_thread_id = 4
         self.login(**stu_cred)
         self._retrieve_discussion_thread_helper(
@@ -146,7 +148,7 @@ class DiscussionThreadViewSetTest(APITestCase):
     def _create_discussion_thread_helper(
         self, discussion_forum_id, title, status_code, author_id, author_category
     ):
-        """Helper function to test create discussion thread functionality.
+        """Helper function for `test_create_discussion_thread()`.
 
         Args:
             discussion_forum_id (int): Discussion forum id
@@ -185,6 +187,7 @@ class DiscussionThreadViewSetTest(APITestCase):
     def test_create_discussion_thread(self):
         """Test: create a discussion thread."""
         discussion_forum_id = 1
+
         # Created by instructor
         self.login(**ins_cred)
         self._create_discussion_thread_helper(
@@ -206,14 +209,14 @@ class DiscussionThreadViewSetTest(APITestCase):
         )
         self.logout()
 
-        # HTTP_400_BAD_REQUEST due to `is_valid()``
+        # `HTTP_400_BAD_REQUEST` due to `is_valid()` method of the serailizer
         self.login(**stu_cred)
         self._create_discussion_thread_helper(
             discussion_forum_id, "", status.HTTP_400_BAD_REQUEST, 3, "S"
         )
         self.logout()
 
-        # HTTP_401_UNAUTHORIZED due to `IsInstructorOeTAOrStudent`
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOeTAOrStudent` permission class
         self._create_discussion_thread_helper(
             discussion_forum_id,
             "DiscussionThread 5",
@@ -222,11 +225,19 @@ class DiscussionThreadViewSetTest(APITestCase):
             "S",
         )
 
-        # HTTP_403_FORBIDDEN due to `_is_registered()`
+        # `HTTP_403_FORBIDDEN` due to `_is_registered()` method
         discussion_forum_id = 2
         self.login(**stu_cred)
         self._create_discussion_thread_helper(
             discussion_forum_id, "DiscussionThread 6", status.HTTP_403_FORBIDDEN, 3, "S"
+        )
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to discussion forum does not exist
+        discussion_forum_id = 3
+        self.login(**stu_cred)
+        self._create_discussion_thread_helper(
+            discussion_forum_id, "DiscussionThread 6", status.HTTP_404_NOT_FOUND, 3, "S"
         )
         self.logout()
 
@@ -240,7 +251,8 @@ class DiscussionThreadViewSetTest(APITestCase):
         method,
     ):
         """
-        Helper function to test update discussion thread functionality.
+        Helper function for `test_partial_update_discussion_thread()`
+            and `test_update_discussion_thread()`.
 
         Args:
             discussion_forum_id (int): Discussion forum id
@@ -292,6 +304,7 @@ class DiscussionThreadViewSetTest(APITestCase):
     def _put_or_patch(self, method):
         """Test: update discussion thread functionality."""
         discussion_forum_id = 1
+
         # Update by instructor
         self.login(**ins_cred)
         self._update_discussion_thread_helper(
@@ -328,14 +341,14 @@ class DiscussionThreadViewSetTest(APITestCase):
         )
         self.logout()
 
-        # HTTP_400_BAD_REQUEST due to `is_valid()``
+        # `HTTP_400_BAD_REQUEST` due to `is_valid()` method of the serializer
         self.login(**stu_cred)
         self._update_discussion_thread_helper(
             discussion_forum_id, "", status.HTTP_400_BAD_REQUEST, 3, "S", method
         )
         self.logout()
 
-        # HTTP_401_UNAUTHORIZED due to `IsInstructorOeTAOrStudent`
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOeTAOrStudent` permission class
         self._update_discussion_thread_helper(
             discussion_forum_id,
             "DiscussionThread 5",
@@ -345,7 +358,7 @@ class DiscussionThreadViewSetTest(APITestCase):
             method,
         )
 
-        # HTTP_403_FORBIDDEN due to `IsInstructorOrTAOrStudent`
+        # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTAOrStudent` permission class
         self.login(**stu_cred)
         self._update_discussion_thread_helper(
             1, "DiscussionThread 6", status.HTTP_403_FORBIDDEN, 2, "S", method

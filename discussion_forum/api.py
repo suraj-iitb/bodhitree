@@ -55,14 +55,10 @@ class DiscussionThreadViewSet(
         user = request.user
         discussion_forum_id = request.data["discussion_forum"]
         try:
-            course_id = (
-                DiscussionForum.objects.select_related("course")
-                .get(id=discussion_forum_id)
-                .course_id
-            )
+            course_id = DiscussionForum.objects.get(id=discussion_forum_id).course_id
         except DiscussionForum.DoesNotExist as e:
             logger.exception(e)
-            return Response(e, status.HTTP_404_NOT_FOUND)
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
 
         check = self._is_registered(course_id, user)
         if check is not True:

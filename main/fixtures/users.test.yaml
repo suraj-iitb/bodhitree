@@ -31,3 +31,14 @@
     is_admin: false
     date_joined: 2021-04-13 16:54:37.818534+00:00
     last_login: 2021-04-13 16:54:37.826134+00:00
+- model: registration.user
+  pk: 4
+  fields:
+    password: pbkdf2_sha256$260000$u1UEkLgq833qwslW1A5bCj$V6ZHz6BhOyKm5yt89B5TX8+DdptnZsqOSJxD2Pak9n8=
+    email: student1@bodhitree.com
+    full_name: Student1
+    is_active: true
+    is_staff: false
+    is_admin: false
+    date_joined: 2021-05-06 09:40:14.301309+00:00
+    last_login: 2021-05-06 09:40:14.308926+00:00

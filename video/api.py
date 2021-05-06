@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from course.models import Chapter, Section
 from utils import mixins as custom_mixins
 from utils.permissions import IsInstructorOrTA
-from utils.utils import check_is_instructor_or_ta
 
 from .models import Video
 from .serializers import VideoSerializer
@@ -17,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
-    """Viewset for Video."""
+    """Viewset for `Video`."""
 
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
@@ -34,67 +33,50 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
             `Response` with the created video data and status HTTP_201_CREATED.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised by:
-                1. `is_valid()` method of the serializer
-                2. If both or none section/chapter is provided
+            HTTP_400_BAD_REQUEST: Raised:
+                1. By `is_valid()` method of the serializer
+                2. If both (or none) the section/chapter is provided
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by:
-                1. If the user is not the instructor/ta of the course
-                2. `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by:
-                1. `_is_registered()` method
-                2. Chapter/Section does not exist
+            HTTP_403_FORBIDDEN: Raised by `_is_instructor_or_ta()` method
+            HTTP_404_NOT_FOUND: Raised if chapter/section does not exist
         """
         user = request.user
         request_data = request.data
 
-        # Validation logic such that only chapter/section is provided
-        if request_data["section"] != "" and request_data["chapter"] != "":
-            data = {"error": "Both chapter and section fields cannot be given."}
-            logger.error(data["error"])
-            return Response(data, status.HTTP_400_BAD_REQUEST)
+        # Validation logic such that only chapter/section is provided. It is done by
+        # serializer during validation but we are doing it here becuase we require
+        # course_id using chapter/section to check for instructor/ta.
         if request_data["section"] == "" and request_data["chapter"] == "":
-            data = {"error": "Atleast one of chapter or section fields must be given"}
-            logger.error(data["error"])
-            return Response(data, status.HTTP_400_BAD_REQUEST)
-        ##############################################################
+            error = "Atleast one of field (chapter or section) must be given."
+            logger.error(error)
+            return Response(error, status.HTTP_400_BAD_REQUEST)
+        elif request_data["section"] != "" and request_data["chapter"] != "":
+            error = "Both fields (chapter and section) must not be given."
+            logger.error(error)
+            return Response(error, status.HTTP_400_BAD_REQUEST)
 
         # Finds course id
         if request_data["chapter"] == "":
             section_id = request_data["section"]
             try:
-                chapter_id = (
-                    Section.objects.select_related("chapter")
-                    .get(id=section_id)
-                    .chapter.id
-                )
+                chapter_id = Section.objects.get(id=section_id).chapter_id
             except Section.DoesNotExist as e:
                 logger.exception(e)
-                Response(e, status.HTTP_404_NOT_FOUND)
+                return Response(str(e), status.HTTP_404_NOT_FOUND)
         else:
             chapter_id = request_data["chapter"]
         try:
-            course_id = (
-                Chapter.objects.select_related("course").get(id=chapter_id).course.id
-            )
+            chapter = Chapter.objects.get(id=chapter_id)
         except Chapter.DoesNotExist as e:
             logger.exception(e)
-            Response(e, status.HTTP_404_NOT_FOUND)
-        #################
-
-        check = self._is_registered(course_id, user)
-        if check is not True:
-            return check
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
+        course_id = chapter.course_id
 
         # This is specifically done during video creation (not during updation or
-        # deletion) because it can't be handled by IsInstructorOrTA permission class
-        if not check_is_instructor_or_ta(course_id, user):
-            data = {
-                "error": "User: {} is not the instructor/ta of the "
-                "course with id: {}".format(user, course_id),
-            }
-            logger.warning(data["error"])
-            return Response(data, status.HTTP_403_FORBIDDEN)
+        # deletion) because it can't be handled by `IsInstructorOrTA` permission class.
+        check = self._is_instructor_or_ta(course_id, user)
+        if check is not True:
+            return check
 
         serializer = self.get_serializer(data=request_data)
         if serializer.is_valid():
@@ -110,17 +92,23 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): chapter id
+            pk (int): Chapter id
 
         Returns:
-            `Response` with all the video data and status HTTP_200_OK.
+            `Response` with all the video data in chapter and status HTTP_200_OK.
 
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered_using_chapter_id()` method
+            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
+            HTTP_404_NOT_FOUND: Raised if the chapter does not exist
         """
-        check, _ = self._is_registered_using_chapter_id(pk, request.user)
+        try:
+            course_id = Chapter.objects.get(id=pk).course_id
+        except Chapter.DoesNotExist as e:
+            logger.exception(e)
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
+
+        check = self._is_registered(course_id, request.user)
         if check is not True:
             return check
 
@@ -134,17 +122,25 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): section id
+            pk (int): Section id
 
         Returns:
-            `Response` with all the video data and status HTTP_200_OK.
+            `Response` with all the video data in section and status HTTP_200_OK.
 
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered_using_chapter_id()` method
+            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
+            HTTP_404_NOT_FOUND: Raised if the section does not exist
         """
-        check, _ = self._is_registered_using_section_id(pk, request.user)
+        try:
+            course_id = (
+                Section.objects.select_related("chapter").get(id=pk).chapter.course_id
+            )
+        except Section.DoesNotExist as e:
+            logger.exception(e)
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
+
+        check = self._is_registered(course_id, request.user)
         if check is not True:
             return check
 
@@ -158,7 +154,7 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): video id
+            pk (int): Video id
 
         Returns:
             `Response` with the video data and status HTTP_200_OK.
@@ -166,23 +162,9 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by:
-                1. `_is_registered_using_chapter_id()` method
-                2. `_is_registered_using_section_id()` method
+            HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
-        user = request.user
         video = self.get_object()
-        if video.chapter_id is None:
-            check, course_id = self._is_registered_using_section_id(
-                video.section_id, user
-            )
-        else:
-            check, course_id = self._is_registered_using_chapter_id(
-                video.chapter_id, user
-            )
-        if check is not True:
-            return check
-
         serializer = self.get_serializer(video)
         return Response(serializer.data)
 
@@ -201,23 +183,9 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
             HTTP_400_BAD_REQUEST: Raised due to serialization errors
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by:
-                1. `_is_registered_using_chapter_id()` method
-                2. `_is_registered_using_section_id()` method
+            HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
-        user = request.user
         video = self.get_object()
-        if video.chapter_id is None:
-            check, course_id = self._is_registered_using_section_id(
-                video.section_id, user
-            )
-        else:
-            check, course_id = self._is_registered_using_chapter_id(
-                video.chapter_id, user
-            )
-        if check is not True:
-            return check
-
         serializer = self.get_serializer(video, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -232,7 +200,7 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): video id
+            pk (int): Video id
 
         Returns:
             `Response` with no data and status HTTP_204_NO_CONTENT.
@@ -240,20 +208,8 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
-        user = request.user
         video = self.get_object()
-        if video.chapter_id is None:
-            check, course_id = self._is_registered_using_section_id(
-                video.section_id, user
-            )
-        else:
-            check, course_id = self._is_registered_using_chapter_id(
-                video.chapter_id, user
-            )
-        if check is not True:
-            return check
-
         video.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

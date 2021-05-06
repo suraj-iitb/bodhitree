@@ -36,14 +36,14 @@ class VideoViewSetTest(APITestCase):
     def logout(self):
         self.client.logout()
 
-    def _create_video_helper(self, title, status_code, chapter_id, section_id):
+    def _create_video_helper(self, chapter_id, section_id, title, status_code):
         """Helper function `test_create_video()`.
 
         Args:
-            title (str): Title of the video
-            status_code (int): Expected status code of the API call
             chapter_id (int): Chapter id
             section_id (int): Section id
+            title (str): Title of the video
+            status_code (int): Expected status code of the API call
         """
         # Video mock file
         video_mock = mock.MagicMock(spec=File, name="FileMock")
@@ -80,7 +80,7 @@ class VideoViewSetTest(APITestCase):
         """Test: create a video.
 
         Args:
-            mock_save: Save method of `FileSystemStorage` class
+            mock_save (MagicMock): Mock object for django file storage
         """
         mock_save.return_value = "video.mp4"
         chapter_id = 1
@@ -116,7 +116,7 @@ class VideoViewSetTest(APITestCase):
         )
         self.logout()
 
-        # `HTTP_400_BAD_REQUEST` due to `is_valid()` method
+        # `HTTP_400_BAD_REQUEST` due to serialization errors
         self.login(**ins_cred)
         self._create_video_helper(
             "", status.HTTP_400_BAD_REQUEST, chapter_id, section_id
@@ -361,10 +361,10 @@ class VideoViewSetTest(APITestCase):
                 self.assertEqual(response_data["section"], data["section"])
 
     def _put_or_patch(self, mock_save, method):
-        """Helper function to decide full(PUT) or partial(PATCH) update.
+        """Helper function for deciding full(PUT) or partial(PATCH) update.
 
         Args:
-            mock_save: Save method of `FileSystemStorage` class
+            mock_save (MagicMock): Mock object for django file storage
             method (str): HTTP method ("PUT" or "PATCH")
         """
         mock_save.return_value = "video.mp4"
@@ -434,7 +434,7 @@ class VideoViewSetTest(APITestCase):
         """Test: update the video.
 
         Args:
-            mock_save: Save method of `FileSystemStorage` class
+            mock_save (MagicMock): Mock object for django file storage
         """
         self._put_or_patch(mock_save, "PUT")
 
@@ -443,7 +443,7 @@ class VideoViewSetTest(APITestCase):
         """Test: partial update the video.
 
         Args:
-            mock_save: Save method of `FileSystemStorage` class
+            mock_save (MagicMock): Mock object for django file storage
         """
         self._put_or_patch(mock_save, "PATCH")
 
@@ -488,7 +488,7 @@ class VideoViewSetTest(APITestCase):
         """Test: delete the video.
 
         Args:
-            mock_save: Save method of `FileSystemStorage` class
+            mock_save (MagicMock): Mock object for django file storage
         """
         mock_save.return_value = "video.mp4"
 
@@ -507,5 +507,5 @@ class VideoViewSetTest(APITestCase):
 
         # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permisison class
         self.login(**stu_cred)
-        self._delete_video_helper("Video 1", status.HTTP_403_FORBIDDEN)
+        self._delete_video_helper("Video 4", status.HTTP_403_FORBIDDEN)
         self.logout()

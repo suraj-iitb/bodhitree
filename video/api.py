@@ -34,7 +34,7 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
 
         Raises:
             HTTP_400_BAD_REQUEST: Raised:
-                1. By `is_valid()` method of the serializer
+                1. Due to serialization errors
                 2. If both (or none) the section/chapter is provided
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `_is_instructor_or_ta()` method
@@ -88,7 +88,7 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
 
     @action(detail=True, methods=["GET"])
     def list_chapter_videos(self, request, pk):
-        """Gets all the videos in the chapter with id as pk.
+        """Gets all the videos in the chapter with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
@@ -118,7 +118,7 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
 
     @action(detail=True, methods=["GET"])
     def list_section_videos(self, request, pk):
-        """Gets all the videos in the section with id as pk.
+        """Gets all the videos in the section with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
@@ -150,7 +150,7 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
 
     @action(detail=True, methods=["GET"])
     def retrieve_video(self, request, pk):
-        """Gets the video with id as pk.
+        """Gets the video with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
@@ -170,11 +170,11 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_video(self, request, pk):
-        """Updates the video with id as pk.
+        """Updates the video with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): video id
+            pk (int): Video id
 
         Returns:
             `Response` with the updated video data and status HTTP_200_OK.
@@ -196,7 +196,7 @@ class VideoViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
 
     @action(detail=True, methods=["DELETE"])
     def delete_video(self, request, pk):
-        """Deletes the video with id as pk.
+        """Deletes the video with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object

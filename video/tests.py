@@ -13,7 +13,6 @@ from video.models import Video
 ins_cred = credentials.TEST_INSTRUCTOR_CREDENTIALS
 ta_cred = credentials.TEST_TA_CREDENTIALS
 stu_cred = credentials.TEST_STUDENT_CREDENTIALS
-stu_cred1 = credentials.TEST_STUDENT1_CREDENTIALS
 
 
 class VideoViewSetTest(APITestCase):
@@ -36,14 +35,14 @@ class VideoViewSetTest(APITestCase):
     def logout(self):
         self.client.logout()
 
-    def _create_video_helper(self, title, status_code, chapter_id, section_id):
+    def _create_video_helper(self, chapter_id, section_id, title, status_code):
         """Helper function `test_create_video()`.
 
         Args:
-            title (str): Title of the video
-            status_code (int): Expected status code of the API call
             chapter_id (int): Chapter id
             section_id (int): Section id
+            title (str): Title of the video
+            status_code (int): Expected status code of the API call
         """
         # Video mock file
         video_mock = mock.MagicMock(spec=File, name="FileMock")
@@ -80,7 +79,7 @@ class VideoViewSetTest(APITestCase):
         """Test: create a video.
 
         Args:
-            mock_save: Save method of `FileSystemStorage` class
+            mock_save (MagicMock): Mock object for django file storage
         """
         mock_save.return_value = "video.mp4"
         chapter_id = 1
@@ -89,14 +88,14 @@ class VideoViewSetTest(APITestCase):
         # Created by instructor (in chapter)
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 1", status.HTTP_201_CREATED, chapter_id, section_id
+            chapter_id, section_id, "Video 1", status.HTTP_201_CREATED
         )
         self.logout()
 
         # Created by ta (in chapter)
         self.login(**ta_cred)
         self._create_video_helper(
-            "Video 2", status.HTTP_201_CREATED, chapter_id, section_id
+            chapter_id, section_id, "Video 2", status.HTTP_201_CREATED
         )
         self.logout()
 
@@ -105,21 +104,21 @@ class VideoViewSetTest(APITestCase):
         section_id = 1
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 1", status.HTTP_201_CREATED, chapter_id, section_id
+            chapter_id, section_id, "Video 1", status.HTTP_201_CREATED
         )
         self.logout()
 
         # Created by ta (in section)
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 2", status.HTTP_201_CREATED, chapter_id, section_id
+            chapter_id, section_id, "Video 2", status.HTTP_201_CREATED
         )
         self.logout()
 
-        # `HTTP_400_BAD_REQUEST` due to `is_valid()` method
+        # `HTTP_400_BAD_REQUEST` due to serialization errors
         self.login(**ins_cred)
         self._create_video_helper(
-            "", status.HTTP_400_BAD_REQUEST, chapter_id, section_id
+            chapter_id, section_id, "", status.HTTP_400_BAD_REQUEST
         )
         self.logout()
 
@@ -127,7 +126,7 @@ class VideoViewSetTest(APITestCase):
         chapter_id = 1
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 3", status.HTTP_400_BAD_REQUEST, chapter_id, section_id
+            chapter_id, section_id, "Video 3", status.HTTP_400_BAD_REQUEST
         )
         self.logout()
 
@@ -136,20 +135,20 @@ class VideoViewSetTest(APITestCase):
         section_id = ""
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 4", status.HTTP_400_BAD_REQUEST, chapter_id, section_id
+            chapter_id, section_id, "Video 4", status.HTTP_400_BAD_REQUEST
         )
         self.logout()
 
         # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
         chapter_id = 1
         self._create_video_helper(
-            "Video 5", status.HTTP_401_UNAUTHORIZED, chapter_id, section_id
+            chapter_id, section_id, "Video 5", status.HTTP_401_UNAUTHORIZED
         )
 
         # `HTTP_403_FORBIDDEN` due to `_is_instructor_or_ta()` method
         self.login(**stu_cred)
         self._create_video_helper(
-            "Video 6", status.HTTP_403_FORBIDDEN, chapter_id, section_id
+            chapter_id, section_id, "Video 6", status.HTTP_403_FORBIDDEN
         )
         self.logout()
 
@@ -157,7 +156,7 @@ class VideoViewSetTest(APITestCase):
         chapter_id = 100
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 7", status.HTTP_404_NOT_FOUND, chapter_id, section_id
+            chapter_id, section_id, "Video 7", status.HTTP_404_NOT_FOUND
         )
         self.logout()
 
@@ -166,7 +165,7 @@ class VideoViewSetTest(APITestCase):
         section_id = 100
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 8", status.HTTP_404_NOT_FOUND, chapter_id, section_id
+            chapter_id, section_id, "Video 8", status.HTTP_404_NOT_FOUND
         )
         self.logout()
 
@@ -275,7 +274,6 @@ class VideoViewSetTest(APITestCase):
             video_id (int): Video id
             status_code (int): Expected status code of the API call
         """
-
         url = reverse("video:video-retrieve-video", args=[video_id])
 
         response = self.client.get(url)
@@ -306,7 +304,8 @@ class VideoViewSetTest(APITestCase):
         self._retrieve_video_helper(video_id, status.HTTP_401_UNAUTHORIZED)
 
         # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permisison class
-        self.login(**stu_cred1)
+        video_id = 4
+        self.login(**stu_cred)
         self._retrieve_video_helper(video_id, status.HTTP_403_FORBIDDEN)
         self.logout()
 
@@ -317,7 +316,7 @@ class VideoViewSetTest(APITestCase):
         self.logout()
 
     def _update_video_helper(self, video, title, status_code, method):
-        """Helper function to test update video functionality.
+        """Helper function for `test_update_video()` & `test_partial_update_video()`.
 
         Args:
             video (Video): `Video` model object
@@ -344,12 +343,13 @@ class VideoViewSetTest(APITestCase):
             data["chapter"] = video.chapter_id
         elif video.section_id:
             data["section"] = video.section_id
-        url = reverse(("video:video-update-video"), args=[video.id])
 
+        url = reverse(("video:video-update-video"), args=[video.id])
         if method == "PUT":
             response = self.client.put(url, data, format="multipart")
         else:
             response = self.client.patch(url, data, format="multipart")
+
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
             response_data = response.data
@@ -361,10 +361,10 @@ class VideoViewSetTest(APITestCase):
                 self.assertEqual(response_data["section"], data["section"])
 
     def _put_or_patch(self, mock_save, method):
-        """Helper function to decide full(PUT) or partial(PATCH) update.
+        """Helper function for deciding full(PUT) or partial(PATCH) update.
 
         Args:
-            mock_save: Save method of `FileSystemStorage` class
+            mock_save (MagicMock): Mock object for django file storage
             method (str): HTTP method ("PUT" or "PATCH")
         """
         mock_save.return_value = "video.mp4"
@@ -372,10 +372,6 @@ class VideoViewSetTest(APITestCase):
         # Video mock file
         video_mock = mock.MagicMock(spec=File, name="FileMock")
         video_mock.name = "video.mp4"
-
-        # Document mock file
-        doc_mock = mock.MagicMock(spec=File, name="FileMock")
-        doc_mock.name = "doc.pdf"
 
         chapter_id = 1
         section_id = 1
@@ -434,7 +430,7 @@ class VideoViewSetTest(APITestCase):
         """Test: update the video.
 
         Args:
-            mock_save: Save method of `FileSystemStorage` class
+            mock_save (MagicMock): Mock object for django file storage
         """
         self._put_or_patch(mock_save, "PUT")
 
@@ -443,7 +439,7 @@ class VideoViewSetTest(APITestCase):
         """Test: partial update the video.
 
         Args:
-            mock_save: Save method of `FileSystemStorage` class
+            mock_save (MagicMock): Mock object for django file storage
         """
         self._put_or_patch(mock_save, "PATCH")
 
@@ -457,10 +453,6 @@ class VideoViewSetTest(APITestCase):
         # Video mock file
         video_mock = mock.MagicMock(spec=File, name="FileMock")
         video_mock.name = "video.mp4"
-
-        # Document mock file
-        doc_mock = mock.MagicMock(spec=File, name="FileMock")
-        doc_mock.name = "doc.pdf"
 
         chapter_id = 1
         section_id = 1
@@ -476,6 +468,7 @@ class VideoViewSetTest(APITestCase):
             video_file=video_mock,
             video_duration=datetime.timedelta(minutes=3),
         )
+
         for video in [video_in_ch, video_in_sec]:
             url = reverse(("video:video-delete-video"), args=[video.id])
             response = self.client.delete(url)
@@ -483,15 +476,8 @@ class VideoViewSetTest(APITestCase):
             if status_code == status.HTTP_204_NO_CONTENT:
                 self.assertEqual(Video.objects.filter(id=video.id).count(), 0)
 
-    @mock.patch("django.core.files.storage.FileSystemStorage.save")
-    def test_delete_video(self, mock_save):
-        """Test: delete the video.
-
-        Args:
-            mock_save: Save method of `FileSystemStorage` class
-        """
-        mock_save.return_value = "video.mp4"
-
+    def test_delete_video(self):
+        """Test: delete the video."""
         # Deleted by instructor
         self.login(**ins_cred)
         self._delete_video_helper("Video 1", status.HTTP_204_NO_CONTENT)
@@ -507,5 +493,5 @@ class VideoViewSetTest(APITestCase):
 
         # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permisison class
         self.login(**stu_cred)
-        self._delete_video_helper("Video 1", status.HTTP_403_FORBIDDEN)
+        self._delete_video_helper("Video 4", status.HTTP_403_FORBIDDEN)
         self.logout()

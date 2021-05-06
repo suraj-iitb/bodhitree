@@ -13,8 +13,3 @@ TEST_STUDENT_CREDENTIALS = {
     "email": "student@bodhitree.com",
     "password": "student",
 }
-
-TEST_STUDENT1_CREDENTIALS = {
-    "email": "student1@bodhitree.com",
-    "password": "student1",
-}

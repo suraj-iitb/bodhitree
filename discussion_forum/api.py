@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class DiscussionThreadViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.IsRegisteredMixins,
+    custom_mixins.IsRegisteredMixin,
 ):
     """Viewset for DiscussionThread."""
 
@@ -167,7 +167,7 @@ class DiscussionThreadViewSet(
 
 class DiscussionCommentViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.IsRegisteredMixins,
+    custom_mixins.IsRegisteredMixin,
 ):
     """Viewset for DiscussionComment."""
 
@@ -302,7 +302,7 @@ class DiscussionCommentViewSet(
 
 class DiscussionReplyViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.IsRegisteredMixins,
+    custom_mixins.IsRegisteredMixin,
 ):
     """Viewset for DiscussionReply."""
 

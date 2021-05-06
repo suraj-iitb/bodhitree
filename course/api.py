@@ -228,7 +228,7 @@ class CourseViewSet(
 
 class CourseHistoryViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.IsRegisteredMixins,
+    custom_mixins.IsRegisteredMixin,
 ):
     """ViewSet for `CourseHistory`."""
 
@@ -376,7 +376,7 @@ class CourseHistoryViewSet(
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
+class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
     """Viewset for `Chapter`."""
 
     queryset = Chapter.objects.all()

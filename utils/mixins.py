@@ -78,7 +78,7 @@ class ContentMixin(IsRegisteredMixin):
                 2. If both (or none) the section/chapter is provided
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `_is_instructor_or_ta()` method
-            HTTP_404_NOT_FOUND: Raised if chapter/section does not exist
+            HTTP_404_NOT_FOUND: Raised if the chapter/section does not exist
         """
         user = request.user
         request_data = request.data
@@ -148,6 +148,8 @@ class ContentMixin(IsRegisteredMixin):
             logger.exception(e)
             return Response(str(e), status.HTTP_404_NOT_FOUND)
 
+        # This is specifically done during list all contents (not during retrieval of
+        # a content) because it can't be handled by `IsInstructorOrTA` permission class.
         check = self._is_registered(course_id, request.user)
         if check is not True:
             return check
@@ -180,6 +182,8 @@ class ContentMixin(IsRegisteredMixin):
             logger.exception(e)
             return Response(str(e), status.HTTP_404_NOT_FOUND)
 
+        # This is specifically done during list all contents (not during retrieval of
+        # a content) because it can't be handled by `IsInstructorOrTA` permission class.
         check = self._is_registered(course_id, request.user)
         if check is not True:
             return check

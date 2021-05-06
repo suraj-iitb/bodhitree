@@ -394,17 +394,24 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
             `Response` with the created chapter data and status HTTP_201_CREATED.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
+            HTTP_400_BAD_REQUEST: Raised due to serialization errors
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by:
-                1. `IntegrityError` of the database
-                2. `_is_instructor_or_ta()` method
+            HTTP_403_FORBIDDEN: Raised:
+                1. By `_is_instructor_or_ta()` method
+                2. Due to `IntegrityError` of the database
+            HTTP_404_NOT_FOUND: Raised if the course does not exist
         """
         user = request.user
         course_id = request.data["course"]
 
+        try:
+            Course.objects.get(id=course_id)
+        except Course.DoesNotExist as e:
+            logger.exception(e)
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
+
         # This is specifically done during chapter creation (not during updation or
-        # deletion) because it can't be handled by IsInstructorOrTA permission class
+        # deletion) because it can't be handled by `IsInstructorOrTA` permission class.
         check = self._is_instructor_or_ta(course_id, user)
         if check is not True:
             return check
@@ -435,7 +442,16 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
+            HTTP_404_NOT_FOUND: Raised if the course does not exist
         """
+        try:
+            Course.objects.get(id=pk)
+        except Course.DoesNotExist as e:
+            logger.exception(e)
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
+
+        # This is specifically done during list all chapters (not during retrieval of
+        # a chapter) because it can't be handled by `IsInstructorOrTA` permission class.
         check = self._is_registered(pk, request.user)
         if check is not True:
             return check
@@ -446,7 +462,7 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
 
     @action(detail=True, methods=["GET"])
     def retrieve_chapter(self, request, pk):
-        """Gets the chapter.
+        """Gets the chapter with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
@@ -458,6 +474,7 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
+            HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
         chapter = self.get_object()
         serializer = self.get_serializer(chapter)
@@ -465,7 +482,7 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_chapter(self, request, pk):
-        """Updates the chapter.
+        """Updates the chapter with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
@@ -475,11 +492,12 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
             `Response` with the updated chapter data and status HTTP_200_OK.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
+            HTTP_400_BAD_REQUEST: Raised due to serialization errors
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by:
                 1. `IsInstructorOrTA` permission class
                 2. `IntegrityError` of the database
+            HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
         chapter = self.get_object()
 
@@ -497,7 +515,7 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
 
     @action(detail=True, methods=["DELETE"])
     def delete_chapter(self, request, pk):
-        """Deletes the chapter.
+        """Deletes the chapter with primary key as pk.
 
         Args:
             request (Request): DRF `Request` object
@@ -509,6 +527,7 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
+            HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
         chapter = self.get_object()
         chapter.delete()

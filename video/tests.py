@@ -188,17 +188,17 @@ class VideoViewSetTest(APITestCase):
         """Test: list all chapter videos."""
         chapter_id = 1
 
-        # List by instructor
+        # Listed by instructor
         self.login(**ins_cred)
         self._list_chapter_videos_helper(chapter_id, status.HTTP_200_OK)
         self.logout()
 
-        # List by ta
+        # Listed by ta
         self.login(**ta_cred)
         self._list_chapter_videos_helper(chapter_id, status.HTTP_200_OK)
         self.logout()
 
-        # List by student
+        # Listed by student
         self.login(**stu_cred)
         self._list_chapter_videos_helper(chapter_id, status.HTTP_200_OK)
         self.logout()
@@ -237,17 +237,17 @@ class VideoViewSetTest(APITestCase):
         """Test: list all section videos."""
         section_id = 1
 
-        # List by instructor
+        # Listed by instructor
         self.login(**ins_cred)
         self._list_section_videos_helper(section_id, status.HTTP_200_OK)
         self.logout()
 
-        # List by ta
+        # Listed by ta
         self.login(**ta_cred)
         self._list_section_videos_helper(section_id, status.HTTP_200_OK)
         self.logout()
 
-        # List by student
+        # Listed by student
         self.login(**stu_cred)
         self._list_section_videos_helper(section_id, status.HTTP_200_OK)
         self.logout()
@@ -285,17 +285,17 @@ class VideoViewSetTest(APITestCase):
         """Test to check: retrieve the video."""
         video_id = 1
 
-        # Retrieve by instructor
+        # Retrieved by instructor
         self.login(**ins_cred)
         self._retrieve_video_helper(video_id, status.HTTP_200_OK)
         self.logout()
 
-        # Retrieve by ta
+        # Retrieved by ta
         self.login(**ta_cred)
         self._retrieve_video_helper(video_id, status.HTTP_200_OK)
         self.logout()
 
-        # Retrieve by student
+        # Retrieved by student
         self.login(**stu_cred)
         self._retrieve_video_helper(video_id, status.HTTP_200_OK)
         self.logout()
@@ -388,22 +388,22 @@ class VideoViewSetTest(APITestCase):
             video_duration=datetime.timedelta(minutes=3),
         )
 
-        # Update by instructor (in chapter)
+        # Updated by instructor (in chapter)
         self.login(**ins_cred)
         self._update_video_helper(video_in_ch, "Video 1", status.HTTP_200_OK, method)
         self.logout()
 
-        # Update by ta (in chapter)
+        # Updated by ta (in chapter)
         self.login(**ta_cred)
         self._update_video_helper(video_in_ch, "Video 2", status.HTTP_200_OK, method)
         self.logout()
 
-        # Update by instructor (in section)
+        # Updated by instructor (in section)
         self.login(**ins_cred)
         self._update_video_helper(video_in_sec, "Video 1", status.HTTP_200_OK, method)
         self.logout()
 
-        # Update by ta (in section)
+        # Updated by ta (in section)
         self.login(**ta_cred)
         self._update_video_helper(video_in_sec, "Video 2", status.HTTP_200_OK, method)
         self.logout()

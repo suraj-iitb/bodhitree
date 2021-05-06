@@ -25,10 +25,9 @@ logger = logging.getLogger(__name__)
 
 
 class DiscussionThreadViewSet(
-    viewsets.GenericViewSet,
-    custom_mixins.IsRegisteredMixins,
+    viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins
 ):
-    """Viewset for DiscussionThread."""
+    """Viewset for `DiscussionThread`."""
 
     queryset = DiscussionThread.objects.all()
     serializer_class = DiscussionThreadSerializer
@@ -51,14 +50,20 @@ class DiscussionThreadViewSet(
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
             HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
+            HTTP_404_NOT_FOUND: Raised by `DiscussionForum.DoesNotExist` exception
         """
         user = request.user
-        discussion_forum = request.data["discussion_forum"]
-        course_id = (
-            DiscussionForum.objects.select_related("course")
-            .get(id=discussion_forum)
-            .course.id
-        )
+        discussion_forum_id = request.data["discussion_forum"]
+        try:
+            course_id = (
+                DiscussionForum.objects.select_related("course")
+                .get(id=discussion_forum_id)
+                .course_id
+            )
+        except DiscussionForum.DoesNotExist as e:
+            logger.exception(e)
+            return Response(e, status.HTTP_404_NOT_FOUND)
+
         check = self._is_registered(course_id, user)
         if check is not True:
             return check
@@ -88,11 +93,13 @@ class DiscussionThreadViewSet(
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
             HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
+            HTTP_404_NOT_FOUND: Raised by `DiscussionForum.DoesNotExist` exception
         """
-        discussion_threads = DiscussionThread.objects.select_related(
-            "discussion_forum__course"
-        ).filter(discussion_forum_id=pk)
-        course_id = discussion_threads[0].discussion_forum.course.id
+        try:
+            course_id = DiscussionForum.objects.get(id=pk).course_id
+        except DiscussionForum.DoesNotExist as e:
+            logger.exception(e)
+            return Response(e, status.HTTP_404_NOT_FOUND)
         check = self._is_registered(course_id, request.user)
         if check is not True:
             return check
@@ -137,6 +144,7 @@ class DiscussionThreadViewSet(
             `Response` with the updated discussion thread data and status HTTP_200_OK
 
         Raises:
+            HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class

@@ -344,12 +344,13 @@ class VideoViewSetTest(APITestCase):
             data["chapter"] = video.chapter_id
         elif video.section_id:
             data["section"] = video.section_id
-        url = reverse(("video:video-update-video"), args=[video.id])
 
+        url = reverse(("video:video-update-video"), args=[video.id])
         if method == "PUT":
             response = self.client.put(url, data, format="multipart")
         else:
             response = self.client.patch(url, data, format="multipart")
+
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
             response_data = response.data
@@ -476,6 +477,7 @@ class VideoViewSetTest(APITestCase):
             video_file=video_mock,
             video_duration=datetime.timedelta(minutes=3),
         )
+
         for video in [video_in_ch, video_in_sec]:
             url = reverse(("video:video-delete-video"), args=[video.id])
             response = self.client.delete(url)

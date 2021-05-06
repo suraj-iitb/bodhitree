@@ -89,14 +89,14 @@ class VideoViewSetTest(APITestCase):
         # Created by instructor (in chapter)
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 1", status.HTTP_201_CREATED, chapter_id, section_id
+            chapter_id, section_id, "Video 1", status.HTTP_201_CREATED
         )
         self.logout()
 
         # Created by ta (in chapter)
         self.login(**ta_cred)
         self._create_video_helper(
-            "Video 2", status.HTTP_201_CREATED, chapter_id, section_id
+            chapter_id, section_id, "Video 2", status.HTTP_201_CREATED
         )
         self.logout()
 
@@ -105,21 +105,21 @@ class VideoViewSetTest(APITestCase):
         section_id = 1
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 1", status.HTTP_201_CREATED, chapter_id, section_id
+            chapter_id, section_id, "Video 1", status.HTTP_201_CREATED
         )
         self.logout()
 
         # Created by ta (in section)
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 2", status.HTTP_201_CREATED, chapter_id, section_id
+            chapter_id, section_id, "Video 2", status.HTTP_201_CREATED
         )
         self.logout()
 
         # `HTTP_400_BAD_REQUEST` due to serialization errors
         self.login(**ins_cred)
         self._create_video_helper(
-            "", status.HTTP_400_BAD_REQUEST, chapter_id, section_id
+            chapter_id, section_id, "", status.HTTP_400_BAD_REQUEST
         )
         self.logout()
 
@@ -127,7 +127,7 @@ class VideoViewSetTest(APITestCase):
         chapter_id = 1
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 3", status.HTTP_400_BAD_REQUEST, chapter_id, section_id
+            chapter_id, section_id, "Video 3", status.HTTP_400_BAD_REQUEST
         )
         self.logout()
 
@@ -136,20 +136,20 @@ class VideoViewSetTest(APITestCase):
         section_id = ""
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 4", status.HTTP_400_BAD_REQUEST, chapter_id, section_id
+            chapter_id, section_id, "Video 4", status.HTTP_400_BAD_REQUEST
         )
         self.logout()
 
         # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
         chapter_id = 1
         self._create_video_helper(
-            "Video 5", status.HTTP_401_UNAUTHORIZED, chapter_id, section_id
+            chapter_id, section_id, "Video 5", status.HTTP_401_UNAUTHORIZED
         )
 
         # `HTTP_403_FORBIDDEN` due to `_is_instructor_or_ta()` method
         self.login(**stu_cred)
         self._create_video_helper(
-            "Video 6", status.HTTP_403_FORBIDDEN, chapter_id, section_id
+            chapter_id, section_id, "Video 6", status.HTTP_403_FORBIDDEN
         )
         self.logout()
 
@@ -157,7 +157,7 @@ class VideoViewSetTest(APITestCase):
         chapter_id = 100
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 7", status.HTTP_404_NOT_FOUND, chapter_id, section_id
+            chapter_id, section_id, "Video 7", status.HTTP_404_NOT_FOUND
         )
         self.logout()
 
@@ -166,7 +166,7 @@ class VideoViewSetTest(APITestCase):
         section_id = 100
         self.login(**ins_cred)
         self._create_video_helper(
-            "Video 8", status.HTTP_404_NOT_FOUND, chapter_id, section_id
+            chapter_id, section_id, "Video 8", status.HTTP_404_NOT_FOUND
         )
         self.logout()
 

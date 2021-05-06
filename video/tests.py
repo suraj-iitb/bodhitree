@@ -13,7 +13,6 @@ from video.models import Video
 ins_cred = credentials.TEST_INSTRUCTOR_CREDENTIALS
 ta_cred = credentials.TEST_TA_CREDENTIALS
 stu_cred = credentials.TEST_STUDENT_CREDENTIALS
-stu_cred1 = credentials.TEST_STUDENT1_CREDENTIALS
 
 
 class VideoViewSetTest(APITestCase):
@@ -275,7 +274,6 @@ class VideoViewSetTest(APITestCase):
             video_id (int): Video id
             status_code (int): Expected status code of the API call
         """
-
         url = reverse("video:video-retrieve-video", args=[video_id])
 
         response = self.client.get(url)
@@ -306,7 +304,8 @@ class VideoViewSetTest(APITestCase):
         self._retrieve_video_helper(video_id, status.HTTP_401_UNAUTHORIZED)
 
         # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permisison class
-        self.login(**stu_cred1)
+        video_id = 4
+        self.login(**stu_cred)
         self._retrieve_video_helper(video_id, status.HTTP_403_FORBIDDEN)
         self.logout()
 
@@ -317,7 +316,7 @@ class VideoViewSetTest(APITestCase):
         self.logout()
 
     def _update_video_helper(self, video, title, status_code, method):
-        """Helper function to test update video functionality.
+        """Helper function for `test_update_video()` & `test_partial_update_video()`.
 
         Args:
             video (Video): `Video` model object
@@ -373,10 +372,6 @@ class VideoViewSetTest(APITestCase):
         # Video mock file
         video_mock = mock.MagicMock(spec=File, name="FileMock")
         video_mock.name = "video.mp4"
-
-        # Document mock file
-        doc_mock = mock.MagicMock(spec=File, name="FileMock")
-        doc_mock.name = "doc.pdf"
 
         chapter_id = 1
         section_id = 1
@@ -459,10 +454,6 @@ class VideoViewSetTest(APITestCase):
         video_mock = mock.MagicMock(spec=File, name="FileMock")
         video_mock.name = "video.mp4"
 
-        # Document mock file
-        doc_mock = mock.MagicMock(spec=File, name="FileMock")
-        doc_mock.name = "doc.pdf"
-
         chapter_id = 1
         section_id = 1
         video_in_ch = Video.objects.create(
@@ -485,15 +476,8 @@ class VideoViewSetTest(APITestCase):
             if status_code == status.HTTP_204_NO_CONTENT:
                 self.assertEqual(Video.objects.filter(id=video.id).count(), 0)
 
-    @mock.patch("django.core.files.storage.FileSystemStorage.save")
-    def test_delete_video(self, mock_save):
-        """Test: delete the video.
-
-        Args:
-            mock_save (MagicMock): Mock object for django file storage
-        """
-        mock_save.return_value = "video.mp4"
-
+    def test_delete_video(self):
+        """Test: delete the video."""
         # Deleted by instructor
         self.login(**ins_cred)
         self._delete_video_helper("Video 1", status.HTTP_204_NO_CONTENT)

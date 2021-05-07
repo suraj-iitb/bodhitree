@@ -282,7 +282,8 @@ class DiscussionCommentViewSet(
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent`
+                permission class
             HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
         serializer = self.get_serializer(
@@ -290,19 +291,13 @@ class DiscussionCommentViewSet(
         )
         if serializer.is_valid():
             serializer.save()
-            print("-------------------------------------------")
-            print(serializer.data)
-            print("------------------------------------------")
             return Response(serializer.data)
         errors = serializer.errors
         logger.error(errors)
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class DiscussionReplyViewSet(
-    viewsets.GenericViewSet,
-    custom_mixins.IsRegisteredMixins,
-):
+class DiscussionReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
     """Viewset for DiscussionReply."""
 
     queryset = DiscussionReply.objects.all()
@@ -427,7 +422,8 @@ class DiscussionReplyViewSet(
             HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
                 permission class
-            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent`
+                permission class
             HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
         serializer = self.get_serializer(

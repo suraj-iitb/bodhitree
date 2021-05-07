@@ -467,6 +467,7 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
         "fixedanswerquestionhistory.test.yaml",
         "descriptivequestionhistory.test.yaml",
         "discussionforum.test.yaml",
+        "tags.test.yaml",
         "discussionthread.test.yaml",
         "discussioncomment.test.yaml",
         "discussionreply.test.yaml",

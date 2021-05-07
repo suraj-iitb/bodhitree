@@ -25,9 +25,9 @@ class DiscussionThreadViewSetTest(APITestCase):
         "sections.test.yaml",
         "documents.test.yaml",
         "videos.test.yaml",
-        "discussionforum.tests.yaml",
+        "discussionforum.test.yaml",
         "tags.test.yaml",
-        "discussionthread.tests.yaml",
+        "discussionthread.test.yaml",
     ]
 
     def login(self, email, password):
@@ -387,9 +387,9 @@ class DiscussionCommentViewSetTest(APITestCase):
         "courses.test.yaml",
         "coursehistories.test.yaml",
         "videos.test.yaml",
-        "discussionforum.tests.yaml",
+        "discussionforum.test.yaml",
         "tags.test.yaml",
-        "discussionthread.tests.yaml",
+        "discussionthread.test.yaml",
         "discussioncomment.test.yaml",
     ]
 
@@ -726,9 +726,9 @@ class DiscussionReplyViewSetTest(APITestCase):
         "courses.test.yaml",
         "coursehistories.test.yaml",
         "videos.test.yaml",
-        "discussionforum.tests.yaml",
+        "discussionforum.test.yaml",
         "tags.test.yaml",
-        "discussionthread.tests.yaml",
+        "discussionthread.test.yaml",
         "discussioncomment.test.yaml",
         "discussionreply.test.yaml",
     ]

@@ -24,9 +24,7 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 
-class DiscussionThreadViewSet(
-    viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins
-):
+class DiscussionThreadViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
     """Viewset for `DiscussionThread`."""
 
     queryset = DiscussionThread.objects.all()
@@ -52,7 +50,6 @@ class DiscussionThreadViewSet(
             HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
             HTTP_404_NOT_FOUND: Raised by `DiscussionForum.DoesNotExist` exception
         """
-        user = request.user
         discussion_forum_id = request.data["discussion_forum"]
         try:
             course_id = DiscussionForum.objects.get(id=discussion_forum_id).course_id
@@ -60,7 +57,7 @@ class DiscussionThreadViewSet(
             logger.exception(e)
             return Response(str(e), status.HTTP_404_NOT_FOUND)
 
-        check = self._is_registered(course_id, user)
+        check = self._is_registered(course_id, request.user)
         if check is not True:
             return check
 
@@ -159,7 +156,7 @@ class DiscussionThreadViewSet(
 
 
 class DiscussionCommentViewSet(
-    viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins
+    viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin
 ):
     """Viewset for DiscussionComment."""
 
@@ -297,7 +294,7 @@ class DiscussionCommentViewSet(
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class DiscussionReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixins):
+class DiscussionReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
     """Viewset for DiscussionReply."""
 
     queryset = DiscussionReply.objects.all()

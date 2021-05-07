@@ -1,0 +1,21 @@
+- model: registration.registration
+  pk: 1
+  fields:
+    user: 1
+    activation_key: activationkey
+    forgot_password: false
+    created_on: 2021-05-04 06:52:03.422213+00:00
+- model: registration.registration
+  pk: 2
+  fields:
+    user: 2
+    activation_key: activationkey
+    forgot_password: false
+    created_on: 2021-05-04 06:52:36.371476+00:00
+- model: registration.registration
+  pk: 3
+  fields:
+    user: 3
+    activation_key: activationkey
+    forgot_password: false
+    created_on: 2021-05-04 06:52:44.931410+00:00

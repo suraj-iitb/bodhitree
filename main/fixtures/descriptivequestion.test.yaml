@@ -1,0 +1,8 @@
+- model: quiz.descriptivequestion
+  pk: 7
+  fields:
+    answer: Descriptive question answer-i
+- model: quiz.descriptivequestion
+  pk: 8
+  fields:
+    answer:  Descriptive question answer-ii

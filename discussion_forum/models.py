@@ -28,6 +28,7 @@ class Content(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ["-id"]
 
     def __str__(self):
         return "{}...".format(self.description[0:20])

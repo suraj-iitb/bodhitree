@@ -1,0 +1,15 @@
+- model: programming_assignments.simpleprogrammingassignmenthistory
+  pk: 1
+  fields:
+    assignment_history: 1
+    file_submitted: 2.123:new_course2/programming_assignment/1.Assignment_1/submission_files/temp_aDGsCwh.py
+- model: programming_assignments.simpleprogrammingassignmenthistory
+  pk: 2
+  fields:
+    assignment_history: 2
+    file_submitted: 2.123:new_course2/programming_assignment/1.Assignment_1/submission_files/temp_lWBghbo.py
+- model: programming_assignments.simpleprogrammingassignmenthistory
+  pk: 3
+  fields:
+    assignment_history: 3
+    file_submitted: 2.123:new_course2/programming_assignment/1.Assignment_1/submission_files/temp_L9vqwPC.py

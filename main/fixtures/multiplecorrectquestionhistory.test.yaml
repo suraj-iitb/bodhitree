@@ -1,0 +1,12 @@
+- model: quiz.mulitplecorrectquestionhistory
+  pk: 4
+  fields:
+    options_selected: '["1"]'
+- model: quiz.mulitplecorrectquestionhistory
+  pk: 5
+  fields:
+    options_selected: '["2"]'
+- model: quiz.mulitplecorrectquestionhistory
+  pk: 6
+  fields:
+    options_selected: '["3"]'

@@ -468,7 +468,7 @@ class IsOwner(permissions.BasePermission):
     """Permission class for viewsets.
 
     Applicable for:
-        1. Course
+        1. Course, CourseHistory
         2. Crib
 
     Allows:
@@ -494,6 +494,8 @@ class IsOwner(permissions.BasePermission):
         """
         if type(obj) == Course:
             user = obj.owner
+        elif type(obj) == CourseHistory:
+            user = obj.user
         elif type(obj) == Crib:
             user = obj.created_by
         return user

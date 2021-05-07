@@ -352,7 +352,10 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
             course_from_obj, user_from_obj = self._get_course_and_user_from_object(obj)
             if request.method in permissions.SAFE_METHODS:
                 return check_course_registration(course_from_obj.id, user)
-            return user_from_obj == user
+            return (
+                check_course_registration(course_from_obj.id, user)
+                and user_from_obj == user
+            )
         return False
 
 

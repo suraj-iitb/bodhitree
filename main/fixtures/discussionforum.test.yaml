@@ -1,0 +1,6 @@
+- model: discussion_forum.discussionforum
+  pk: 1
+  fields:
+    course: 2
+    anonymous_to_instructor: true
+    send_email_to_all: false

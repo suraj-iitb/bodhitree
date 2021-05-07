@@ -1,0 +1,24 @@
+- model: email_notices.email
+  pk: 1
+  fields:
+    course: 2
+    sender: 1
+    from_email: abc@gmail.com
+    to_email_list: '["pqr@gmail.com"]'
+    reply_to: ''
+    cc_list: '[]'
+    subject: Subject of email-i
+    body: ''
+    sent_on: 2021-05-03 14:02:39.876953+00:00
+- model: email_notices.email
+  pk: 2
+  fields:
+    course: 2
+    sender: 1
+    from_email: mno@gmail.com
+    to_email_list: '["pqr@gmail.com"]'
+    reply_to: ''
+    cc_list: '[]'
+    subject: Subject of email-ii
+    body: ''
+    sent_on: 2021-05-03 14:03:16.740893+00:00

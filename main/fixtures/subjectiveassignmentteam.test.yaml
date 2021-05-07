@@ -1,0 +1,5 @@
+- model: subjective_assignments.subjectiveassignmentteam
+  pk: 1
+  fields:
+    user_ids: '["1", "2"]'
+    subjective_assignment: 1

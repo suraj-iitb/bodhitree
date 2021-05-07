@@ -1,0 +1,120 @@
+- model: quiz.questionhistory
+  pk: 1
+  fields:
+    question: 1
+    user: 1
+    no_of_times_attempted: 5
+    marks_obtained: 5
+    hint_taken: false
+    created_on: 2021-05-04 06:53:54.954875+00:00
+    modified_on: 2021-05-04 06:53:54.954894+00:00
+- model: quiz.questionhistory
+  pk: 2
+  fields:
+    question: 1
+    user: 2
+    no_of_times_attempted: 5
+    marks_obtained: 5
+    hint_taken: false
+    created_on: 2021-05-04 06:54:15.851237+00:00
+    modified_on: 2021-05-04 06:54:15.851270+00:00
+- model: quiz.questionhistory
+  pk: 3
+  fields:
+    question: 1
+    user: 3
+    no_of_times_attempted: 6
+    marks_obtained: 4
+    hint_taken: false
+    created_on: 2021-05-04 06:54:33.416709+00:00
+    modified_on: 2021-05-04 06:54:33.416762+00:00
+- model: quiz.questionhistory
+  pk: 4
+  fields:
+    question: 3
+    user: 1
+    no_of_times_attempted: 5
+    marks_obtained: 5
+    hint_taken: false
+    created_on: 2021-05-04 07:26:39.470228+00:00
+    modified_on: 2021-05-04 07:26:39.470255+00:00
+- model: quiz.questionhistory
+  pk: 5
+  fields:
+    question: 3
+    user: 2
+    no_of_times_attempted: 6
+    marks_obtained: 6
+    hint_taken: false
+    created_on: 2021-05-04 07:26:59.747540+00:00
+    modified_on: 2021-05-04 07:26:59.747571+00:00
+- model: quiz.questionhistory
+  pk: 6
+  fields:
+    question: 3
+    user: 3
+    no_of_times_attempted: 5
+    marks_obtained: 5
+    hint_taken: false
+    created_on: 2021-05-04 07:27:16.652616+00:00
+    modified_on: 2021-05-04 07:27:16.652640+00:00
+- model: quiz.questionhistory
+  pk: 7
+  fields:
+    question: 5
+    user: 1
+    no_of_times_attempted: 5
+    marks_obtained: 2
+    hint_taken: false
+    created_on: 2021-05-04 07:27:58.093776+00:00
+    modified_on: 2021-05-04 07:27:58.093802+00:00
+- model: quiz.questionhistory
+  pk: 8
+  fields:
+    question: 5
+    user: 2
+    no_of_times_attempted: 6
+    marks_obtained: 3
+    hint_taken: false
+    created_on: 2021-05-04 07:28:14.156726+00:00
+    modified_on: 2021-05-04 07:28:14.156740+00:00
+- model: quiz.questionhistory
+  pk: 9
+  fields:
+    question: 5
+    user: 3
+    no_of_times_attempted: 3
+    marks_obtained: 3
+    hint_taken: false
+    created_on: 2021-05-04 07:28:35.585704+00:00
+    modified_on: 2021-05-04 07:28:35.585725+00:00
+- model: quiz.questionhistory
+  pk: 10
+  fields:
+    question: 7
+    user: 1
+    no_of_times_attempted: 3
+    marks_obtained: 3
+    hint_taken: false
+    created_on: 2021-05-04 07:29:08.529005+00:00
+    modified_on: 2021-05-04 07:29:08.529028+00:00
+- model: quiz.questionhistory
+  pk: 11
+  fields:
+    question: 7
+    user: 2
+    no_of_times_attempted: 3
+    marks_obtained: 3
+    hint_taken: false
+    created_on: 2021-05-04 07:29:23.692260+00:00
+    modified_on: 2021-05-04 07:29:23.692316+00:00
+- model: quiz.questionhistory
+  pk: 12
+  fields:
+    question: 7
+    user: 3
+    no_of_times_attempted: 2
+    marks_obtained: 2
+    hint_taken: false
+    created_on: 2021-05-04 07:29:42.983582+00:00
+    modified_on: 2021-05-04 07:29:42.983608+00:00

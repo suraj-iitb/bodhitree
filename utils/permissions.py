@@ -66,9 +66,11 @@ class IsInstructorOrTA(permissions.BasePermission):
 
     Allows:
         1. `GET (list)` permission to instructor/ta/student
-            (check `is_registered()` in api.py)
+            (If above is not desirable, then one way is: check `is_registered()`
+                in api.py)
         2  `POST` permission to instructor/ta/student
-            (check `is_instructor_or_ta()` in api.py)
+            (If above is not desirable, then one way is: check `is_instructor_or_ta()`
+                in api.py)
         3. `GET (retrieve)` permission to registered instructor/ta/student
         4. `PUT` permision to registered instructor/ta
         5. `PATCH` permision to registered instructor/ta
@@ -163,8 +165,8 @@ class IsInstructorOrTA(permissions.BasePermission):
 
         Args:
             request (Request): DRF `Request` object
-            view (ViewSet): `ViewSet` object (`ChapterViewSet`, `QuizViewSet` etc.)
-            obj (Model): `Model` object (`Chapter`, `Quiz` etc.)
+            view (ViewSet): `ViewSet` object (`ChapterViewSet`, `VideoViewSet` etc.)
+            obj (Model): `Model` object (`Chapter`, `Video` etc.)
 
         Returns:
             A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
@@ -247,9 +249,11 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
 
     Allows:
         1. `GET (list)` permission to instructor/ta/student
-            (check `is_registered()` in api.py)
+            (If above is not desirable, then one way is: check `is_registered()`
+                in api.py)
         2  `POST` permission to instructor/ta/student
-            (check `is_registered()` in api.py)
+            (If above is not desirable, then one way is: check `is_registered()`
+                in api.py)
         3. `GET (retrieve)` permission to registered instructor/ta/student
         4. `PUT` permision to owner
         5. `PATCH` permision to owner
@@ -287,6 +291,7 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
                 if obj.question.question_module.quiz.chapter
                 else obj.question.question_module.quiz.section.chapter.course
             )
+            user = obj.user
         elif type(obj) == DiscussionThread:
             course = obj.discussion_forum.course
             user = obj.author
@@ -301,7 +306,7 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
             user = obj.created_by
         elif type(obj) == CribReply:
             course = obj.crib.course
-            user = obj.created_by
+            user = obj.user
         elif type(obj) in (
             SimpleProgrammingAssignmentHistory,
             SubjectiveAssignmentHistory,
@@ -309,8 +314,8 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
             course = obj.assignment_history.assignment.course
             user = obj.assignment_history.user
         elif type(obj) == AdvancedProgrammingAssignmentHistory:
-            sim_assign = obj.simple_programming_assignment_history
-            course = sim_assign.assignment_history.assignment.course
+            simple_assign_hist = obj.simple_programming_assignment_history
+            course = simple_assign_hist.assignment_history.assignment.course
             user = obj.simple_programming_assignment_history.assignment_history.user
         elif type(obj) == ExamHistory:
             course = obj.exam.assignment.course
@@ -321,6 +326,7 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
                 if obj.testcase.assignment
                 else obj.testcase.assignment_section.assignment.course
             )
+            user = obj.user
         return (course, user)
 
     def has_permission(self, request, view):
@@ -366,7 +372,7 @@ class UserPermission(permissions.BasePermission):
 
     Allows:
         1. `GET (list)` permission to any authenticated user
-            (don't provide a `list()` method)
+            (If above is not desirable, then one way is: don't provide `list()` method)
         2  `POST` permisison to authenticated/not_authenticated user
         3. `GET (retrieve)` permission to owner or admin user
         4. `PUT` permision to owner or admin user
@@ -412,7 +418,7 @@ class IsAdmin(permissions.BasePermission):
 
     Allows:
         1. `GET (list)` permission to any authenticated user
-            (don't provide a `list()` method)
+            (If above is not desirable, then one way is: don't provide `list()` method)
         2  `POST` permisison to any admin user
         3. `GET (retrieve)` permission to owner or admin user
         4. `PUT` permision to admin user
@@ -462,14 +468,15 @@ class IsOwner(permissions.BasePermission):
     """Permission class for viewsets.
 
     Applicable for:
-        1. Course, CourseHistory
+        1. Course
         2. Crib
 
     Allows:
         1. `GET (list)` permission to any authenticated user
-            (don't provide a `list()` method)
+            (If above is not desirable, then one way is: don't provide `list()` method)
         2  `POST` permisison to any authenticated user
-            (don't provide a `create()` method)
+            (If above is not desirable, then one way is: don't provide `create()`
+                method)
         3. `GET (retrieve)` permission to owner
         4. `PUT` permision to owner
         5. `PATCH` permision to owner
@@ -480,15 +487,13 @@ class IsOwner(permissions.BasePermission):
         """Get user using obj.
 
         Args:
-            obj (Model): `Model` object (`Course`, `CourseHistory` etc.)
+            obj (Model): `Model` object (`Course`, `Crib` etc.)
 
         Returns:
             user (User): `User` model object
         """
         if type(obj) == Course:
             user = obj.owner
-        elif type(obj) == CourseHistory:
-            user = obj.user
         elif type(obj) == Crib:
             user = obj.created_by
         return user
@@ -507,7 +512,7 @@ class IsOwner(permissions.BasePermission):
         return bool(user and user.is_authenticated)
 
     def has_object_permission(self, request, view, obj):
-        """Applicable at model instance level (GET(one object), PUT, PATCH, DELETE).
+        """Applicable at model instance level (GET(retrieve), PUT, PATCH, DELETE).
 
         Args:
             request (Request): DRF `Request` object

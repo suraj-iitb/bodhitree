@@ -32,7 +32,7 @@
   pk: 4
   fields:
     course: 2
-    created_by: 3
+    created_by: 2
     assigned_to: 3
     title: Cribs title
     description: ''

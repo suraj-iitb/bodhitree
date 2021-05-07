@@ -376,7 +376,7 @@ class CourseHistoryViewSet(
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
+class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
     """Viewset for `Chapter`."""
 
     queryset = Chapter.objects.all()
@@ -385,151 +385,23 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
 
     @action(detail=False, methods=["POST"])
     def create_chapter(self, request):
-        """Adds a chapter to the course.
-
-        Args:
-            request (Request): DRF `Request` object
-
-        Returns:
-            `Response` with the created chapter data and status HTTP_201_CREATED.
-
-        Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised:
-                1. By `_is_instructor_or_ta()` method
-                2. Due to `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised if the course does not exist
-        """
-        course_id = request.data["course"]
-
-        try:
-            Course.objects.get(id=course_id)
-        except Course.DoesNotExist as e:
-            logger.exception(e)
-            return Response(str(e), status.HTTP_404_NOT_FOUND)
-
-        # This is specifically done during chapter creation (not during updation or
-        # deletion) because it can't be handled by `IsInstructorOrTA` permission class.
-        check = self._is_instructor_or_ta(course_id, request.user)
-        if check is not True:
-            return check
-
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.create(request)
 
     @action(detail=True, methods=["GET"])
     def list_chapters(self, request, pk):
-        """Gets all the chapters in the course with primary key as pk.
-
-        Args:
-            request (Request): DRF `Request` object
-            pk (int): Course id
-
-        Returns:
-            `Response` with all the chapter data and status HTTP_200_OK.
-
-        Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
-            HTTP_404_NOT_FOUND: Raised if the course does not exist
-        """
-        try:
-            Course.objects.get(id=pk)
-        except Course.DoesNotExist as e:
-            logger.exception(e)
-            return Response(str(e), status.HTTP_404_NOT_FOUND)
-
-        # This is specifically done during list all chapters (not during retrieval of
-        # a chapter) because it can't be handled by `IsInstructorOrTA` permission class.
-        check = self._is_registered(pk, request.user)
-        if check is not True:
-            return check
-
-        chapters = Chapter.objects.filter(course_id=pk)
-        serializer = self.get_serializer(chapters, many=True)
-        return Response(serializer.data)
+        return self.list(request, pk, Chapter)
 
     @action(detail=True, methods=["GET"])
     def retrieve_chapter(self, request, pk):
-        """Gets the chapter with primary key as pk.
-
-        Args:
-            request (Request): DRF `Request` object
-            pk (int): Chapter id
-
-        Returns:
-            `Response` with the chapter data and status HTTP_200_OK.
-
-        Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `get_object()` method
-        """
-        chapter = self.get_object()
-        serializer = self.get_serializer(chapter)
-        return Response(serializer.data)
+        return self.retrieve(request, pk)
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_chapter(self, request, pk):
-        """Updates the chapter with primary key as pk.
-
-        Args:
-            request (Request): DRF `Request` object
-            pk (int): Chapter id
-
-        Returns:
-            `Response` with the updated chapter data and status HTTP_200_OK.
-
-        Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by:
-                1. `IsInstructorOrTA` permission class
-                2. `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised by `get_object()` method
-        """
-        chapter = self.get_object()
-        serializer = self.get_serializer(chapter, data=request.data, partial=True)
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)
 
     @action(detail=True, methods=["DELETE"])
     def delete_chapter(self, request, pk):
-        """Deletes the chapter with primary key as pk.
-
-        Args:
-            request (Request): DRF `Request` object
-            pk (int): Chapter id
-
-        Returns:
-            `Response` with no data and status HTTP_204_NO_CONTENT.
-
-        Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `get_object()` method
-        """
-        chapter = self.get_object()
-        chapter.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return self._delete(request, pk)
 
 
 class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):

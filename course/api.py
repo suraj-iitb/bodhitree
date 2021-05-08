@@ -31,9 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 class CourseViewSet(
-    viewsets.GenericViewSet,
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin
 ):
     """ViewSet for `Course`."""
 
@@ -64,54 +62,51 @@ class CourseViewSet(
             A bool value representing whether the user can create a course or not.
 
         Raises:
-            HTTP_403_FORBIDDEN: Raised if:
+            `HTTP_403_FORBIDDEN`: Raised if:
                 1. The course limit of the subscription is reached.
-                2. The subscription plan does not exist.
+                2. `SubscriptionHistory.DoesNotExist` exception
         """
         try:
             if not SubscriptionView.is_course_limit_reached(user):
                 return True
-            data = {
-                "error": "For user: {}, the limit of number of courses in "
-                "subscription exceeded.".format(user),
-            }
-            logger.warning(data["error"])
+
+            error = "For user: `{}`, the limit of number of courses reached.".format(
+                user
+            )
+            logger.warning(error)
+            return Response(error, status.HTTP_403_FORBIDDEN)
         except SubscriptionHistory.DoesNotExist as e:
             logger.exception(e)
-            data = {
-                "error": "User: {} does not have a valid subscription.".format(user),
-            }
-        return Response(data, status.HTTP_403_FORBIDDEN)
+            return Response(str(e), status.HTTP_403_FORBIDDEN)
 
     def _update_course_check(self, course_id, user):
         """Checks if the user can update a course.
 
         Args:
-            course_id: course id
+            course_id: Course id
             user (User): `User` model object
 
         Returns:
             A bool value representing whether the user can update a course or not.
 
         Raises:
-            HTTP_404_NOT_FOUND: Raised if the course does not exist
-            HTTP_403_FORBIDDEN: Raised if the subscription is not valid
+            `HTTP_404_NOT_FOUND`: Raised by `Course.DoesNotExist` exception
+            `HTTP_403_FORBIDDEN`: Raised if the subscription is not valid
         """
         try:
             course = Course.objects.select_related("owner").get(id=course_id)
         except Course.DoesNotExist as e:
             logger.exception(e)
-            return Response(e, status.HTTP_404_NOT_FOUND)
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
 
         if SubscriptionView.has_valid_subscription(course.owner):
             return True
-        data = {
-            "error": "User: {} is not permitted to update the course: {}.".format(
-                user, course
-            ),
-        }
-        logger.warning(data["error"])
-        return Response(data, status.HTTP_403_FORBIDDEN)
+
+        error = "User: `{}` is not permitted to update the course: `{}`.".format(
+            user, course
+        )
+        logger.warning(error)
+        return Response(error, status.HTTP_403_FORBIDDEN)
 
     @action(detail=False, methods=["POST"])
     def create_course(self, request):
@@ -121,16 +116,15 @@ class CourseViewSet(
             request (Request): DRF `Request` object
 
         Returns:
-            `Response` with the created course data and status HTTP_201_CREATED.
+            `Response` with the created course data and status `HTTP_201_CREATED`.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrReadOnly`
-                permission class
+            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrReadOnly` permission
+                class
             HTTP_403_FORBIDDEN: Raised by:
-                1. `IsInstructorOrTAOrReadOnly` permission class
-                2. `IntegrityError` of the database
-                3. `_create_course_check()` method
+                1. `IntegrityError` of the database
+                2. `_create_course_check()` method
         """
         user = request.user
         check = self._create_course_check(user)
@@ -143,14 +137,7 @@ class CourseViewSet(
                 serializer.save()
             except IntegrityError as e:
                 logger.exception(e)
-                data = {
-                    "error": "Course with code '{}' & title '{}' already exists for"
-                    " you.".format(
-                        serializer.initial_data["code"],
-                        serializer.initial_data["title"],
-                    )
-                }
-                return Response(data, status=status.HTTP_403_FORBIDDEN)
+                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
             course_history = CourseHistory(
                 user=user, course=serializer.instance, role="I", status="E"
             )
@@ -166,17 +153,17 @@ class CourseViewSet(
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): course id
+            pk (int): Course id
 
         Returns:
-            `Response` with the updated course data and status HTTP_200_OK.
+            `Response` with the updated course data and status `HTTP_200_OK`.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrReadOnly`
-                permission class
-            HTTP_403_FORBIDDEN: Raised by:
-                1. `IsInstructorOrTAOrReadOnly` permission class
+            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrReadOnly` permission
+                class
+            `HTTP_403_FORBIDDEN`: Raised by:
+                1.  `IsInstructorOrTAOrReadOnly` permission class
                 2. `IntegrityError` of the database
                 3. `_update_course_check()` method
             HTTP_404_NOT_FOUND: Raise by `_update_course_check()` method
@@ -193,14 +180,7 @@ class CourseViewSet(
                 serializer.save()
             except IntegrityError as e:
                 logger.exception(e)
-                data = {
-                    "error": "Course with code '{}' & title '{}' already exists for"
-                    " you.".format(
-                        serializer.initial_data["code"],
-                        serializer.initial_data["title"],
-                    )
-                }
-                return Response(data, status=status.HTTP_403_FORBIDDEN)
+                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
             return Response(serializer.data)
         errors = serializer.errors
         logger.error(errors)
@@ -212,14 +192,14 @@ class CourseViewSet(
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): course id
+            pk (int): Course id
 
         Returns:
             `Response` with no data and status HTTP_204_NO_CONTENT.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsOwner` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsOwner` permission class
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
+            `HTTP_403_FORBIDDEN`: Raised by `IsOwner` permission class
         """
         instance = self.get_object()
         instance.delete()

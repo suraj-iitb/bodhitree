@@ -518,7 +518,7 @@ class IsOwner(permissions.BasePermission):
 
     Applicable for:
         1. Course, CourseHistory
-        2. Crib
+        2. Crib, CribReply
 
     Allows:
         1. `GET (list)` permission to any authenticated user

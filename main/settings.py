@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 import logging.config
 import os
+import sys
 from configparser import ConfigParser
 from pathlib import Path
 
@@ -28,6 +29,8 @@ DEBUG = config["server"].getboolean("debug")
 
 ALLOWED_HOSTS = config["server"]["allowed_hosts"]
 
+TEST = "test" in sys.argv
+
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -41,7 +44,6 @@ INSTALLED_APPS = [
     "django_filters",
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",
-    "debug_toolbar",
     # Our apps
     "discussion_forum",
     "cribs",
@@ -58,7 +60,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -68,6 +69,12 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+if DEBUG and not TEST:
+    INSTALLED_APPS += [
+        "debug_toolbar",
+    ]
+    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
 ROOT_URLCONF = "main.urls"
 
@@ -159,7 +166,7 @@ INTERNAL_IPS = [
 ]
 
 DEBUG_TOOLBAR_CONFIG = {
-    "SHOW_TOOLBAR_CALLBACK": lambda request: True,
+    "SHOW_TOOLBAR_CALLBACK": lambda request: DEBUG,
 }
 
 # Simple JWT

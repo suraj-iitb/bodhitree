@@ -15,6 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from rest_framework.documentation import include_docs_urls
+from rest_framework.schemas import get_schema_view
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -36,4 +38,13 @@ urlpatterns = [
     path("videos/", include("video.urls")),
     path("cribs/", include("cribs.urls")),
     path("discussion_forum/", include("discussion_forum.urls")),
+    # Schema & docs
+    path(
+        "schema/",
+        get_schema_view(
+            title="BodhiTree", description="API for BodhiTree", version="1.0.0"
+        ),
+        name="openapi-schema",
+    ),
+    path("docs/", include_docs_urls(title="BodhiTree")),
 ]

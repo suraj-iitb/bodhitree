@@ -18,3 +18,6 @@ djangorestframework-simplejwt==4.6.0
 PyYAML==5.4.1
 # Date
 python-dateutil==2.8.1
+# Schema & doc for API
+uritemplate==3.0.1
+coreapi==2.3.3

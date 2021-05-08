@@ -137,6 +137,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "user": "200/min",
     },
+    "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
     # For testing
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }

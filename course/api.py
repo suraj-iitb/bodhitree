@@ -323,8 +323,7 @@ class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMi
 
         Raises:
             `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
-            `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission
-                class
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
             `HTTP_403_FORBIDDEN`: Raised by:
                 1. `IsOwner` permission class
                 2. `IntegrityError` of the database

@@ -433,7 +433,7 @@ class CourseHistoryViewSetTest(APITestCase):
         self.logout()
 
     def _retrieve_course_history_helper(self, status_code, course_history_id):
-        """Helper function to test retrieve the course history functionality.
+        """Helper function for `test_retrieve_course_history()`.
 
         Args:
             status_code (int): Expected status code of the API call
@@ -450,8 +450,9 @@ class CourseHistoryViewSetTest(APITestCase):
 
     def test_retrieve_course_history(self):
         """Test to check: retrieve the courses history."""
-        # Retrieved by instructor
         course_history_id = 1
+
+        # Retrieved by instructor
         self.login(**ins_cred)
         self._retrieve_course_history_helper(status.HTTP_200_OK, course_history_id)
         self.logout()
@@ -488,7 +489,7 @@ class CourseHistoryViewSetTest(APITestCase):
         self.logout()
 
     def _update_course_history_helper(
-        self, status_code, user_id, role, user_status="U"
+        self, status_code, user_id, role, method, user_status="U"
     ):
         """Helper function for `test_update_course_history()` &
         `test_partial_update_course_history()`.
@@ -497,7 +498,9 @@ class CourseHistoryViewSetTest(APITestCase):
             status_code (int): Expected status code of the API call
             user_id (int): User id
             role (str): Role of the user (instructor/ta/student)
-            user_status (str): Status of user (enrolled/unerolled/pending)
+            method (str): HTTP method ("PUT" or "PATCH")
+            user_status (str, optional): Status of user (enrolled/unerolled/pending).
+                Default value is "U".
         """
         course_id = 4  # course with id 4 is created by django fixture
         course_history = CourseHistory.objects.create(
@@ -517,7 +520,10 @@ class CourseHistoryViewSetTest(APITestCase):
             args=[course_history.id],
         )
 
-        response = self.client.put(url, data)
+        if method == "PUT":
+            response = self.client.put(url, data)
+        else:
+            response = self.client.patch(url, data)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
             response_data = response.data
@@ -526,32 +532,49 @@ class CourseHistoryViewSetTest(APITestCase):
             self.assertEqual(response_data, data)
         course_history.delete()
 
-    def test_update_course_history(self):
-        """Test: update the course history."""
+    def _put_or_patch(self, method):
+        """Helper function to decide full(PUT) or partial(PATCH) update.
+
+        Args:
+            method (str): HTTP method ("PUT" or "PATCH")
+        """
         # Updated by instructor
         self.login(**ins_cred)
-        self._update_course_history_helper(status.HTTP_200_OK, 1, "I")
+        self._update_course_history_helper(status.HTTP_200_OK, 1, "I", method)
         self.logout()
 
         # Updated by ta
         self.login(**ta_cred)
-        self._update_course_history_helper(status.HTTP_200_OK, 2, "T")
+        self._update_course_history_helper(status.HTTP_200_OK, 2, "T", method)
         self.logout()
 
         # Updated by student
         self.login(**stu_cred)
-        self._update_course_history_helper(status.HTTP_200_OK, 3, "S")
+        self._update_course_history_helper(status.HTTP_200_OK, 3, "S", method)
         self.logout()
 
         # `HTTP_400_BAD_REQUEST` due to serialization errors
         self.login(**ins_cred)
         self._update_course_history_helper(
-            status.HTTP_400_BAD_REQUEST, 1, "I", "Enrolled"
+            status.HTTP_400_BAD_REQUEST, 1, "I", method, "Enrolled"
         )
         self.logout()
 
         # `HTTP_401_UNAUTHORIZED` due to `IsOwner` permission class
-        self._update_course_history_helper(status.HTTP_401_UNAUTHORIZED, 1, "I")
+        self._update_course_history_helper(status.HTTP_401_UNAUTHORIZED, 1, "I", method)
+
+        # `HTTP_403_FORBIDDEN` due to `IsOwner` permission class
+        self.login(**stu_cred)
+        self._update_course_history_helper(status.HTTP_403_FORBIDDEN, 1, "I", method)
+        self.logout()
+
+    def test_update_course_history(self):
+        """Test: update the course history."""
+        self._put_or_patch("PUT")
+
+    def test_partial_update_course_history(self):
+        """Test: partial update the course history."""
+        self._put_or_patch("PATCH")
 
 
 class ChapterViewSetTest(APITestCase):

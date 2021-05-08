@@ -186,6 +186,7 @@ class StrictIsInstructorOrTA(permissions.BasePermission):
 
     Applicable for:
         1. Crib
+        2. CribReply
 
     Allows:
         1. All permissions to instructor/ta
@@ -218,8 +219,12 @@ class StrictIsInstructorOrTA(permissions.BasePermission):
         Returns:
             A bool value denoting whether method (`GET`, `POST` etc.) is allowed or not.
         """
+        if type(obj) == Crib:
+            course_id = obj.course_id
+        elif type(obj) == CribReply:
+            course_id = obj.crib.course_id
         if request.user.is_authenticated:
-            instructor_or_ta = check_is_instructor_or_ta(obj.course_id, request.user)
+            instructor_or_ta = check_is_instructor_or_ta(course_id, request.user)
             if instructor_or_ta:
                 return True
         return False
@@ -542,6 +547,8 @@ class IsOwner(permissions.BasePermission):
             user = obj.user
         elif type(obj) == Crib:
             user = obj.created_by
+        elif type(obj) == CribReply:
+            user = obj.user
         return user
 
     def has_permission(self, request, view):

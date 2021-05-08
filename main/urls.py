@@ -13,6 +13,8 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+import debug_toolbar
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework.documentation import include_docs_urls
@@ -38,13 +40,19 @@ urlpatterns = [
     path("videos/", include("video.urls")),
     path("cribs/", include("cribs.urls")),
     path("discussion_forum/", include("discussion_forum.urls")),
-    # Schema & docs
-    path(
-        "schema/",
-        get_schema_view(
-            title="BodhiTree", description="API for BodhiTree", version="1.0.0"
-        ),
-        name="openapi-schema",
-    ),
-    path("docs/", include_docs_urls(title="BodhiTree")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += [
+        # Schema & docs
+        path(
+            "schema/",
+            get_schema_view(
+                title="BodhiTree", description="API for BodhiTree", version="1.0.0"
+            ),
+            name="openapi-schema",
+        ),
+        path("docs/", include_docs_urls(title="BodhiTree")),
+        # Debug ttolbar
+        path("__debug__/", include(debug_toolbar.urls)),
+    ]

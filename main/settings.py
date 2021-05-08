@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django_filters",
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",
+    "debug_toolbar",
     # Our apps
     "discussion_forum",
     "cribs",
@@ -57,6 +58,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -150,6 +152,15 @@ CORS_ALLOWED_ORIGINS = [
         port=config["app"]["port"],
     )
 ]
+
+# Django debug toolbar
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
+
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK": lambda request: True,
+}
 
 # Simple JWT
 SIMPLE_JWT = {

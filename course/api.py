@@ -226,51 +226,46 @@ class CourseViewSet(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CourseHistoryViewSet(
-    viewsets.GenericViewSet,
-    custom_mixins.IsRegisteredMixin,
-):
+class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
     """ViewSet for `CourseHistory`."""
 
     queryset = CourseHistory.objects.all()
     serializer_class = CourseHistorySerializer
-    permission_classes = (IsInstructorOrTAOrStudent, IsOwner)
+    permission_classes = (IsInstructorOrTAOrStudent,)
     pagination_class = StandardResultsSetPagination
 
     @action(detail=False, methods=["POST"])
     def create_course_history(self, request):
-        """Adds a course history.
+        """Adds a course history for a course
 
         Args:
             request (Request): DRF `Request` object
 
         Returns:
-            `Response` with the created course history data and status HTTP_201_CREATED.
+            `Response` with the created course history data and status
+            `HTTP_201_CREATED`.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_401_UNAUTHORIZED: Raised by:
-                1. `IsInstructorOrTAOrStudent` permission class
-                2. `IsOwner` permission class
-            HTTP_403_FORBIDDEN: Raised by:
-                1. `IsInstructorOrTAOrStudent` permission class
-                2. `IsOwner` permission class
-                3. `IntegrityError` of the database
+            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
+                class
+            `HTTP_403_FORBIDDEN`: Raised by `IntegrityError` of the database
+            `HTTP_404_NOT_FOUND`: Raised by `Course.DoesNotExist` exception
         """
+        course_id = request.data["course"]
+        try:
+            Course.objects.get(id=course_id)
+        except Course.DoesNotExist as e:
+            logger.exception(e)
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
+
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             try:
                 serializer.save()
             except IntegrityError as e:
                 logger.exception(e)
-                data = {
-                    "error": "Course history for the user with id: {} in the course"
-                    " with id: {} exists.".format(
-                        serializer.initial_data["user"],
-                        serializer.initial_data["course"],
-                    )
-                }
-                return Response(data, status=status.HTTP_403_FORBIDDEN)
+                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         errors = serializer.errors
         logger.error(errors)
@@ -285,18 +280,24 @@ class CourseHistoryViewSet(
             pk (int): Course id
 
         Returns:
-            `Response` with all the course histories data and status HTTP_200_OK.
+            `Response` with all the course histories data and status `HTTP_200_OK`.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Can be raised by:
-                1. `IsInstructorOrTAOrStudent` permission class
-                2. `IsOwner` permission class
-            HTTP_403_FORBIDDEN: Can be raised by:
-                1. `IsInstructorOrTAOrStudent` permission class
-                2. `IsOwner` permission class
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
+                class
+            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
+            `HTTP_404_NOT_FOUND`: Raised by `Course.DoesNotExist` exception
         """
-        check = self._is_registered(pk, request.user)
+        try:
+            Course.objects.get(id=pk)
+        except Course.DoesNotExist as e:
+            logger.exception(e)
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
 
+        # This is specifically done during list all course histories (not during
+        # retrieval of a course history) because it can't be handled by
+        # `IsInstructorOrTAOrStudent` permission class.
+        check = self._is_registered(pk, request.user)
         if check is not True:
             return check
 
@@ -314,62 +315,51 @@ class CourseHistoryViewSet(
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): course history id
+            pk (int): Course history id
 
         Returns:
-            `Response` with the course history data and status HTTP_200_OK.
+            `Response` with the course history data and status `HTTP_200_OK`.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by:
-                1. `_is_registered()` method
-                2. CourseHistory object does not exist
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
+                class
+            `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
+            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
-        try:
-            course_history = CourseHistory.objects.select_related("course").get(id=pk)
-        except CourseHistory.DoesNotExist as e:
-            logger.exception(e)
-            data = {"error": "Course history with id: {} does not exists.".format(pk)}
-            return Response(data["error"], status.HTTP_404_NOT_FOUND)
-        self.check_object_permissions(request, course_history)
-        check = self._is_registered(course_history.course.id, request.user)
-        if check is not True:
-            return check
-
+        course_history = self.get_object()
         serializer = self.get_serializer(course_history)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["PUT", "PATCH"])
+    @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
     def update_course_history(self, request, pk):
         """Updates the course history with id as pk.
 
         Args:
             request (Request): DRF `Request` object
-            pk (int): course history id
+            pk (int): Course history id
 
         Returns:
-            `Response` with the updated course history data and status HTTP_200_OK.
+            `Response` with the updated course history data and status `HTTP_200_OK`.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised by `is_valid()` method of the serializer
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTAOrStudent`
-                permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTAOrStudent` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission
+                class
+            `HTTP_403_FORBIDDEN`: Raised by:
+                1. `IsOwner` permission class
+                2. `IntegrityError` of the database
+            HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
-        course_history = CourseHistory.objects.select_related("course").get(id=pk)
-        self.check_object_permissions(request, course_history)
-        check = self._is_registered(course_history.course.id, request.user)
-        if check is not True:
-            return check
-
+        course_history = self.get_object()
         serializer = self.get_serializer(
             course_history, data=request.data, partial=True
         )
         if serializer.is_valid():
-            serializer.save()
+            try:
+                serializer.save()
+            except IntegrityError as e:
+                logger.exception(e)
+                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
             return Response(serializer.data)
         errors = serializer.errors
         logger.error(errors)

@@ -517,7 +517,7 @@ class IsOwner(permissions.BasePermission):
     """Permission class for viewsets.
 
     Applicable for:
-        1. Course
+        1. Course, CourseHistory
         2. Crib
 
     Allows:

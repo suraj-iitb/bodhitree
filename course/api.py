@@ -15,7 +15,6 @@ from utils.permissions import (
     IsOwner,
 )
 from utils.subscription import SubscriptionView
-from utils.utils import check_course_registration, check_is_instructor_or_ta
 
 from .models import Chapter, Course, CourseHistory, Page, Section
 from .serializers import (
@@ -531,209 +530,29 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PageViewSet(viewsets.GenericViewSet):
+class PageViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
     """Viewset for `Page`."""
 
     queryset = Page.objects.all()
     serializer_class = PageSerializer
     permission_classes = (IsInstructorOrTA,)
 
-    def _is_registered(self, course_id, user):
-        """Checks if the user is registered in the given course.
-
-        Args:
-            course_id (int): course id
-            user (User): `User` model object
-
-        Returns:
-            A bool value representing whether the user is registered
-            in the course with id course_id or not.
-
-        Raises:
-            HTTP_404_NOT_FOUND: Raised if:
-                1. The course does not exist
-                2. The user is not registered in the course
-        """
-        try:
-            course = Course.objects.get(id=course_id)
-        except Course.DoesNotExist as e:
-            logger.exception(e)
-            data = {
-                "error": "Course with id: {} does not exist.".format(course_id),
-            }
-            return Response(data, status.HTTP_404_NOT_FOUND)
-
-        if not check_course_registration(course_id, user):
-            data = {
-                "error": "User: {} is not registered in the course: {}.".format(
-                    user, course
-                ),
-            }
-            logger.warning(data["error"])
-            return Response(data, status.HTTP_404_NOT_FOUND)
-        return True
-
     @action(detail=False, methods=["POST"])
     def create_page(self, request):
-        """Adds a page to the course.
-
-        Args:
-            request (Request): DRF `Request` object
-
-        Returns:
-            `Response` with the created page data and status HTTP_201_CREATED.
-
-        Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by:
-                1. If the user is not the instructor/ta of the course
-                2. `IsInstructorOrTA` permission class
-                3. `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
-        """
-        user = request.user
-        course_id = request.data["course"]
-        check = self._is_registered(course_id, user)
-        if check is not True:
-            return check
-
-        # This is specifically done during page creation (not during updation or
-        # deletion) because it can't be handled by IsInstructorOrTA permission class
-        if not check_is_instructor_or_ta(course_id, user):
-            data = {
-                "error": "User: {} is not the instructor/ta of"
-                " the course with id: {}.".format(user, course_id),
-            }
-            logger.warning(data["error"])
-            return Response(data, status.HTTP_403_FORBIDDEN)
-
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                data = {
-                    "error": "Page with title '{}' already exists.".format(
-                        serializer.initial_data["title"]
-                    )
-                }
-                return Response(data, status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.create(request)
 
     @action(detail=True, methods=["GET"])
     def list_pages(self, request, pk):
-        """Gets all the pages in the course with id as pk.
-
-        Args:
-            request (Request): DRF `Request` object
-            pk (int): course id
-
-        Returns:
-            `Response` with all the pages data and status HTTP_200_OK.
-
-        Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
-        """
-        check = self._is_registered(pk, request.user)
-        if check is not True:
-            return check
-
-        pages = Page.objects.filter(course_id=pk)
-        serializer = self.get_serializer(pages, many=True)
-        return Response(serializer.data)
+        return self.list(request, pk, Page)
 
     @action(detail=True, methods=["GET"])
     def retrieve_page(self, request, pk):
-        """Gets the page with id as pk.
-
-        Args:
-            request (Request): DRF `Request` object
-            pk (int): page id
-
-        Returns:
-            `Response` with the page data and status HTTP_200_OK.
-
-        Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
-        """
-        page = self.get_object()
-        check = self._is_registered(page.course.id, request.user)
-        if check is not True:
-            return check
-
-        serializer = self.get_serializer(page)
-        return Response(serializer.data)
+        return self.retrieve(request, pk)
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_page(self, request, pk):
-        """Updates the page with id as pk.
-
-        Args:
-            request (Request): DRF `Request` object
-            pk (int): page id
-
-        Returns:
-            `Response` with the updated page data and status HTTP_200_OK.
-
-        Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by
-                1. `IsInstructorOrTA` permission class
-                2. `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
-        """
-        page = self.get_object()
-        check = self._is_registered(page.course.id, request.user)
-        if check is not True:
-            return check
-
-        serializer = self.get_serializer(page, data=request.data, partial=True)
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                data = {
-                    "error": "Page with title '{}' already exists.".format(
-                        serializer.initial_data["title"]
-                    )
-                }
-                return Response(data, status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)
 
     @action(detail=True, methods=["DELETE"])
     def delete_page(self, request, pk):
-        """Deletes the page with id as pk.
-
-        Args:
-            request (Request): DRF `Request` object
-            pk (int): page id
-
-        Returns:
-            `Response` with no data and status HTTP_204_NO_CONTENT.
-
-        Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
-        """
-        page = self.get_object()
-        check = self._is_registered(page.course.id, request.user)
-        if check is not True:
-            return check
-
-        page.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return self._delete(request, pk)

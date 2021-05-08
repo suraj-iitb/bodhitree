@@ -331,8 +331,8 @@ class ChapterorPageMixin(IsRegisteredMixin):
         if check is not True:
             return check
 
-        chapters = model.objects.filter(course_id=pk)
-        serializer = self.get_serializer(chapters, many=True)
+        chapters_or_pages = model.objects.filter(course_id=pk)
+        serializer = self.get_serializer(chapters_or_pages, many=True)
         return Response(serializer.data)
 
     def retrieve(self, request, pk):
@@ -350,8 +350,8 @@ class ChapterorPageMixin(IsRegisteredMixin):
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
             HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
-        chapter = self.get_object()
-        serializer = self.get_serializer(chapter)
+        chapter_or_page = self.get_object()
+        serializer = self.get_serializer(chapter_or_page)
         return Response(serializer.data)
 
     def update(self, request, pk):
@@ -372,8 +372,10 @@ class ChapterorPageMixin(IsRegisteredMixin):
                 2. `IntegrityError` of the database
             HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
-        chapter = self.get_object()
-        serializer = self.get_serializer(chapter, data=request.data, partial=True)
+        chapter_or_page = self.get_object()
+        serializer = self.get_serializer(
+            chapter_or_page, data=request.data, partial=True
+        )
         if serializer.is_valid():
             try:
                 serializer.save()
@@ -400,6 +402,6 @@ class ChapterorPageMixin(IsRegisteredMixin):
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
             HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
-        chapter = self.get_object()
-        chapter.delete()
+        chapter_or_page = self.get_object()
+        chapter_or_page.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

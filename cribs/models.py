@@ -21,6 +21,9 @@ class Crib(models.Model):
     status = models.CharField(max_length=1, choices=CRIB_STATUS, default="U")
     created_on = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["-id"]
+
     def __str__(self):
         return self.title
 
@@ -30,6 +33,9 @@ class CribReply(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     description = models.TextField(blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-id"]
 
     def __str__(self):
         return self.description

@@ -32,9 +32,9 @@
   pk: 4
   fields:
     course: 2
-    created_by: 3
+    created_by: 2
     assigned_to: 3
-    title: crib title 3
+    title: Cribs title
     description: ''
-    status: U
-    created_on: 2021-05-04 07:35:32.781203+00:00
+    status: R
+    created_on: 2021-05-04 17:42:58.814614+00:00

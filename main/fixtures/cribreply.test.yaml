@@ -19,3 +19,10 @@
     user: 3
     description: ''
     created_on: 2021-05-04 07:36:15.113840+00:00
+- model: cribs.cribreply
+  pk: 4
+  fields:
+    crib: 4
+    user: 1
+    description: ''
+    created_on: 2021-05-04 07:36:15.113840+00:00

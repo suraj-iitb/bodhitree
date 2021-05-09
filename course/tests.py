@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
-from course.models import Chapter, Course, CourseHistory, Page, Section
+from course.models import Announcement, Chapter, Course, CourseHistory, Page, Section
 from discussion_forum.models import DiscussionForum
 from registration.models import SubscriptionHistory
 from utils import credentials
@@ -1490,4 +1490,303 @@ class SectionViewSetTest(APITestCase):
         # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permission class
         self.login(**stu_cred)
         self._delete_section_helper("Section 4", status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+
+class AnnouncementViewSetTest(APITestCase):
+    """Test for AnnouncementViewSetTest."""
+
+    fixtures = [
+        "users.test.yaml",
+        "departments.test.yaml",
+        "colleges.test.yaml",
+        "courses.test.yaml",
+        "coursehistories.test.yaml",
+        "announcement.test.yaml",
+    ]
+
+    def login(self, email, password):
+        self.client.login(email=email, password=password)
+
+    def logout(self):
+        self.client.logout()
+
+    def _list_announcements_helper(self, course_id, status_code):
+        """Helper function for `test_list_announcements()`.
+
+        Args:
+            course_id (int): Course id
+            status_code (int): Expected status code of the API call
+        """
+        url = reverse("course:announcement-list-announcements", args=[course_id])
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            self.assertEqual(
+                len(response.data),
+                Announcement.objects.filter(course_id=course_id).count(),
+            )
+
+    def test_list_announcements(self):
+        """Test: list all announcements."""
+        course_id = 1  # course with id 1 is created by django fixture
+
+        # Listed by instructor
+        self.login(**ins_cred)
+        self._list_announcements_helper(course_id, status.HTTP_200_OK)
+        self.logout()
+
+        # Listed by ta
+        self.login(**ta_cred)
+        self._list_announcements_helper(course_id, status.HTTP_200_OK)
+        self.logout()
+
+        # Listed by student
+        self.login(**stu_cred)
+        self._list_announcements_helper(course_id, status.HTTP_200_OK)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._list_announcements_helper(course_id, status.HTTP_401_UNAUTHORIZED)
+
+        # `HTTP_403_FORBIDDEN` due to `_is_registered()` method
+        course_id = 3  # course with id 3 is created by django fixture
+        self.login(**ins_cred)
+        self._list_announcements_helper(course_id, status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to the course does not exist
+        course_id = 100
+        self.login(**ins_cred)
+        self._list_announcements_helper(course_id, status.HTTP_404_NOT_FOUND)
+        self.logout()
+
+    def _retrieve_announcement_helper(self, announcement_id, status_code):
+        """Helper function for `test_retrieve_announcement()`.
+
+        Args:
+            announcement_id (int): Announcement id
+            status_code (int): Expected status code of the API call
+        """
+        url = reverse(
+            "course:announcement-retrieve-announcement", args=[announcement_id]
+        )
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            self.assertEqual(response.data["id"], announcement_id)
+
+    def test_retrieve_announcement(self):
+        """Test: retrieve the announcement."""
+        announcement_id = 1  # chapter with id 1 is created by django fixture
+
+        # Retrieved by instructor
+        self.login(**ins_cred)
+        self._retrieve_announcement_helper(announcement_id, status.HTTP_200_OK)
+        self.logout()
+
+        # Retrieved by ta
+        self.login(**ta_cred)
+        self._retrieve_announcement_helper(announcement_id, status.HTTP_200_OK)
+        self.logout()
+
+        # Retrieved by student
+        self.login(**stu_cred)
+        self._retrieve_announcement_helper(announcement_id, status.HTTP_200_OK)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._retrieve_announcement_helper(
+            announcement_id, status.HTTP_401_UNAUTHORIZED
+        )
+
+        # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permission class
+        announcement_id = 3  # chapter with id 3 is created by django fixture
+        self.login(**ins_cred)
+        self._retrieve_announcement_helper(announcement_id, status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to `get_object()` method
+        announcement_id = 100
+        self.login(**ins_cred)
+        self._retrieve_announcement_helper(announcement_id, status.HTTP_404_NOT_FOUND)
+        self.logout()
+
+    def _create_announcement_helper(self, course_id, body, status_code):
+        """Helper function for `test_create_announcement()`.
+
+        Args:
+            course_id (int): Course id
+            body (str): Body of the announcement
+            status_code (int): Expected status code of the API call
+        """
+        data = {
+            "course": course_id,
+            "body": body,
+        }
+        url = reverse("course:announcement-create-announcement")
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            response_data = response.data
+            self.assertEqual(response_data["course"], data["course"])
+            self.assertEqual(response_data["body"], data["body"])
+
+    def test_create_announcement(self):
+        """Test: create a announcement."""
+        course_id = 1  # course with id 1 is created by django fixture
+
+        # Created by instructor
+        self.login(**ins_cred)
+        self._create_announcement_helper(course_id, "body 1", status.HTTP_201_CREATED)
+        self.logout()
+
+        # Created by ta
+        self.login(**ta_cred)
+        self._create_announcement_helper(course_id, "body 2", status.HTTP_201_CREATED)
+        self.logout()
+
+        # `HTTP_400_BAD_REQUEST` due to serialization errors
+        self.login(**ins_cred)
+        self._create_announcement_helper(course_id, "", status.HTTP_400_BAD_REQUEST)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._create_announcement_helper(
+            course_id, "body 3", status.HTTP_401_UNAUTHORIZED
+        )
+
+        # `HTTP_403_FORBIDDEN` due to `_is_instructor_or_ta()` method
+        self.login(**stu_cred)
+        self._create_announcement_helper(course_id, "body 4", status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to the course does not exist
+        course_id = 100
+        self.login(**ins_cred)
+        self._create_announcement_helper(course_id, "body 5", status.HTTP_404_NOT_FOUND)
+        self.logout()
+
+    def _update_announcement_helper(self, announcement_id, body, status_code, method):
+        """Helper function for `test_update_announcement()` &
+        `test_partial_update_announcement()`.
+
+        Args:
+            announcement_id (int): Announcement id
+            body (str): Body of the announcement
+            status_code (int): Expected status code of the API call
+            method (str): HTTP method ("PUT" or "PATCH")
+        """
+        course_id = 1  # course with id 1 is created by django fixture
+        data = {
+            "course": course_id,
+            "body": body,
+        }
+        url = reverse("course:announcement-update-announcement", args=[announcement_id])
+
+        if method == "PUT":
+            response = self.client.put(url, data)
+        else:
+            response = self.client.patch(url, data)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            response_data = response.data
+            self.assertEqual(response_data["course"], data["course"])
+            self.assertEqual(response_data["body"], data["body"])
+
+    def _put_or_patch(self, method):
+        """Helper function to decide full(PUT) or partial(PATCH) update.
+
+        Args:
+            method (str): HTTP method ("PUT" or "PATCH")
+        """
+        announcement_id = Announcement.objects.create(course_id=1, body="Body 1").id
+
+        # Updated by instructor
+        self.login(**ins_cred)
+        self._update_announcement_helper(
+            announcement_id, "Body 2", status.HTTP_200_OK, method
+        )
+        self.logout()
+
+        # Updated by ta
+        self.login(**ta_cred)
+        self._update_announcement_helper(
+            announcement_id, "Body 3", status.HTTP_200_OK, method
+        )
+        self.logout()
+
+        # `HTTP_400_BAD_REQUEST` due to serialization errors
+        self.login(**ins_cred)
+        self._update_announcement_helper(
+            announcement_id, "", status.HTTP_400_BAD_REQUEST, method
+        )
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._update_announcement_helper(
+            announcement_id, "Body 4", status.HTTP_401_UNAUTHORIZED, method
+        )
+
+        # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permission class
+        self.login(**stu_cred)
+        self._update_announcement_helper(
+            announcement_id, "Body 5", status.HTTP_403_FORBIDDEN, method
+        )
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to `get_object()` method
+        announcement_id = 100
+        self.login(**ins_cred)
+        self._update_announcement_helper(
+            announcement_id, "Body 6", status.HTTP_404_NOT_FOUND, method
+        )
+        self.logout()
+
+    def test_update_announcement(self):
+        """Test: update the announcement."""
+        self._put_or_patch("PUT")
+
+    def test_partial_update_announcement(self):
+        """Test: partial update the announcement."""
+        self._put_or_patch("PATCH")
+
+    def _delete_announcement_helper(self, body, status_code):
+        """Helper function for `test_delete_announcement()`.
+
+        Args:
+            body(str): Body of the announcement
+            status_code (int): Expected status code of the API call
+        """
+        announcement = Announcement.objects.create(course_id=1, body=body)
+        url = reverse(
+            ("course:announcement-delete-announcement"), args=[announcement.id]
+        )
+
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_204_NO_CONTENT:
+            self.assertEqual(Announcement.objects.filter(id=announcement.id).count(), 0)
+
+    def test_delete_announcement(self):
+        """Test: delete the announcement."""
+        # Deleted by instructor
+        self.login(**ins_cred)
+        self._delete_announcement_helper("Body 1", status.HTTP_204_NO_CONTENT)
+        self.logout()
+
+        # Deleted by ta
+        self.login(**ta_cred)
+        self._delete_announcement_helper("Body 2", status.HTTP_204_NO_CONTENT)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._delete_announcement_helper("Body 3", status.HTTP_401_UNAUTHORIZED)
+
+        # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permission class
+        self.login(**stu_cred)
+        self._delete_announcement_helper("Body 4", status.HTTP_403_FORBIDDEN)
         self.logout()

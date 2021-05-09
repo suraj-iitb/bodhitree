@@ -906,6 +906,68 @@ class PageViewSetTest(APITestCase):
     def logout(self):
         self.client.logout()
 
+    def _create_page_helper(self, course_id, title, status_code):
+        """Helper function for `test_create_page()`.
+
+        Args:
+            course_id (int): Course id
+            title (str): Title of the page
+            status_code (int): Expected status code of the API call
+        """
+        data = {
+            "course": course_id,
+            "title": title,
+            "description": "Page description",
+        }
+        url = reverse("course:page-create-page")
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            response_data = response.data
+            self.assertEqual(response_data["course"], data["course"])
+            self.assertEqual(response_data["title"], data["title"])
+            self.assertEqual(response_data["description"], data["description"])
+
+    def test_create_page(self):
+        """Test: create a page."""
+        course_id = 1  # course with id 1 is created by django fixture
+
+        # Created by instructor
+        self.login(**ins_cred)
+        self._create_page_helper(course_id, "Page 1", status.HTTP_201_CREATED)
+        self.logout()
+
+        # Created by ta
+        self.login(**ta_cred)
+        self._create_page_helper(course_id, "Page 2", status.HTTP_201_CREATED)
+        self.logout()
+
+        # `HTTP_400_BAD_REQUEST` due to serialization errors
+        self.login(**ins_cred)
+        self._create_page_helper(course_id, "", status.HTTP_400_BAD_REQUEST)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._create_page_helper(course_id, "Page 3", status.HTTP_401_UNAUTHORIZED)
+
+        # `HTTP_403_FORBIDDEN` due to `_is_instructor_or_ta()` method
+        self.login(**stu_cred)
+        self._create_page_helper(course_id, "Page 4", status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+        # `HTTP_403_FORBIDDEN` due to `IntegrityError` of the database
+        self.login(**ins_cred)
+        with transaction.atomic():
+            self._create_page_helper(course_id, "Page 1", status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to the course does not exist
+        course_id = 100
+        self.login(**ins_cred)
+        self._create_page_helper(course_id, "Page 5", status.HTTP_404_NOT_FOUND)
+        self.logout()
+
     def _list_pages_helper(self, course_id, status_code):
         """Helper function for `test_list_pages()`.
 
@@ -1003,68 +1065,6 @@ class PageViewSetTest(APITestCase):
         page_id = 100
         self.login(**ins_cred)
         self._retrieve_page_helper(page_id, status.HTTP_404_NOT_FOUND)
-        self.logout()
-
-    def _create_page_helper(self, course_id, title, status_code):
-        """Helper function for `test_create_page()`.
-
-        Args:
-            course_id (int): Course id
-            title (str): Title of the page
-            status_code (int): Expected status code of the API call
-        """
-        data = {
-            "course": course_id,
-            "title": title,
-            "description": "Page description",
-        }
-        url = reverse("course:page-create-page")
-
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status_code)
-        if status_code == status.HTTP_201_CREATED:
-            response_data = response.data
-            self.assertEqual(response_data["course"], data["course"])
-            self.assertEqual(response_data["title"], data["title"])
-            self.assertEqual(response_data["description"], data["description"])
-
-    def test_create_page(self):
-        """Test: create a page."""
-        course_id = 1  # course with id 1 is created by django fixture
-
-        # Created by instructor
-        self.login(**ins_cred)
-        self._create_page_helper(course_id, "Page 1", status.HTTP_201_CREATED)
-        self.logout()
-
-        # Created by ta
-        self.login(**ta_cred)
-        self._create_page_helper(course_id, "Page 2", status.HTTP_201_CREATED)
-        self.logout()
-
-        # `HTTP_400_BAD_REQUEST` due to serialization errors
-        self.login(**ins_cred)
-        self._create_page_helper(course_id, "", status.HTTP_400_BAD_REQUEST)
-        self.logout()
-
-        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
-        self._create_page_helper(course_id, "Page 3", status.HTTP_401_UNAUTHORIZED)
-
-        # `HTTP_403_FORBIDDEN` due to `_is_instructor_or_ta()` method
-        self.login(**stu_cred)
-        self._create_page_helper(course_id, "Page 4", status.HTTP_403_FORBIDDEN)
-        self.logout()
-
-        # `HTTP_403_FORBIDDEN` due to `IntegrityError` of the database
-        self.login(**ins_cred)
-        with transaction.atomic():
-            self._create_page_helper(course_id, "Page 1", status.HTTP_403_FORBIDDEN)
-        self.logout()
-
-        # `HTTP_404_NOT_FOUND` due to the course does not exist
-        course_id = 100
-        self.login(**ins_cred)
-        self._create_page_helper(course_id, "Page 5", status.HTTP_404_NOT_FOUND)
         self.logout()
 
     def _update_page_helper(self, page_id, title, status_code, method):
@@ -1511,6 +1511,62 @@ class AnnouncementViewSetTest(APITestCase):
     def logout(self):
         self.client.logout()
 
+    def _create_announcement_helper(self, course_id, body, status_code):
+        """Helper function for `test_create_announcement()`.
+
+        Args:
+            course_id (int): Course id
+            body (str): Body of the announcement
+            status_code (int): Expected status code of the API call
+        """
+        data = {
+            "course": course_id,
+            "body": body,
+        }
+        url = reverse("course:announcement-create-announcement")
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            response_data = response.data
+            self.assertEqual(response_data["course"], data["course"])
+            self.assertEqual(response_data["body"], data["body"])
+
+    def test_create_announcement(self):
+        """Test: create a announcement."""
+        course_id = 1  # course with id 1 is created by django fixture
+
+        # Created by instructor
+        self.login(**ins_cred)
+        self._create_announcement_helper(course_id, "body 1", status.HTTP_201_CREATED)
+        self.logout()
+
+        # Created by ta
+        self.login(**ta_cred)
+        self._create_announcement_helper(course_id, "body 2", status.HTTP_201_CREATED)
+        self.logout()
+
+        # `HTTP_400_BAD_REQUEST` due to serialization errors
+        self.login(**ins_cred)
+        self._create_announcement_helper(course_id, "", status.HTTP_400_BAD_REQUEST)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._create_announcement_helper(
+            course_id, "body 3", status.HTTP_401_UNAUTHORIZED
+        )
+
+        # `HTTP_403_FORBIDDEN` due to `_is_instructor_or_ta()` method
+        self.login(**stu_cred)
+        self._create_announcement_helper(course_id, "body 4", status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to the course does not exist
+        course_id = 100
+        self.login(**ins_cred)
+        self._create_announcement_helper(course_id, "body 5", status.HTTP_404_NOT_FOUND)
+        self.logout()
+
     def _list_announcements_helper(self, course_id, status_code):
         """Helper function for `test_list_announcements()`.
 
@@ -1580,7 +1636,7 @@ class AnnouncementViewSetTest(APITestCase):
 
     def test_retrieve_announcement(self):
         """Test: retrieve the announcement."""
-        announcement_id = 1  # chapter with id 1 is created by django fixture
+        announcement_id = 1  # announcement with id 1 is created by django fixture
 
         # Retrieved by instructor
         self.login(**ins_cred)
@@ -1603,7 +1659,7 @@ class AnnouncementViewSetTest(APITestCase):
         )
 
         # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permission class
-        announcement_id = 3  # chapter with id 3 is created by django fixture
+        announcement_id = 3  # announcement with id 3 is created by django fixture
         self.login(**ins_cred)
         self._retrieve_announcement_helper(announcement_id, status.HTTP_403_FORBIDDEN)
         self.logout()
@@ -1612,62 +1668,6 @@ class AnnouncementViewSetTest(APITestCase):
         announcement_id = 100
         self.login(**ins_cred)
         self._retrieve_announcement_helper(announcement_id, status.HTTP_404_NOT_FOUND)
-        self.logout()
-
-    def _create_announcement_helper(self, course_id, body, status_code):
-        """Helper function for `test_create_announcement()`.
-
-        Args:
-            course_id (int): Course id
-            body (str): Body of the announcement
-            status_code (int): Expected status code of the API call
-        """
-        data = {
-            "course": course_id,
-            "body": body,
-        }
-        url = reverse("course:announcement-create-announcement")
-
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status_code)
-        if status_code == status.HTTP_201_CREATED:
-            response_data = response.data
-            self.assertEqual(response_data["course"], data["course"])
-            self.assertEqual(response_data["body"], data["body"])
-
-    def test_create_announcement(self):
-        """Test: create a announcement."""
-        course_id = 1  # course with id 1 is created by django fixture
-
-        # Created by instructor
-        self.login(**ins_cred)
-        self._create_announcement_helper(course_id, "body 1", status.HTTP_201_CREATED)
-        self.logout()
-
-        # Created by ta
-        self.login(**ta_cred)
-        self._create_announcement_helper(course_id, "body 2", status.HTTP_201_CREATED)
-        self.logout()
-
-        # `HTTP_400_BAD_REQUEST` due to serialization errors
-        self.login(**ins_cred)
-        self._create_announcement_helper(course_id, "", status.HTTP_400_BAD_REQUEST)
-        self.logout()
-
-        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
-        self._create_announcement_helper(
-            course_id, "body 3", status.HTTP_401_UNAUTHORIZED
-        )
-
-        # `HTTP_403_FORBIDDEN` due to `_is_instructor_or_ta()` method
-        self.login(**stu_cred)
-        self._create_announcement_helper(course_id, "body 4", status.HTTP_403_FORBIDDEN)
-        self.logout()
-
-        # `HTTP_404_NOT_FOUND` due to the course does not exist
-        course_id = 100
-        self.login(**ins_cred)
-        self._create_announcement_helper(course_id, "body 5", status.HTTP_404_NOT_FOUND)
         self.logout()
 
     def _update_announcement_helper(self, announcement_id, body, status_code, method):

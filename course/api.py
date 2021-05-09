@@ -16,8 +16,9 @@ from utils.permissions import (
 )
 from utils.subscription import SubscriptionView
 
-from .models import Chapter, Course, CourseHistory, Page, Section
+from .models import Announcement, Chapter, Course, CourseHistory, Page, Section
 from .serializers import (
+    AnnouncementSerializer,
     ChapterSerializer,
     CourseHistorySerializer,
     CourseSerializer,
@@ -555,4 +556,32 @@ class PageViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
 
     @action(detail=True, methods=["DELETE"])
     def delete_page(self, request, pk):
+        return self._delete(request, pk)
+
+
+class AnnouncementViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
+    """Viewset for `Announcement`."""
+
+    queryset = Announcement.objects.all()
+    serializer_class = AnnouncementSerializer
+    permission_classes = (IsInstructorOrTA,)
+
+    @action(detail=False, methods=["POST"])
+    def create_announcement(self, request):
+        return self.create(request)
+
+    @action(detail=True, methods=["GET"])
+    def list_announcements(self, request, pk):
+        return self.list(request, pk, Announcement)
+
+    @action(detail=True, methods=["GET"])
+    def retrieve_announcement(self, request, pk):
+        return self.retrieve(request, pk)
+
+    @action(detail=True, methods=["PUT", "PATCH"])
+    def update_announcement(self, request, pk):
+        return self.update(request, pk)
+
+    @action(detail=True, methods=["DELETE"])
+    def delete_announcement(self, request, pk):
         return self._delete(request, pk)

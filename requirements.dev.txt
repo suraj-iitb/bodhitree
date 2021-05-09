@@ -1,2 +1,7 @@
 # IPython shell
 ipython==7.23.0
+# Schema & doc for API
+uritemplate==3.0.1
+coreapi==2.3.3
+# Debug toolbar
+django-debug-toolbar==3.2.1

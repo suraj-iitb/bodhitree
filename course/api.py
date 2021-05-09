@@ -31,7 +31,11 @@ logger = logging.getLogger(__name__)
 
 
 class CourseViewSet(
-    viewsets.GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin
+    viewsets.GenericViewSet,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    custom_mixins.UpdateMixin,
+    custom_mixins.DeleteMixin,
 ):
     """ViewSet for `Course`."""
 
@@ -172,19 +176,7 @@ class CourseViewSet(
         if check is not True:
             return check
 
-        serializer = self.get_serializer(
-            self.get_object(), data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)
 
     @action(detail=True, methods=["DELETE"], permission_classes=[IsOwner])
     def delete_course(self, request, pk):
@@ -201,12 +193,16 @@ class CourseViewSet(
             `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
             `HTTP_403_FORBIDDEN`: Raised by `IsOwner` permission class
         """
-        instance = self.get_object()
-        instance.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return self._delete(request, pk)
 
 
-class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
+class CourseHistoryViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.ListMixin_Paginated,
+    custom_mixins.CreateMixin,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.UpdateMixin,
+):
     """ViewSet for `CourseHistory`."""
 
     queryset = CourseHistory.objects.all()
@@ -226,30 +222,11 @@ class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMi
             `HTTP_201_CREATED`.
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `IntegrityError` of the database
-            `HTTP_404_NOT_FOUND`: Raised by `Course.DoesNotExist` exception
         """
         course_id = request.data["course"]
-        try:
-            Course.objects.get(id=course_id)
-        except Course.DoesNotExist as e:
-            logger.exception(e)
-            return Response(str(e), status.HTTP_404_NOT_FOUND)
-
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_course_histories(self, request, pk):
@@ -265,29 +242,8 @@ class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMi
         Raises:
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
-            `HTTP_404_NOT_FOUND`: Raised by `Course.DoesNotExist` exception
         """
-        try:
-            Course.objects.get(id=pk)
-        except Course.DoesNotExist as e:
-            logger.exception(e)
-            return Response(str(e), status.HTTP_404_NOT_FOUND)
-
-        # This is specifically done during list all course histories (not during
-        # retrieval of a course history) because it can't be handled by
-        # `IsInstructorOrTAOrStudent` permission class.
-        check = self._is_registered(pk, request.user)
-        if check is not True:
-            return check
-
-        course_histories = CourseHistory.objects.filter(course_id=pk)
-        page = self.paginate_queryset(course_histories)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(course_histories, many=True)
-        return Response(serializer.data)
+        return self.list(request, pk, CourseHistory)
 
     @action(detail=True, methods=["GET"])
     def retrieve_course_history(self, request, pk):
@@ -306,9 +262,7 @@ class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMi
             `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
             `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
-        course_history = self.get_object()
-        serializer = self.get_serializer(course_history)
-        return Response(serializer.data)
+        return self.retrieve(request, pk)
 
     @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
     def update_course_history(self, request, pk):
@@ -322,30 +276,22 @@ class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMi
             `Response` with the updated course history data and status `HTTP_200_OK`.
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
             `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
             `HTTP_403_FORBIDDEN`: Raised by:
                 1. `IsOwner` permission class
                 2. `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
-        course_history = self.get_object()
-        serializer = self.get_serializer(
-            course_history, data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)
 
 
-class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
+class ChapterViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.CreateMixin_InsOrTA,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.ListMixin,
+    custom_mixins.DeleteMixin,
+    custom_mixins.UpdateMixin,
+):
     """Viewset for `Chapter`."""
 
     queryset = Chapter.objects.all()
@@ -354,7 +300,8 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
 
     @action(detail=False, methods=["POST"])
     def create_chapter(self, request):
-        return self.create(request)
+        course_id = request.data["course"]
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_chapters(self, request, pk):
@@ -373,7 +320,13 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
         return self._delete(request, pk)
 
 
-class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
+class SectionViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.CreateMixin_InsOrTA,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.UpdateMixin,
+    custom_mixins.DeleteMixin,
+):
     """Viewset for `Section`."""
 
     queryset = Section.objects.all()
@@ -391,11 +344,8 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
             `Response` with the created section data and status HTTP_201_CREATED.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by:
-                1. `_is_instructor_or_ta()` permission class
-                2. `IntegrityError` of the database
+            HTTP_403_FORBIDDEN: Raised by `_is_instructor_or_ta()` permission class
             HTTP_404_NOT_FOUND: Raised if the chapter does not exist
         """
         chapter_id = request.data["chapter"]
@@ -409,21 +359,7 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
 
         # This is specifically done during section creation (not during updation or
         # deletion) because it can't be handled by `IsInstructorOrTA` permission class
-        check = self._is_instructor_or_ta(course_id, request.user)
-        if check is not True:
-            return check
-
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_sections(self, request, pk):
@@ -472,11 +408,8 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
-        section = self.get_object()
-        serializer = self.get_serializer(section)
-        return Response(serializer.data)
+        return self.retrieve(request, pk)
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_section(self, request, pk):
@@ -490,25 +423,10 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
             `Response` with the updated section data and status HTTP_200_OK.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by
-                1. `IsInstructorOrTA` permission class
-                2. `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
         """
-        section = self.get_object()
-        serializer = self.get_serializer(section, data=request.data, partial=True)
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)
 
     @action(detail=True, methods=["DELETE"])
     def delete_section(self, request, pk):
@@ -524,14 +442,18 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
         Raises:
             HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
             HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `get_object()` method
         """
-        section = self.get_object()
-        section.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return self._delete(request, pk)
 
 
-class PageViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
+class PageViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.CreateMixin_InsOrTA,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.ListMixin,
+    custom_mixins.DeleteMixin,
+    custom_mixins.UpdateMixin,
+):
     """Viewset for `Page`."""
 
     queryset = Page.objects.all()
@@ -540,7 +462,8 @@ class PageViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
 
     @action(detail=False, methods=["POST"])
     def create_page(self, request):
-        return self.create(request)
+        course_id = request.data["course"]
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_pages(self, request, pk):
@@ -559,7 +482,14 @@ class PageViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
         return self._delete(request, pk)
 
 
-class AnnouncementViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
+class AnnouncementViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.CreateMixin_InsOrTA,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.ListMixin,
+    custom_mixins.DeleteMixin,
+    custom_mixins.UpdateMixin,
+):
     """Viewset for `Announcement`."""
 
     queryset = Announcement.objects.all()
@@ -568,7 +498,8 @@ class AnnouncementViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMi
 
     @action(detail=False, methods=["POST"])
     def create_announcement(self, request):
-        return self.create(request)
+        course_id = request.data["course"]
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_announcements(self, request, pk):

@@ -24,7 +24,12 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 
-class DiscussionThreadViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
+class DiscussionThreadViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.CreateMixin_Reg,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.UpdateMixin,
+):
     """Viewset for `DiscussionThread`."""
 
     queryset = DiscussionThread.objects.all()
@@ -44,10 +49,8 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet, custom_mixins.IsRegistere
             `HTTP_201_CREATED`
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
             `HTTP_404_NOT_FOUND`: Raised by `DiscussionForum.DoesNotExist` exception
         """
         discussion_forum_id = request.data["discussion_forum"]
@@ -60,17 +63,7 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet, custom_mixins.IsRegistere
         # This is specifically done during discussion thread creation (not during
         # updation or deletion) because it can't be handled by
         # `IsInstructorOrTAOrStudent` permission class
-        check = self._is_registered(course_id, request.user)
-        if check is not True:
-            return check
-
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_discussion_threads(self, request, pk):
@@ -125,11 +118,8 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet, custom_mixins.IsRegistere
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
             `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
-            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
-        discussion_thread = self.get_object()
-        serializer = self.get_serializer(discussion_thread)
-        return Response(serializer.data)
+        return self.retrieve(request, pk)
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_discussion_thread(self, request, pk):
@@ -143,26 +133,19 @@ class DiscussionThreadViewSet(viewsets.GenericViewSet, custom_mixins.IsRegistere
             `Response` with the updated discussion thread data and status `HTTP_200_OK`
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
             `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
-            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
-        discussion_thread = self.get_object()
-        serializer = self.get_serializer(
-            discussion_thread, data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)
 
 
 class DiscussionCommentViewSet(
-    viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin
+    viewsets.GenericViewSet,
+    custom_mixins.CreateMixin_Reg,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.UpdateMixin,
 ):
     """Viewset for `DiscussionComment`."""
 
@@ -183,10 +166,8 @@ class DiscussionCommentViewSet(
              `HTTP_201_CREATED`
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
             `HTTP_404_NOT_FOUND`: Raised by `DiscussionThread.DoesNotExist` exception
         """
         discussion_thread_id = request.data["discussion_thread"]
@@ -202,17 +183,7 @@ class DiscussionCommentViewSet(
         # This is specifically done during discussion comment creation (not during
         # updation or deletion) because it can't be handled by
         # `IsInstructorOrTAOrStudent` permission class
-        check = self._is_registered(course_id, request.user)
-        if check is not True:
-            return check
-
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_discussion_comments(self, request, pk):
@@ -270,11 +241,8 @@ class DiscussionCommentViewSet(
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
             `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
-            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
-        discussion_comment = self.get_object()
-        serializer = self.get_serializer(discussion_comment)
-        return Response(serializer.data)
+        return self.retrieve(request, pk)
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_discussion_comment(self, request, pk):
@@ -294,19 +262,15 @@ class DiscussionCommentViewSet(
             `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
             `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
-        discussion_comment = self.get_object()
-        serializer = self.get_serializer(
-            discussion_comment, data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)
 
 
-class DiscussionReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
+class DiscussionReplyViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.CreateMixin_Reg,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.UpdateMixin,
+):
     """Viewset for `DiscussionReply`."""
 
     queryset = DiscussionReply.objects.all()
@@ -326,10 +290,8 @@ class DiscussionReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegistered
              `HTTP_201_CREATED`
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
             `HTTP_404_NOT_FOUND`: Raised by `DiscussionComment.DoesNotExist` exception
 
         """
@@ -346,17 +308,7 @@ class DiscussionReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegistered
         # This is specifically done during discussion reply creation (not during
         # updation or deletion) because it can't be handled by
         # `IsInstructorOrTAOrStudent` permission class.
-        check = self._is_registered(course_id, request.user)
-        if check is not True:
-            return check
-
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_discussion_replies(self, request, pk):
@@ -414,11 +366,8 @@ class DiscussionReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegistered
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
             `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
-            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
-        discussion_reply = self.get_object()
-        serializer = self.get_serializer(discussion_reply)
-        return Response(serializer.data)
+        return self.retrieve(request, pk)
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_discussion_reply(self, request, pk):
@@ -432,19 +381,8 @@ class DiscussionReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegistered
             `Response` with the updated discussion reply data and status `HTTP_200_OK`
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
             `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
-            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
-        discussion_reply = self.get_object()
-        serializer = self.get_serializer(
-            discussion_reply, data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)

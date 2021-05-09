@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 import logging.config
 import os
+import sys
 from configparser import ConfigParser
 from pathlib import Path
 
@@ -27,6 +28,8 @@ SECRET_KEY = config["server"]["secret_key"]
 DEBUG = config["server"].getboolean("debug")
 
 ALLOWED_HOSTS = config["server"]["allowed_hosts"]
+
+TEST = "test" in sys.argv
 
 # Application definition
 INSTALLED_APPS = [
@@ -66,6 +69,12 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+if DEBUG and not TEST:
+    INSTALLED_APPS += [
+        "debug_toolbar",
+    ]
+    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
 ROOT_URLCONF = "main.urls"
 
@@ -137,6 +146,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "user": "200/min",
     },
+    "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
     # For testing
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
@@ -149,6 +159,15 @@ CORS_ALLOWED_ORIGINS = [
         port=config["app"]["port"],
     )
 ]
+
+# Django debug toolbar
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
+
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK": lambda request: DEBUG,
+}
 
 # Simple JWT
 SIMPLE_JWT = {

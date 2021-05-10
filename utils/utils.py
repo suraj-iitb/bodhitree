@@ -75,8 +75,8 @@ def check_course_registration(course_id, user):
         A bool value indicating if the user is registered in a course or not.
     """
     course_history = CourseHistory.objects.filter(
-        course_id=course_id, user=user
-    ).count()
+        course_id=course_id, user=user, status="E"
+    ).exists()
     if course_history:
         return True
     return False
@@ -93,8 +93,11 @@ def check_is_instructor_or_ta(course_id, user):
         A bool value indicating if the user is is instructor/ta in a course or not.
     """
     course_history = CourseHistory.objects.filter(
-        Q(course_id=course_id) & (Q(role="I") | Q(role="T")) & Q(user=user)
-    ).count()
+        Q(course_id=course_id)
+        & (Q(role="I") | Q(role="T"))
+        & Q(user=user)
+        & Q(status="E")
+    ).exists()
     if course_history:
         return True
     return False

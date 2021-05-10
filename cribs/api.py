@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 class CribViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.CreateMixin_Reg,
-    custom_mixins.ListMixin_InsOrTA_Paginated,
+    custom_mixins.RegisteredCreateMixin,
+    custom_mixins.InsOrTAListMixin,
     custom_mixins.RetrieveMixin,
     custom_mixins.UpdateMixin,
 ):
@@ -28,6 +28,10 @@ class CribViewSet(
     serializer_class = CribSerializer
     permission_classes = (IsInstructorOrTAOrStudent,)
     pagination_class = StandardResultsSetPagination
+
+    def get_queryset_list(self, course_id):
+        queryset = Crib.objects.filter(course=course_id)
+        return queryset
 
     @action(detail=False, methods=["POST"])
     def create_crib(self, request):
@@ -62,7 +66,7 @@ class CribViewSet(
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
         """
-        return self.list(request, pk, Crib)
+        return self.list(request, pk)
 
     @action(
         detail=True,
@@ -109,7 +113,7 @@ class CribViewSet(
 
 class CribReplyViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.CreateMixin_Reg,
+    custom_mixins.RegisteredCreateMixin,
     custom_mixins.RetrieveMixin,
     custom_mixins.UpdateMixin,
 ):
@@ -169,7 +173,7 @@ class CribReplyViewSet(
             logger.exception(e)
             return Response(str(e), status.HTTP_404_NOT_FOUND)
 
-        check = self._is_instructor_or_ta(crib.course, request.user)
+        check = self._is_instructor_or_ta(crib.course_id, request.user)
         if (check is True) or request.user == crib.created_by:
             cribreplies = CribReply.objects.filter(crib_id=pk)
             page = self.paginate_queryset(cribreplies)

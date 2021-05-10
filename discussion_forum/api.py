@@ -26,7 +26,8 @@ logger = logging.getLogger(__name__)
 
 class DiscussionThreadViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.CreateMixin_Reg,
+    custom_mixins.RegisteredCreateMixin,
+    custom_mixins.ListMixin,
     custom_mixins.RetrieveMixin,
     custom_mixins.UpdateMixin,
 ):
@@ -36,6 +37,10 @@ class DiscussionThreadViewSet(
     serializer_class = DiscussionThreadSerializer
     permission_classes = (IsInstructorOrTAOrStudent,)
     pagination_class = StandardResultsSetPagination
+
+    def get_queryset_list(self, pk):
+        queryset = DiscussionThread.objects.filter(discussion_forum=pk)
+        return queryset
 
     @action(detail=False, methods=["POST"])
     def create_discussion_thread(self, request):
@@ -95,13 +100,7 @@ class DiscussionThreadViewSet(
         if check is not True:
             return check
 
-        discussion_threads = DiscussionThread.objects.filter(discussion_forum=pk)
-        page = self.paginate_queryset(discussion_threads)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(discussion_threads, many=True)
-        return Response(serializer.data)
+        return self.list(request, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_discussion_thread(self, request, pk):
@@ -143,7 +142,8 @@ class DiscussionThreadViewSet(
 
 class DiscussionCommentViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.CreateMixin_Reg,
+    custom_mixins.RegisteredCreateMixin,
+    custom_mixins.ListMixin,
     custom_mixins.RetrieveMixin,
     custom_mixins.UpdateMixin,
 ):
@@ -153,6 +153,10 @@ class DiscussionCommentViewSet(
     serializer_class = DiscussionCommentSerializer
     permission_classes = (IsInstructorOrTAOrStudent,)
     pagination_class = StandardResultsSetPagination
+
+    def get_queryset_list(self, pk):
+        queryset = DiscussionComment.objects.filter(discussion_thread=pk)
+        return queryset
 
     @action(detail=False, methods=["POST"])
     def create_discussion_comment(self, request):
@@ -218,13 +222,7 @@ class DiscussionCommentViewSet(
         if check is not True:
             return check
 
-        discussion_comments = DiscussionComment.objects.filter(discussion_thread=pk)
-        page = self.paginate_queryset(discussion_comments)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(discussion_comments, many=True)
-        return Response(serializer.data)
+        return self.list(request, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_discussion_comment(self, request, pk):
@@ -267,7 +265,8 @@ class DiscussionCommentViewSet(
 
 class DiscussionReplyViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.CreateMixin_Reg,
+    custom_mixins.RegisteredCreateMixin,
+    custom_mixins.ListMixin,
     custom_mixins.RetrieveMixin,
     custom_mixins.UpdateMixin,
 ):
@@ -277,6 +276,10 @@ class DiscussionReplyViewSet(
     serializer_class = DiscussionReplySerializer
     permission_classes = (IsInstructorOrTAOrStudent,)
     pagination_class = StandardResultsSetPagination
+
+    def get_queryset_list(self, pk):
+        queryset = DiscussionReply.objects.filter(discussion_comment=pk)
+        return queryset
 
     @action(detail=False, methods=["POST"])
     def create_discussion_reply(self, request):
@@ -343,13 +346,7 @@ class DiscussionReplyViewSet(
         if check is not True:
             return check
 
-        discussion_replies = DiscussionReply.objects.filter(discussion_comment=pk)
-        page = self.paginate_queryset(discussion_replies)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(discussion_replies, many=True)
-        return Response(serializer.data)
+        return self.list(request, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_discussion_reply(self, request, pk):

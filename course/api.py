@@ -198,7 +198,7 @@ class CourseViewSet(
 
 class CourseHistoryViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.ListMixin_Paginated,
+    custom_mixins.RegisteredListMixin,
     custom_mixins.CreateMixin,
     custom_mixins.RetrieveMixin,
     custom_mixins.UpdateMixin,
@@ -209,6 +209,10 @@ class CourseHistoryViewSet(
     serializer_class = CourseHistorySerializer
     permission_classes = (IsInstructorOrTAOrStudent,)
     pagination_class = StandardResultsSetPagination
+
+    def get_queryset_list(self, course_id):
+        queryset = CourseHistory.objects.filter(course=course_id)
+        return queryset
 
     @action(detail=False, methods=["POST"])
     def create_course_history(self, request):
@@ -226,7 +230,12 @@ class CourseHistoryViewSet(
                 class
         """
         course_id = request.data["course"]
-        return self.create(request, course_id)
+        try:
+            Course.objects.get(id=course_id)
+        except Course.DoesNotExist as e:
+            logger.exception(e)
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
+        return self.create(request)
 
     @action(detail=True, methods=["GET"])
     def list_course_histories(self, request, pk):
@@ -243,7 +252,7 @@ class CourseHistoryViewSet(
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
         """
-        return self.list(request, pk, CourseHistory)
+        return self.list(request, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_course_history(self, request, pk):
@@ -286,9 +295,9 @@ class CourseHistoryViewSet(
 
 class ChapterViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.CreateMixin_InsOrTA,
+    custom_mixins.InsOrTACreateMixin,
     custom_mixins.RetrieveMixin,
-    custom_mixins.ListMixin,
+    custom_mixins.RegisteredListMixin,
     custom_mixins.DeleteMixin,
     custom_mixins.UpdateMixin,
 ):
@@ -298,6 +307,10 @@ class ChapterViewSet(
     serializer_class = ChapterSerializer
     permission_classes = (IsInstructorOrTA,)
 
+    def get_queryset_list(self, course_id):
+        queryset = Chapter.objects.filter(course=course_id)
+        return queryset
+
     @action(detail=False, methods=["POST"])
     def create_chapter(self, request):
         course_id = request.data["course"]
@@ -305,7 +318,7 @@ class ChapterViewSet(
 
     @action(detail=True, methods=["GET"])
     def list_chapters(self, request, pk):
-        return self.list(request, pk, Chapter)
+        return self.list(request, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_chapter(self, request, pk):
@@ -322,7 +335,8 @@ class ChapterViewSet(
 
 class SectionViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.CreateMixin_InsOrTA,
+    custom_mixins.InsOrTACreateMixin,
+    custom_mixins.ListMixin,
     custom_mixins.RetrieveMixin,
     custom_mixins.UpdateMixin,
     custom_mixins.DeleteMixin,
@@ -332,6 +346,10 @@ class SectionViewSet(
     queryset = Section.objects.all()
     serializer_class = SectionSerializer
     permission_classes = (IsInstructorOrTA,)
+
+    def get_queryset_list(self, chapter_id):
+        queryset = Section.objects.filter(chapter_id=chapter_id)
+        return queryset
 
     @action(detail=False, methods=["POST"])
     def create_section(self, request):
@@ -389,10 +407,7 @@ class SectionViewSet(
         check = self._is_registered(course_id, request.user)
         if check is not True:
             return check
-
-        sections = Section.objects.filter(chapter_id=pk)
-        serializer = self.get_serializer(sections, many=True)
-        return Response(serializer.data)
+        return self.list(request, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_section(self, request, pk):
@@ -448,9 +463,9 @@ class SectionViewSet(
 
 class PageViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.CreateMixin_InsOrTA,
+    custom_mixins.InsOrTACreateMixin,
     custom_mixins.RetrieveMixin,
-    custom_mixins.ListMixin,
+    custom_mixins.RegisteredListMixin,
     custom_mixins.DeleteMixin,
     custom_mixins.UpdateMixin,
 ):
@@ -460,6 +475,10 @@ class PageViewSet(
     serializer_class = PageSerializer
     permission_classes = (IsInstructorOrTA,)
 
+    def get_queryset_list(self, course_id):
+        queryset = Page.objects.filter(course=course_id)
+        return queryset
+
     @action(detail=False, methods=["POST"])
     def create_page(self, request):
         course_id = request.data["course"]
@@ -467,7 +486,7 @@ class PageViewSet(
 
     @action(detail=True, methods=["GET"])
     def list_pages(self, request, pk):
-        return self.list(request, pk, Page)
+        return self.list(request, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_page(self, request, pk):
@@ -484,9 +503,9 @@ class PageViewSet(
 
 class AnnouncementViewSet(
     viewsets.GenericViewSet,
-    custom_mixins.CreateMixin_InsOrTA,
+    custom_mixins.InsOrTACreateMixin,
     custom_mixins.RetrieveMixin,
-    custom_mixins.ListMixin,
+    custom_mixins.RegisteredListMixin,
     custom_mixins.DeleteMixin,
     custom_mixins.UpdateMixin,
 ):
@@ -496,6 +515,10 @@ class AnnouncementViewSet(
     serializer_class = AnnouncementSerializer
     permission_classes = (IsInstructorOrTA,)
 
+    def get_queryset_list(self, course_id):
+        queryset = Announcement.objects.filter(course=course_id)
+        return queryset
+
     @action(detail=False, methods=["POST"])
     def create_announcement(self, request):
         course_id = request.data["course"]
@@ -503,7 +526,7 @@ class AnnouncementViewSet(
 
     @action(detail=True, methods=["GET"])
     def list_announcements(self, request, pk):
-        return self.list(request, pk, Announcement)
+        return self.list(request, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_announcement(self, request, pk):

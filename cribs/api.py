@@ -44,9 +44,13 @@ class CribViewSet(
             `Response` with the created crib data and status `HTTP_201_CREATED`
 
         Raises:
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_404_NOT_FOUND`: Raised by `Course.DoesNotExist` exception
+            `HTTP_403_FORBIDDEN`: Raised:
+                1. By `IsInstructorOrTAOrStudent` permission class
+                2. Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `create()` method
         """
         course_id = request.data["course"]
         return self.create(request, course_id)
@@ -65,6 +69,8 @@ class CribViewSet(
         Raises:
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
+            `HTTP_403_FORBIDDEN`: Raised by `list()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `list()` method
         """
         return self.list(request, pk)
 
@@ -90,6 +96,7 @@ class CribViewSet(
             `HTTP_403_FORBIDDEN`:  Raised by:
                 1.`StrictIsInstructorOrTA` permission class
                 2.`IsOwner` permission class
+            `HTTP_404_NOT_FOUND`: Raised by `retrieve()` method
         """
         return self.retrieve(request, pk)
 
@@ -105,8 +112,12 @@ class CribViewSet(
             `Response` with the updated crib data and status `HTTP_200_OK`
 
         Raises:
-            `HTTP_401_UNAUTHORIZED`:  Raised by `IsOwner` permission class
-            `HTTP_403_FORBIDDEN`: Raised by `IsOwner` permission class
+            `HTTP_400_BAD_REQUEST`: Raised by `update()` method
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
+            `HTTP_403_FORBIDDEN`: Raised:
+                1. by `IsOwner` permission class
+                2. by `update()` method
+            `HTTP_404_NOT_FOUND`: Raised by `update()` method
         """
         return self.update(request, pk)
 
@@ -135,9 +146,15 @@ class CribReplyViewSet(
             `Response` with the created crib reply data and status `HTTP_201_CREATED`
 
         Raises:
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_404_NOT_FOUND`: Raised by `Crib.DoesNotExist` exception
+            `HTTP_403_FORBIDDEN`: Raised:
+                1. By `IsInstructorOrTAOrStudent` permission class
+                2. Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised
+                1. Due to `create()` method
+                2. By `Crib.DoesNotExist` exception
         """
         crib = request.data["crib"]
 
@@ -208,6 +225,7 @@ class CribReplyViewSet(
             `HTTP_403_FORBIDDEN`: Raised by:
                 1.`StrictIsInstructorOrTA` permission class
                 2.`IsOwner` permission class
+            `HTTP_404_NOT_FOUND`: Raised by `retrieve()` method
         """
         return self.retrieve(request, pk)
 
@@ -223,8 +241,11 @@ class CribReplyViewSet(
             `Response` with the updated crib data and status `HTTP_200_OK`
 
         Raises:
-            `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission
-                class
-            `HTTP_403_FORBIDDEN`: Raised by `IsOwner` permission class
+            `HTTP_400_BAD_REQUEST`: Raised by `update()` method
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
+            `HTTP_403_FORBIDDEN`: Raised
+                1. by `IsOwner` permission class
+                2. by `update()` method
+            `HTTP_404_NOT_FOUND`: Raised by `update()` method
         """
         return self.update(request, pk)

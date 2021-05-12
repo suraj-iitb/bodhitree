@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class DiscussionThreadViewSet(
     viewsets.GenericViewSet,
     custom_mixins.RegisteredCreateMixin,
-    custom_mixins.ListMixin,
+    custom_mixins.RegisteredListMixin,
     custom_mixins.RetrieveMixin,
     custom_mixins.UpdateMixin,
 ):
@@ -54,9 +54,15 @@ class DiscussionThreadViewSet(
             `HTTP_201_CREATED`
 
         Raises:
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_404_NOT_FOUND`: Raised by `DiscussionForum.DoesNotExist` exception
+            `HTTP_403_FORBIDDEN`: Raised:
+                1. By `IsInstructorOrTAOrStudent` permission class
+                2. Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised
+                1. due to `create()` method
+                2. by `DiscussionForum.DoesNotExist` exception
         """
         discussion_forum_id = request.data["discussion_forum"]
         try:
@@ -65,9 +71,9 @@ class DiscussionThreadViewSet(
             logger.exception(e)
             return Response(str(e), status.HTTP_404_NOT_FOUND)
 
-        # This is specifically done during discussion thread creation (not during
-        # updation or deletion) because it can't be handled by
-        # `IsInstructorOrTAOrStudent` permission class
+        # `_is_instructor_or_ta` check is specifically done during
+        #  discussion thread creation (not during updation or deletion) because
+        # it can't be handled by `IsInstructorOrTAOrStudent` permission class
         return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
@@ -84,8 +90,10 @@ class DiscussionThreadViewSet(
         Raises:
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
-            `HTTP_404_NOT_FOUND`: Raised by `DiscussionForum.DoesNotExist` exception
+            `HTTP_403_FORBIDDEN`: Raised by `list()` method
+            `HTTP_404_NOT_FOUND`: Raised
+                1. by `DiscussionForum.DoesNotExist` exception
+                2. by `list()` method
         """
         try:
             course_id = DiscussionForum.objects.get(id=pk).course_id
@@ -93,14 +101,10 @@ class DiscussionThreadViewSet(
             logger.exception(e)
             return Response(str(e), status.HTTP_404_NOT_FOUND)
 
-        # This is specifically done during list all discussion threads (not during
-        # retrieval of a discussion thread) because it can't be handled by
-        # `IsInstructorOrTAOrStudent` permission class.
-        check = self._is_registered(course_id, request.user)
-        if check is not True:
-            return check
-
-        return self.list(request, pk)
+        # `_is_instructor_or_ta` check is specifically done during list all
+        #  discussion threads (not during retrieval of a discussion thread)
+        # because it can't be handled by `IsInstructorOrTAOrStudent` permission class.
+        return self.list(request, course_id, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_discussion_thread(self, request, pk):
@@ -117,6 +121,7 @@ class DiscussionThreadViewSet(
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
             `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
+            `HTTP_404_NOT_FOUND`: Raised by `retrieve()` method
         """
         return self.retrieve(request, pk)
 
@@ -132,10 +137,13 @@ class DiscussionThreadViewSet(
             `Response` with the updated discussion thread data and status `HTTP_200_OK`
 
         Raises:
-
+            `HTTP_400_BAD_REQUEST`: Raised by `update()` method
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
+            `HTTP_403_FORBIDDEN`: Raised
+                1. by `IsInstructorOrTAOrStudent` permission class
+                2. by `update()` method
+            `HTTP_404_NOT_FOUND`: Raised by `update()` method
         """
         return self.update(request, pk)
 
@@ -143,7 +151,7 @@ class DiscussionThreadViewSet(
 class DiscussionCommentViewSet(
     viewsets.GenericViewSet,
     custom_mixins.RegisteredCreateMixin,
-    custom_mixins.ListMixin,
+    custom_mixins.RegisteredListMixin,
     custom_mixins.RetrieveMixin,
     custom_mixins.UpdateMixin,
 ):
@@ -170,9 +178,15 @@ class DiscussionCommentViewSet(
              `HTTP_201_CREATED`
 
         Raises:
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_404_NOT_FOUND`: Raised by `DiscussionThread.DoesNotExist` exception
+            `HTTP_403_FORBIDDEN`: Raised:
+                1. By `IsInstructorOrTAOrStudent` permission class
+                2. Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised
+                1. due to `create()` method
+                2. by `DiscussionThread.DoesNotExist` exception
         """
         discussion_thread_id = request.data["discussion_thread"]
         try:
@@ -184,9 +198,9 @@ class DiscussionCommentViewSet(
             return Response(str(e), status.HTTP_404_NOT_FOUND)
         course_id = discussion_thread.discussion_forum.course_id
 
-        # This is specifically done during discussion comment creation (not during
-        # updation or deletion) because it can't be handled by
-        # `IsInstructorOrTAOrStudent` permission class
+        # `_is_instructor_or_ta` check is specifically done during discussion
+        #  comment creation (not during updation or deletion) because it can't
+        # be handled by `IsInstructorOrTAOrStudent` permission class
         return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
@@ -203,8 +217,10 @@ class DiscussionCommentViewSet(
         Raises:
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
-            `HTTP_404_NOT_FOUND`: Raised by `DiscussionThread.DoesNotExist` exception
+            `HTTP_403_FORBIDDEN`: Raised by `list()` method
+            `HTTP_404_NOT_FOUND`: Raised
+                1. by `DiscussionThread.DoesNotExist` exception
+                2. by `list()` method
         """
         try:
             discussion_thread = DiscussionThread.objects.select_related(
@@ -215,14 +231,10 @@ class DiscussionCommentViewSet(
             return Response(str(e), status.HTTP_404_NOT_FOUND)
         course_id = discussion_thread.discussion_forum.course_id
 
-        # This is specifically done during list all discussion comments (not during
-        # retrieval of a discussion comment) because it can't be handled by
-        # `IsInstructorOrTAOrStudent` permission class.
-        check = self._is_registered(course_id, request.user)
-        if check is not True:
-            return check
-
-        return self.list(request, pk)
+        # `_is_instructor_or_ta` check is specifically done during list all
+        #  discussion comments (not during retrieval of a discussion comment) because
+        # it can't be handled by `IsInstructorOrTAOrStudent` permission class.
+        return self.list(request, course_id, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_discussion_comment(self, request, pk):
@@ -239,6 +251,7 @@ class DiscussionCommentViewSet(
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
             `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
+            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
         return self.retrieve(request, pk)
 
@@ -254,11 +267,13 @@ class DiscussionCommentViewSet(
             `Response` with the updated discussion thread data and status `HTTP_200_OK`
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+            `HTTP_400_BAD_REQUEST`: Raised by `update()` method
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
-            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
+            `HTTP_403_FORBIDDEN`: Raised
+                1. by `IsInstructorOrTAOrStudent` permission class
+                2. by `update()` method
+            `HTTP_404_NOT_FOUND`: Raised by `update()` method
         """
         return self.update(request, pk)
 
@@ -266,7 +281,7 @@ class DiscussionCommentViewSet(
 class DiscussionReplyViewSet(
     viewsets.GenericViewSet,
     custom_mixins.RegisteredCreateMixin,
-    custom_mixins.ListMixin,
+    custom_mixins.RegisteredListMixin,
     custom_mixins.RetrieveMixin,
     custom_mixins.UpdateMixin,
 ):
@@ -293,10 +308,15 @@ class DiscussionReplyViewSet(
              `HTTP_201_CREATED`
 
         Raises:
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_404_NOT_FOUND`: Raised by `DiscussionComment.DoesNotExist` exception
-
+            `HTTP_403_FORBIDDEN`: Raised:
+                1. By `IsInstructorOrTAOrStudent` permission class
+                2. Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised
+                1. due to `create()` method
+                2. by `DiscussionComment.DoesNotExist` exception
         """
         discussion_comment = request.data["discussion_comment"]
         try:
@@ -308,8 +328,8 @@ class DiscussionReplyViewSet(
             return Response(str(e), status.HTTP_404_NOT_FOUND)
         course_id = discussion_comment.discussion_thread.discussion_forum.course_id
 
-        # This is specifically done during discussion reply creation (not during
-        # updation or deletion) because it can't be handled by
+        # `_is_instructor_or_ta` check is specifically done during discussion reply
+        #  creation (not during updation or deletion) because it can't be handled by
         # `IsInstructorOrTAOrStudent` permission class.
         return self.create(request, course_id)
 
@@ -327,8 +347,10 @@ class DiscussionReplyViewSet(
         Raises:
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
-            `HTTP_404_NOT_FOUND`: Raised by `DiscussionComment.DoesNotExist` exception
+            `HTTP_403_FORBIDDEN`: Raised by `list()` method
+            `HTTP_404_NOT_FOUND`: Raised
+                1. by `DiscussionThread.DoesNotExist` exception
+                2. by `list()` method
         """
         try:
             discussion_comment = DiscussionComment.objects.select_related(
@@ -339,14 +361,10 @@ class DiscussionReplyViewSet(
             return Response(str(e), status.HTTP_404_NOT_FOUND)
         course_id = discussion_comment.discussion_thread.discussion_forum.course_id
 
-        # This is specifically done during list all discussion replies (not during
-        # retrieval of a discussion reply) because it can't be handled by
-        # `IsInstructorOrTAOrStudent` permission class.
-        check = self._is_registered(course_id, request.user)
-        if check is not True:
-            return check
-
-        return self.list(request, pk)
+        # `_is_instructor_or_ta` check is specifically done during list all
+        #  discussion replies (not during retrieval of a discussion reply) because
+        # it can't be handled by `IsInstructorOrTAOrStudent` permission class.
+        return self.list(request, course_id, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_discussion_reply(self, request, pk):
@@ -363,6 +381,7 @@ class DiscussionReplyViewSet(
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
             `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
+            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
         return self.retrieve(request, pk)
 
@@ -378,8 +397,12 @@ class DiscussionReplyViewSet(
             `Response` with the updated discussion reply data and status `HTTP_200_OK`
 
         Raises:
+            `HTTP_400_BAD_REQUEST`: Raised by `update()` method
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
+            `HTTP_403_FORBIDDEN`: Raised
+                1. by `IsInstructorOrTAOrStudent` permission class
+                2. by `update()` method
+            `HTTP_404_NOT_FOUND`: Raised by `update()` method
         """
         return self.update(request, pk)

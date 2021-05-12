@@ -163,14 +163,14 @@ class CourseViewSet(
             `Response` with the updated course data and status `HTTP_200_OK`.
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+            `HTTP_400_BAD_REQUEST`: Raised due to `update()` method.
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrReadOnly` permission
                 class
             `HTTP_403_FORBIDDEN`: Raised by:
                 1.  `IsInstructorOrTAOrReadOnly` permission class
-                2. `IntegrityError` of the database
+                2.   due to `update()` method
                 3. `_update_course_check()` method
-            HTTP_404_NOT_FOUND: Raise by `_update_course_check()` method
+            `HTTP_404_NOT_FOUND`: Raise by `_update_course_check()` method
         """
         check = self._update_course_check(pk, request.user)
         if check is not True:
@@ -192,6 +192,7 @@ class CourseViewSet(
         Raises:
             `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
             `HTTP_403_FORBIDDEN`: Raised by `IsOwner` permission class
+            `HTTP_404_NOT_FOUND`: due to `_delete()` method
         """
         return self._delete(request, pk)
 
@@ -228,6 +229,9 @@ class CourseHistoryViewSet(
         Raises:
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
+            `HTTP_403_FORBIDDEN`: Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `create()` method
         """
         course_id = request.data["course"]
         try:
@@ -251,6 +255,8 @@ class CourseHistoryViewSet(
         Raises:
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
+            `HTTP_403_FORBIDDEN`:  Raised due to `list()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `list()` method
         """
         return self.list(request, pk)
 
@@ -269,7 +275,7 @@ class CourseHistoryViewSet(
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
             `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
-            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `retrieve()` method
         """
         return self.retrieve(request, pk)
 
@@ -285,10 +291,12 @@ class CourseHistoryViewSet(
             `Response` with the updated course history data and status `HTTP_200_OK`.
 
         Raises:
+            `HTTP_400_BAD_REQUEST`: Raised due to `update()` method
             `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
             `HTTP_403_FORBIDDEN`: Raised by:
                 1. `IsOwner` permission class
-                2. `IntegrityError` of the database
+                2. Raised due to `update()` method
+            `HTTP_404_NOT_FOUND`: Raised by `update()` method
         """
         return self.update(request, pk)
 
@@ -336,7 +344,7 @@ class ChapterViewSet(
 class SectionViewSet(
     viewsets.GenericViewSet,
     custom_mixins.InsOrTACreateMixin,
-    custom_mixins.ListMixin,
+    custom_mixins.RegisteredListMixin,
     custom_mixins.RetrieveMixin,
     custom_mixins.UpdateMixin,
     custom_mixins.DeleteMixin,
@@ -362,9 +370,14 @@ class SectionViewSet(
             `Response` with the created section data and status HTTP_201_CREATED.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `_is_instructor_or_ta()` permission class
-            HTTP_404_NOT_FOUND: Raised if the chapter does not exist
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised:
+                1. Raised by `IsInstructorOrTA` permission class
+                2. Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised:
+                1. If the chapter does not exist
+                2. Raised due to `create()` method
         """
         chapter_id = request.data["chapter"]
 
@@ -391,9 +404,11 @@ class SectionViewSet(
             `Response` with all the sections data and status HTTP_200_OK.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
-            HTTP_404_NOT_FOUND: Raised if the chapter does not exist
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`:  Raised due to `list()` method
+            `HTTP_404_NOT_FOUND`: Raised:
+                1. If the chapter does not exist
+                1. due to `list()` method
         """
         try:
             chapter = Chapter.objects.get(id=pk)
@@ -404,10 +419,7 @@ class SectionViewSet(
 
         # This is specifically done during list all sections (not during retrieval of
         # a section) because it can't be handled by `IsInstructorOrTA` permission class.
-        check = self._is_registered(course_id, request.user)
-        if check is not True:
-            return check
-        return self.list(request, pk)
+        return self.list(request, course_id, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_section(self, request, pk):
@@ -421,8 +433,9 @@ class SectionViewSet(
             `Response` with the section data and status HTTP_200_OK.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_404_NOT_FOUND`: Raised due to `retrieve()` method
         """
         return self.retrieve(request, pk)
 
@@ -438,8 +451,12 @@ class SectionViewSet(
             `Response` with the updated section data and status HTTP_200_OK.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
+            `HTTP_400_BAD_REQUEST`: Raised due to `update()` method
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised
+                1. by `IsInstructorOrTA` permission class
+                2. Raised due to `update()` method
+            `HTTP_404_NOT_FOUND`: Raised by `update()` method
         """
         return self.update(request, pk)
 
@@ -455,8 +472,9 @@ class SectionViewSet(
             `Response` with no data and status HTTP_204_NO_CONTENT.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_404_NOT_FOUND`: due to `_delete()` method
         """
         return self._delete(request, pk)
 

@@ -25,7 +25,8 @@ class IsRegisteredMixin:
             A bool value representing whether the user is registered in the course.
 
         Raises:
-            HTTP_403_FORBIDDEN: Raised if the user is not registered in the course
+            `HTTP_403_FORBIDDEN`: Raised if the user is not registered in the course
+            `HTTP_404_NOT_FOUND`: Raised if the course does not exist
         """
         try:
             Course.objects.get(id=course_id)
@@ -53,7 +54,8 @@ class IsRegisteredMixin:
             A bool value representing whether the user is instructor/ta in the course.
 
         Raises:
-            HTTP_403_FORBIDDEN: Raised if the user is not instructor/ta in the course
+            `HTTP_403_FORBIDDEN`: Raised if the user is not instructor/ta in the course
+            `HTTP_404_NOT_FOUND`: Raised if the course does not exist
         """
         try:
             Course.objects.get(id=course_id)
@@ -211,22 +213,20 @@ class ContentMixin_List(IsRegisteredMixin):
 
 
 class CreateMixin:
-    """---"""
+    """Mixin for object creation"""
 
     def create(self, request):
-        """---.
+        """Creates an object.
 
         Args:
             request (Request): DRF `Request` object
 
         Returns:
-            `Response` with the created chapter/page data and status HTTP_201_CREATED.
+            `Response` with the created data and status HTTP_201_CREATED.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_403_FORBIDDEN: Raised:
-                1. Due to `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised if the course does not exist
+            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+            `HTTP_403_FORBIDDEN`: Raised due to `IntegrityError` of the database
         """
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -254,13 +254,13 @@ class InsOrTACreateMixin(CreateMixin, IsRegisteredMixin):
             `Response` with the created chapter/page data and status HTTP_201_CREATED.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_403_FORBIDDEN: Raised:
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
+            `HTTP_403_FORBIDDEN`: Raised:
                 1. By `_is_instructor_or_ta()` method
-                2. Due to `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised if the course does not exist
+                2. Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `_is_instructor_or_ta()` method
         """
-        # This is specifically done during chapter/page creation (not during updation or
+        # This is specifically done during object creation (not during updation or
         # deletion) because it can't be handled by `IsInstructorOrTA` permission class.
         check = self._is_instructor_or_ta(course_id, request.user)
         if check is not True:
@@ -282,14 +282,14 @@ class RegisteredCreateMixin(CreateMixin, IsRegisteredMixin):
             `Response` with the created chapter/page data and status HTTP_201_CREATED.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_403_FORBIDDEN: Raised:
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
+            `HTTP_403_FORBIDDEN`: Raised:
                 1. By `_is_registered()` method
-                2. Due to `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised if the course does not exist
+                2. Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `_is_registered()` method
         """
-        # This is specifically done during chapter/page creation (not during updation or
-        # deletion) because it can't be handled by `IsInstructorOrTA` permission class.
+        # This is specifically done during object creation (not during updation or
+        # deletion) because it can't be handled by `IsRegistered` permission class.
         check = self._is_registered(course_id, request.user)
         if check is not True:
             return check
@@ -308,11 +308,10 @@ class ListMixin:
             pk (int): Course id
 
         Returns:
-            `Response` with all the chapter/page data and status HTTP_200_OK.
+            `Response` with all the data and status HTTP_200_OK.
 
         Raises:
-            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
-            HTTP_404_NOT_FOUND: Raised if the course does not exist
+            `HTTP_404_NOT_FOUND`: Raised if the filter object does not exist
         """
         queryset = self.filter_queryset(self.get_queryset_list(pk))
         page = self.paginate_queryset(queryset)
@@ -326,7 +325,7 @@ class ListMixin:
 class RegisteredListMixin(ListMixin, IsRegisteredMixin):
     """---"""
 
-    def list(self, request, pk):
+    def list(self, request, course_id, filter_id=None):
         """---
 
         Args:
@@ -337,23 +336,27 @@ class RegisteredListMixin(ListMixin, IsRegisteredMixin):
             `Response` with all the chapter/page data and status HTTP_200_OK.
 
         Raises:
-            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
-            HTTP_404_NOT_FOUND: Raised if the course does not exist
+            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
+            `HTTP_404_NOT_FOUND`: Raised
+                1. due to `list()` method
+                2. by `_is_registered()` method
         """
         # This is specifically done during list all chapters/pages (not during
         # retrieval of a chapter) because it can't be handled by `IsInstructorOrTA`
         # permission class.
-        check = self._is_registered(pk, request.user)
+        check = self._is_registered(course_id, request.user)
         if check is not True:
             return check
 
-        return super().list(request, pk)
+        if filter_id is not None:
+            return super().list(request, filter_id)
+        return super().list(request, course_id)
 
 
 class InsOrTAListMixin(ListMixin, IsRegisteredMixin):
     """---"""
 
-    def list(self, request, pk):
+    def list(self, request, course_id, filter_id=None):
         """---
 
         Args:
@@ -364,17 +367,21 @@ class InsOrTAListMixin(ListMixin, IsRegisteredMixin):
             `Response` with all the chapter/page data and status HTTP_200_OK.
 
         Raises:
-            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
-            HTTP_404_NOT_FOUND: Raised if the course does not exist
+            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
+            `HTTP_404_NOT_FOUND`: Raised
+                1. due to `list()` method
+                2. by `_is_registered()` method
         """
         # This is specifically done during list all chapters/pages (not during
         # retrieval of a chapter) because it can't be handled by `IsInstructorOrTA`
         # permission class.
-        check = self._is_instructor_or_ta(pk, request.user)
+        check = self._is_instructor_or_ta(course_id, request.user)
         if check is not True:
             return check
 
-        return super().list(request, pk)
+        if filter_id is not None:
+            return super().list(request, filter_id)
+        return super().list(request, course_id)
 
 
 class RetrieveMixin:
@@ -391,7 +398,7 @@ class RetrieveMixin:
             `Response` with the chapter/page data and status HTTP_200_OK.
 
         Raises:
-            HTTP_404_NOT_FOUND: Raised by `get_object()` method
+            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
         obj = self.get_object()
         serializer = self.get_serializer(obj)
@@ -412,9 +419,9 @@ class UpdateMixin:
             `Response` with the updated chapter/page data and status HTTP_200_OK.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_403_FORBIDDEN: Raised by: `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised by `get_object()` method
+            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+            `HTTP_403_FORBIDDEN`: Raised by: `IntegrityError` of the database
+            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
         obj = self.get_object()
         serializer = self.get_serializer(obj, data=request.data, partial=True)
@@ -444,7 +451,7 @@ class DeleteMixin:
             `Response` with no data and status HTTP_204_NO_CONTENT.
 
         Raises:
-            HTTP_404_NOT_FOUND: Raised by `get_object()` method
+            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
         """
         obj = self.get_object()
         obj.delete()

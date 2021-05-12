@@ -16,13 +16,22 @@ from utils.permissions import (
 )
 from utils.subscription import SubscriptionView
 
-from .models import Announcement, Chapter, Course, CourseHistory, Page, Section
+from .models import (
+    Announcement,
+    Chapter,
+    Course,
+    CourseHistory,
+    Page,
+    Schedule,
+    Section,
+)
 from .serializers import (
     AnnouncementSerializer,
     ChapterSerializer,
     CourseHistorySerializer,
     CourseSerializer,
     PageSerializer,
+    ScheduleSerializer,
     SectionSerializer,
 )
 
@@ -556,4 +565,61 @@ class AnnouncementViewSet(
 
     @action(detail=True, methods=["DELETE"])
     def delete_announcement(self, request, pk):
+        return self._delete(request, pk)
+
+
+class ScheduleViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.InsOrTACreateMixin,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.RegisteredListMixin,
+    custom_mixins.DeleteMixin,
+    custom_mixins.UpdateMixin,
+):
+    """Viewset for `Schedule`."""
+
+    queryset = Schedule.objects.all()
+    serializer_class = ScheduleSerializer
+    permission_classes = (IsInstructorOrTA,)
+
+    def get_queryset_list(self, course_id):
+        queryset = Schedule.objects.filter(course=course_id).order_by(
+            "-end_date", "-start_date"
+        )
+        return queryset
+
+    def schedule_date_check(self, start_date, end_date):
+        if start_date > end_date:
+            error = "Schedule end date has to be greater than start date"
+            logger.warning(error)
+            return Response(error, status.HTTP_400_BAD_REQUEST)
+        return True
+
+    @action(detail=False, methods=["POST"])
+    def create_schedule(self, request):
+        start_date = request.data["start_date"]
+        end_date = request.data["end_date"]
+
+        if self.schedule_date_check(start_date, end_date):
+            course_id = request.data["course"]
+            return self.create(request, course_id)
+
+    @action(detail=True, methods=["GET"])
+    def list_schedules(self, request, pk):
+        return self.list(request, pk)
+
+    @action(detail=True, methods=["GET"])
+    def retrieve_schedule(self, request, pk):
+        return self.retrieve(request, pk)
+
+    @action(detail=True, methods=["PUT", "PATCH"])
+    def update_schedule(self, request, pk):
+        start_date = request.data["start_date"]
+        end_date = request.data["end_date"]
+
+        if self.schedule_date_check(start_date, end_date):
+            return self.update(request, pk)
+
+    @action(detail=True, methods=["DELETE"])
+    def delete_schedule(self, request, pk):
         return self._delete(request, pk)

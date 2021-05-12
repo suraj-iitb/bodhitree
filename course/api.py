@@ -591,7 +591,7 @@ class ScheduleViewSet(
     def schedule_date_check(self, start_date, end_date):
         if start_date > end_date:
             error = "Schedule end date has to be greater than start date"
-            logger.warning(error)
+            logger.error(error)
             return Response(error, status.HTTP_400_BAD_REQUEST)
         return True
 

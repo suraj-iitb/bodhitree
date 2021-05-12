@@ -4,7 +4,6 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from course.models import Course
 from utils import mixins as custom_mixins
 from utils.pagination import StandardResultsSetPagination
 from utils.permissions import IsInstructorOrTAOrStudent, IsOwner, StrictIsInstructorOrTA
@@ -16,13 +15,23 @@ from .serializers import CribReplySerializer, CribSerializer
 logger = logging.getLogger(__name__)
 
 
-class CribViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
+class CribViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.RegisteredCreateMixin,
+    custom_mixins.InsOrTAListMixin,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.UpdateMixin,
+):
     """Viewset for `Crib`."""
 
     queryset = Crib.objects.all()
     serializer_class = CribSerializer
     permission_classes = (IsInstructorOrTAOrStudent,)
     pagination_class = StandardResultsSetPagination
+
+    def get_queryset_list(self, course_id):
+        queryset = Crib.objects.filter(course=course_id)
+        return queryset
 
     @action(detail=False, methods=["POST"])
     def create_crib(self, request):
@@ -35,31 +44,16 @@ class CribViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
             `Response` with the created crib data and status `HTTP_201_CREATED`
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
-            `HTTP_404_NOT_FOUND`: Raised by `Course.DoesNotExist` exception
+            `HTTP_403_FORBIDDEN`: Raised:
+                1. By `IsInstructorOrTAOrStudent` permission class
+                2. Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `create()` method
         """
-        user = request.user
         course_id = request.data["course"]
-        try:
-            Course.objects.get(id=course_id)
-        except Course.DoesNotExist as e:
-            logger.exception(e)
-            return Response(str(e), status.HTTP_404_NOT_FOUND)
-
-        check = self._is_registered(course_id, user)
-        if check is not True:
-            return check
-
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_cribs(self, request, pk):
@@ -75,25 +69,10 @@ class CribViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
         Raises:
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `_is_instructor_or_ta` method
-            `HTTP_404_NOT_FOUND`: Raised by `Course.DoesNotExist` exception
+            `HTTP_403_FORBIDDEN`: Raised by `list()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `list()` method
         """
-        try:
-            Course.objects.get(id=pk)
-        except Course.DoesNotExist as e:
-            logger.exception(e)
-            return Response(str(e), status.HTTP_404_NOT_FOUND)
-        check = self._is_instructor_or_ta(pk, request.user)
-        if check is not True:
-            return check
-
-        cribs = Crib.objects.filter(course_id=pk)
-        page = self.paginate_queryset(cribs)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(cribs, many=True)
-        return Response(serializer.data)
+        return self.list(request, pk)
 
     @action(
         detail=True,
@@ -117,11 +96,9 @@ class CribViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
             `HTTP_403_FORBIDDEN`:  Raised by:
                 1.`StrictIsInstructorOrTA` permission class
                 2.`IsOwner` permission class
-            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
+            `HTTP_404_NOT_FOUND`: Raised by `retrieve()` method
         """
-        crib = self.get_object()
-        serializer = self.get_serializer(crib)
-        return Response(serializer.data)
+        return self.retrieve(request, pk)
 
     @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
     def update_crib(self, request, pk):
@@ -135,23 +112,22 @@ class CribViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
             `Response` with the updated crib data and status `HTTP_200_OK`
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
-            `HTTP_401_UNAUTHORIZED`:  Raised by `IsOwner` permission class
-            `HTTP_403_FORBIDDEN`: Raised by `IsOwner` permission class
-            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
+            `HTTP_400_BAD_REQUEST`: Raised by `update()` method
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
+            `HTTP_403_FORBIDDEN`: Raised:
+                1. by `IsOwner` permission class
+                2. by `update()` method
+            `HTTP_404_NOT_FOUND`: Raised by `update()` method
         """
-        serializer = self.get_serializer(
-            self.get_object(), data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)
 
 
-class CribReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
+class CribReplyViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.RegisteredCreateMixin,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.UpdateMixin,
+):
     """Viewset for `CribReply`."""
 
     queryset = CribReply.objects.all()
@@ -170,13 +146,16 @@ class CribReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin)
             `Response` with the created crib reply data and status `HTTP_201_CREATED`
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
-            `HTTP_404_NOT_FOUND`: Raised by `Crib.DoesNotExist` exception
+            `HTTP_403_FORBIDDEN`: Raised:
+                1. By `IsInstructorOrTAOrStudent` permission class
+                2. Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised
+                1. Due to `create()` method
+                2. By `Crib.DoesNotExist` exception
         """
-        user = request.user
         crib = request.data["crib"]
 
         try:
@@ -184,17 +163,7 @@ class CribReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin)
         except Crib.DoesNotExist as e:
             logger.exception(e)
             return Response(str(e), status.HTTP_404_NOT_FOUND)
-        check = self._is_registered(course_id, user)
-        if check is not True:
-            return check
-
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"], permission_classes=[IsOwner])
     def list_crib_replies(self, request, pk):
@@ -221,7 +190,7 @@ class CribReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin)
             logger.exception(e)
             return Response(str(e), status.HTTP_404_NOT_FOUND)
 
-        check = self._is_instructor_or_ta(crib.course, request.user)
+        check = self._is_instructor_or_ta(crib.course_id, request.user)
         if (check is True) or request.user == crib.created_by:
             cribreplies = CribReply.objects.filter(crib_id=pk)
             page = self.paginate_queryset(cribreplies)
@@ -256,11 +225,9 @@ class CribReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin)
             `HTTP_403_FORBIDDEN`: Raised by:
                 1.`StrictIsInstructorOrTA` permission class
                 2.`IsOwner` permission class
-            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
+            `HTTP_404_NOT_FOUND`: Raised by `retrieve()` method
         """
-        cribreply = self.get_object()
-        serializer = self.get_serializer(cribreply)
-        return Response(serializer.data)
+        return self.retrieve(request, pk)
 
     @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
     def update_crib_reply(self, request, pk):
@@ -274,18 +241,11 @@ class CribReplyViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin)
             `Response` with the updated crib data and status `HTTP_200_OK`
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
-            `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission
-                class
-            `HTTP_403_FORBIDDEN`: Raised by `IsOwner` permission class
-            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
+            `HTTP_400_BAD_REQUEST`: Raised by `update()` method
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
+            `HTTP_403_FORBIDDEN`: Raised
+                1. by `IsOwner` permission class
+                2. by `update()` method
+            `HTTP_404_NOT_FOUND`: Raised by `update()` method
         """
-        serializer = self.get_serializer(
-            self.get_object(), data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)

@@ -11,6 +11,8 @@ host               =
 port               =
 user               =
 password           =
+# Use django.core.mail.backends.console.EmailBackend for dev
+# Use django.core.mail.backends.smtp.EmailBackend for prod
 backend            = django.core.mail.backends.smtp.EmailBackend
 use_tls            = True
 subject_prefix     = '[Bodhitree] '

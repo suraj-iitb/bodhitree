@@ -110,6 +110,17 @@ DATABASES = {
     }
 }
 
+# Email
+EMAIL_HOST = config["email"]["host"]
+EMAIL_PORT = config["email"]["port"]
+EMAIL_HOST_USER = config["email"]["user"]
+EMAIL_HOST_PASSWORD = config["email"]["password"]
+EMAIL_BACKEND = config["email"]["backend"]
+EMAIL_USE_TLS = config["email"]["use_tls"]
+EMAIL_SUBJECT_PREFIX = config["email"]["subject_prefix"]
+EMAIL_DOMAIN = config["email"]["domain"]
+EMAIL_REPLY_TO = config["email"]["reply_to"]
+
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 

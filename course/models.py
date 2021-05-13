@@ -148,7 +148,8 @@ class Schedule(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["course", "start_date", "end_date"], name="unique_schedule"
+                fields=["course", "start_date", "end_date", "content_list"],
+                name="unique_schedule",
             )
         ]
 

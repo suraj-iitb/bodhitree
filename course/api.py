@@ -23,13 +23,22 @@ from utils.permissions import (
 from utils.subscription import SubscriptionView
 from utils.utils import CaseInsensitiveHeaderDictReader, get_course_folder
 
-from .models import Announcement, Chapter, Course, CourseHistory, Page, Section
+from .models import (
+    Announcement,
+    Chapter,
+    Course,
+    CourseHistory,
+    Page,
+    Schedule,
+    Section,
+)
 from .serializers import (
     AnnouncementSerializer,
     ChapterSerializer,
     CourseHistorySerializer,
     CourseSerializer,
     PageSerializer,
+    ScheduleSerializer,
     SectionSerializer,
 )
 
@@ -40,7 +49,11 @@ logger = logging.getLogger(__name__)
 
 
 class CourseViewSet(
-    viewsets.GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin
+    viewsets.GenericViewSet,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    custom_mixins.UpdateMixin,
+    custom_mixins.DeleteMixin,
 ):
     """ViewSet for `Course`."""
 
@@ -168,32 +181,20 @@ class CourseViewSet(
             `Response` with the updated course data and status `HTTP_200_OK`.
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+            `HTTP_400_BAD_REQUEST`: Raised due to `update()` method.
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrReadOnly` permission
                 class
             `HTTP_403_FORBIDDEN`: Raised by:
                 1.  `IsInstructorOrTAOrReadOnly` permission class
-                2. `IntegrityError` of the database
+                2.   due to `update()` method
                 3. `_update_course_check()` method
-            HTTP_404_NOT_FOUND: Raise by `_update_course_check()` method
+            `HTTP_404_NOT_FOUND`: Raise by `_update_course_check()` method
         """
         check = self._update_course_check(pk, request.user)
         if check is not True:
             return check
 
-        serializer = self.get_serializer(
-            self.get_object(), data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)
 
     @action(detail=True, methods=["DELETE"], permission_classes=[IsOwner])
     def delete_course(self, request, pk):
@@ -209,10 +210,9 @@ class CourseViewSet(
         Raises:
             `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
             `HTTP_403_FORBIDDEN`: Raised by `IsOwner` permission class
+            `HTTP_404_NOT_FOUND`: due to `_delete()` method
         """
-        instance = self.get_object()
-        instance.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return self._delete(request, pk)
 
     def _store_file(self, request, course):
         """Helper function to store the attached file in the server.
@@ -449,13 +449,23 @@ class CourseViewSet(
         return self._handle_message(enrollment_stats)
 
 
-class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
+class CourseHistoryViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.RegisteredListMixin,
+    custom_mixins.CreateMixin,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.UpdateMixin,
+):
     """ViewSet for `CourseHistory`."""
 
     queryset = CourseHistory.objects.all()
     serializer_class = CourseHistorySerializer
     permission_classes = (IsInstructorOrTAOrStudent,)
     pagination_class = StandardResultsSetPagination
+
+    def get_queryset_list(self, course_id):
+        queryset = CourseHistory.objects.filter(course=course_id)
+        return queryset
 
     @action(detail=False, methods=["POST"])
     def create_course_history(self, request):
@@ -469,11 +479,11 @@ class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMi
             `HTTP_201_CREATED`.
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `IntegrityError` of the database
-            `HTTP_404_NOT_FOUND`: Raised by `Course.DoesNotExist` exception
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
+            `HTTP_403_FORBIDDEN`: Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `create()` method
         """
         course_id = request.data["course"]
         try:
@@ -481,18 +491,7 @@ class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMi
         except Course.DoesNotExist as e:
             logger.exception(e)
             return Response(str(e), status.HTTP_404_NOT_FOUND)
-
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.create(request)
 
     @action(detail=True, methods=["GET"])
     def list_course_histories(self, request, pk):
@@ -508,29 +507,10 @@ class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMi
         Raises:
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
-            `HTTP_403_FORBIDDEN`: Raised by `_is_registered()` method
-            `HTTP_404_NOT_FOUND`: Raised by `Course.DoesNotExist` exception
+            `HTTP_403_FORBIDDEN`:  Raised due to `list()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `list()` method
         """
-        try:
-            Course.objects.get(id=pk)
-        except Course.DoesNotExist as e:
-            logger.exception(e)
-            return Response(str(e), status.HTTP_404_NOT_FOUND)
-
-        # This is specifically done during list all course histories (not during
-        # retrieval of a course history) because it can't be handled by
-        # `IsInstructorOrTAOrStudent` permission class.
-        check = self._is_registered(pk, request.user)
-        if check is not True:
-            return check
-
-        course_histories = CourseHistory.objects.filter(course_id=pk)
-        page = self.paginate_queryset(course_histories)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(course_histories, many=True)
-        return Response(serializer.data)
+        return self.list(request, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_course_history(self, request, pk):
@@ -547,11 +527,9 @@ class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMi
             `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTAOrStudent` permission
                 class
             `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTAOrStudent` permission class
-            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `retrieve()` method
         """
-        course_history = self.get_object()
-        serializer = self.get_serializer(course_history)
-        return Response(serializer.data)
+        return self.retrieve(request, pk)
 
     @action(detail=True, methods=["PUT", "PATCH"], permission_classes=[IsOwner])
     def update_course_history(self, request, pk):
@@ -565,43 +543,42 @@ class CourseHistoryViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMi
             `Response` with the updated course history data and status `HTTP_200_OK`.
 
         Raises:
-            `HTTP_400_BAD_REQUEST`: Raised due to serialization errors
+            `HTTP_400_BAD_REQUEST`: Raised due to `update()` method
             `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
             `HTTP_403_FORBIDDEN`: Raised by:
                 1. `IsOwner` permission class
-                2. `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised by `get_object()` method
+                2. Raised due to `update()` method
+            `HTTP_404_NOT_FOUND`: Raised by `update()` method
         """
-        course_history = self.get_object()
-        serializer = self.get_serializer(
-            course_history, data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)
 
 
-class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
+class ChapterViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.InsOrTACreateMixin,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.RegisteredListMixin,
+    custom_mixins.DeleteMixin,
+    custom_mixins.UpdateMixin,
+):
     """Viewset for `Chapter`."""
 
     queryset = Chapter.objects.all()
     serializer_class = ChapterSerializer
     permission_classes = (IsInstructorOrTA,)
 
+    def get_queryset_list(self, course_id):
+        queryset = Chapter.objects.filter(course=course_id)
+        return queryset
+
     @action(detail=False, methods=["POST"])
     def create_chapter(self, request):
-        return self.create(request)
+        course_id = request.data["course"]
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_chapters(self, request, pk):
-        return self.list(request, pk, Chapter)
+        return self.list(request, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_chapter(self, request, pk):
@@ -616,12 +593,23 @@ class ChapterViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
         return self._delete(request, pk)
 
 
-class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
+class SectionViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.InsOrTACreateMixin,
+    custom_mixins.RegisteredListMixin,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.UpdateMixin,
+    custom_mixins.DeleteMixin,
+):
     """Viewset for `Section`."""
 
     queryset = Section.objects.all()
     serializer_class = SectionSerializer
     permission_classes = (IsInstructorOrTA,)
+
+    def get_queryset_list(self, chapter_id):
+        queryset = Section.objects.filter(chapter_id=chapter_id)
+        return queryset
 
     @action(detail=False, methods=["POST"])
     def create_section(self, request):
@@ -634,12 +622,14 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
             `Response` with the created section data and status HTTP_201_CREATED.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by:
-                1. `_is_instructor_or_ta()` permission class
-                2. `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised if the chapter does not exist
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised:
+                1. Raised by `IsInstructorOrTA` permission class
+                2. Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised:
+                1. If the chapter does not exist
+                2. Raised due to `create()` method
         """
         chapter_id = request.data["chapter"]
 
@@ -652,21 +642,7 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
 
         # This is specifically done during section creation (not during updation or
         # deletion) because it can't be handled by `IsInstructorOrTA` permission class
-        check = self._is_instructor_or_ta(course_id, request.user)
-        if check is not True:
-            return check
-
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_sections(self, request, pk):
@@ -680,9 +656,11 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
             `Response` with all the sections data and status HTTP_200_OK.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `_is_registered()` method
-            HTTP_404_NOT_FOUND: Raised if the chapter does not exist
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`:  Raised due to `list()` method
+            `HTTP_404_NOT_FOUND`: Raised:
+                1. If the chapter does not exist
+                1. due to `list()` method
         """
         try:
             chapter = Chapter.objects.get(id=pk)
@@ -693,13 +671,7 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
 
         # This is specifically done during list all sections (not during retrieval of
         # a section) because it can't be handled by `IsInstructorOrTA` permission class.
-        check = self._is_registered(course_id, request.user)
-        if check is not True:
-            return check
-
-        sections = Section.objects.filter(chapter_id=pk)
-        serializer = self.get_serializer(sections, many=True)
-        return Response(serializer.data)
+        return self.list(request, course_id, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_section(self, request, pk):
@@ -713,13 +685,11 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
             `Response` with the section data and status HTTP_200_OK.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `get_object()` method
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_404_NOT_FOUND`: Raised due to `retrieve()` method
         """
-        section = self.get_object()
-        serializer = self.get_serializer(section)
-        return Response(serializer.data)
+        return self.retrieve(request, pk)
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_section(self, request, pk):
@@ -733,25 +703,14 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
             `Response` with the updated section data and status HTTP_200_OK.
 
         Raises:
-            HTTP_400_BAD_REQUEST: Raised due to serialization errors
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by
-                1. `IsInstructorOrTA` permission class
-                2. `IntegrityError` of the database
-            HTTP_404_NOT_FOUND: Raised by `_is_registered()` method
+            `HTTP_400_BAD_REQUEST`: Raised due to `update()` method
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised
+                1. by `IsInstructorOrTA` permission class
+                2. Raised due to `update()` method
+            `HTTP_404_NOT_FOUND`: Raised by `update()` method
         """
-        section = self.get_object()
-        serializer = self.get_serializer(section, data=request.data, partial=True)
-        if serializer.is_valid():
-            try:
-                serializer.save()
-            except IntegrityError as e:
-                logger.exception(e)
-                return Response(str(e), status=status.HTTP_403_FORBIDDEN)
-            return Response(serializer.data)
-        errors = serializer.errors
-        logger.error(errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        return self.update(request, pk)
 
     @action(detail=True, methods=["DELETE"])
     def delete_section(self, request, pk):
@@ -765,29 +724,39 @@ class SectionViewSet(viewsets.GenericViewSet, custom_mixins.IsRegisteredMixin):
             `Response` with no data and status HTTP_204_NO_CONTENT.
 
         Raises:
-            HTTP_401_UNAUTHORIZED: Raised by `IsInstructorOrTA` permission class
-            HTTP_403_FORBIDDEN: Raised by `IsInstructorOrTA` permission class
-            HTTP_404_NOT_FOUND: Raised by `get_object()` method
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_404_NOT_FOUND`: due to `_delete()` method
         """
-        section = self.get_object()
-        section.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return self._delete(request, pk)
 
 
-class PageViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
+class PageViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.InsOrTACreateMixin,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.RegisteredListMixin,
+    custom_mixins.DeleteMixin,
+    custom_mixins.UpdateMixin,
+):
     """Viewset for `Page`."""
 
     queryset = Page.objects.all()
     serializer_class = PageSerializer
     permission_classes = (IsInstructorOrTA,)
 
+    def get_queryset_list(self, course_id):
+        queryset = Page.objects.filter(course=course_id)
+        return queryset
+
     @action(detail=False, methods=["POST"])
     def create_page(self, request):
-        return self.create(request)
+        course_id = request.data["course"]
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_pages(self, request, pk):
-        return self.list(request, pk, Page)
+        return self.list(request, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_page(self, request, pk):
@@ -802,20 +771,32 @@ class PageViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
         return self._delete(request, pk)
 
 
-class AnnouncementViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMixin):
+class AnnouncementViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.InsOrTACreateMixin,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.RegisteredListMixin,
+    custom_mixins.DeleteMixin,
+    custom_mixins.UpdateMixin,
+):
     """Viewset for `Announcement`."""
 
     queryset = Announcement.objects.all()
     serializer_class = AnnouncementSerializer
     permission_classes = (IsInstructorOrTA,)
 
+    def get_queryset_list(self, course_id):
+        queryset = Announcement.objects.filter(course=course_id)
+        return queryset
+
     @action(detail=False, methods=["POST"])
     def create_announcement(self, request):
-        return self.create(request)
+        course_id = request.data["course"]
+        return self.create(request, course_id)
 
     @action(detail=True, methods=["GET"])
     def list_announcements(self, request, pk):
-        return self.list(request, pk, Announcement)
+        return self.list(request, pk)
 
     @action(detail=True, methods=["GET"])
     def retrieve_announcement(self, request, pk):
@@ -827,4 +808,61 @@ class AnnouncementViewSet(viewsets.GenericViewSet, custom_mixins.ChapterorPageMi
 
     @action(detail=True, methods=["DELETE"])
     def delete_announcement(self, request, pk):
+        return self._delete(request, pk)
+
+
+class ScheduleViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.InsOrTACreateMixin,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.RegisteredListMixin,
+    custom_mixins.DeleteMixin,
+    custom_mixins.UpdateMixin,
+):
+    """Viewset for `Schedule`."""
+
+    queryset = Schedule.objects.all()
+    serializer_class = ScheduleSerializer
+    permission_classes = (IsInstructorOrTA,)
+
+    def get_queryset_list(self, course_id):
+        queryset = Schedule.objects.filter(course=course_id).order_by(
+            "-end_date", "-start_date"
+        )
+        return queryset
+
+    def schedule_date_check(self, start_date, end_date):
+        if start_date > end_date:
+            error = "Schedule end date has to be greater than start date"
+            logger.error(error)
+            return Response(error, status.HTTP_400_BAD_REQUEST)
+        return True
+
+    @action(detail=False, methods=["POST"])
+    def create_schedule(self, request):
+        start_date = request.data["start_date"]
+        end_date = request.data["end_date"]
+
+        if self.schedule_date_check(start_date, end_date):
+            course_id = request.data["course"]
+            return self.create(request, course_id)
+
+    @action(detail=True, methods=["GET"])
+    def list_schedules(self, request, pk):
+        return self.list(request, pk)
+
+    @action(detail=True, methods=["GET"])
+    def retrieve_schedule(self, request, pk):
+        return self.retrieve(request, pk)
+
+    @action(detail=True, methods=["PUT", "PATCH"])
+    def update_schedule(self, request, pk):
+        start_date = request.data["start_date"]
+        end_date = request.data["end_date"]
+
+        if self.schedule_date_check(start_date, end_date):
+            return self.update(request, pk)
+
+    @action(detail=True, methods=["DELETE"])
+    def delete_schedule(self, request, pk):
         return self._delete(request, pk)

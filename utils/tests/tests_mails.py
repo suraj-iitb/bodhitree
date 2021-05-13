@@ -8,6 +8,7 @@ class EmailTest(TestCase):
     """Email Test"""
 
     def test_send_email(self):
+        """Test `send_email()`"""
         send_mail(
             "Subject here",
             "Here is the message.",

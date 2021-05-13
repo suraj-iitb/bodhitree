@@ -13,7 +13,7 @@ class Email(models.Model):
     from_email = models.EmailField()
     to_email_list = ArrayField(models.EmailField())
     reply_to = models.EmailField(blank=True)
-    cc_list = ArrayField(models.EmailField(), blank=True)
+    cc_list = ArrayField(models.EmailField(), blank=True, null=True)
     subject = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     body = models.TextField(blank=True)
     sent_on = models.DateTimeField(auto_now_add=True)

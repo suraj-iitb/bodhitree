@@ -1,7 +1,7 @@
 - model: email_notices.email
   pk: 1
   fields:
-    course: 2
+    course: 1
     sender: 1
     from_email: abc@gmail.com
     to_email_list: '["pqr@gmail.com"]'
@@ -13,10 +13,10 @@
 - model: email_notices.email
   pk: 2
   fields:
-    course: 2
+    course: 1
     sender: 1
     from_email: mno@gmail.com
-    to_email_list: '["pqr@gmail.com"]'
+    to_email_list: '["student@bodhitree.com"]'
     reply_to: ''
     cc_list: '[]'
     subject: Subject of email-ii

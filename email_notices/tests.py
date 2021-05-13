@@ -1,3 +1,4 @@
+from django.core import mail
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
@@ -31,15 +32,13 @@ class EmailViewSetTest(APITestCase):
     def logout(self):
         self.client.logout()
 
-    def _create_email_helper(
-        self, sender, from_email, to_email_list, subject, status_code
-    ):
+    def _create_email_helper(self, sender, from_email, to, subject, status_code):
         """Helper function `test_create_email()`.
 
         Args:
             sender (int): sender id
             from_email (email): Section id
-            to_email_list (array): array of reciever emails
+            to (array): array of reciever emails
             subject (str): Title of the document
             status_code (int): Expected status code of the API call
         """
@@ -49,9 +48,10 @@ class EmailViewSetTest(APITestCase):
             "course": course_id,
             "sender": sender,
             "from_email": from_email,
-            "to_email_list": to_email_list,
+            "to": to,
             "subject": subject,
         }
+        mail.outbox = []
         url = reverse("email_notices:email-create-email")
 
         response = self.client.post(url, data)
@@ -61,8 +61,9 @@ class EmailViewSetTest(APITestCase):
             self.assertEqual(response_data["course"], data["course"])
             self.assertEqual(response_data["sender"], data["sender"])
             self.assertEqual(response_data["from_email"], data["from_email"])
-            self.assertEqual(response_data["to_email_list"], data["to_email_list"])
+            self.assertEqual(response_data["to"], data["to"])
             self.assertEqual(response_data["subject"], data["subject"])
+            self.assertEqual(len(mail.outbox), 1)
 
     def test_create_email(self):
         """Test: create an email."""
@@ -140,7 +141,7 @@ class EmailViewSetTest(APITestCase):
             self.assertEqual(
                 len(response.data),
                 Email.objects.filter(
-                    course_id=course_id, to_email_list__contains=[user.email]
+                    course_id=course_id, to__contains=[user.email]
                 ).count(),
             )
         elif status_code == status.HTTP_200_OK:

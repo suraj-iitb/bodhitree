@@ -1,10 +1,11 @@
 import logging
 
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from utils import mixins as custom_mixins
+from utils.mails import send_mail
 from utils.permissions import IsInstructorOrTA
 
 from .models import Email
@@ -43,7 +44,23 @@ class EmailViewSet(
             `HTTP_404_NOT_FOUND`: Raised due to `create()` method
         """
         course_id = request.data["course"]
-        return self.create(request, course_id)
+        check = self._is_instructor_or_ta(course_id, request.user)
+        if check is not True:
+            return check
+
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            send_mail(
+                serializer.data["subject"],
+                serializer.data["body"],
+                serializer.data["from_email"],
+                serializer.data["to"],
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        errors = serializer.errors
+        logger.error(errors)
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=["GET"])
     def list_emails_instructor(self, request, pk):
@@ -94,7 +111,7 @@ class EmailViewSet(
         check = self._is_registered(pk, user)
         if check is not True:
             return check
-        emails = Email.objects.filter(course=pk, to_email_list__contains=[user.email])
+        emails = Email.objects.filter(course=pk, to__contains=[user.email])
 
         page = self.paginate_queryset(emails)
         if page is not None:

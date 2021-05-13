@@ -3,7 +3,15 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
-from course.models import Announcement, Chapter, Course, CourseHistory, Page, Section
+from course.models import (
+    Announcement,
+    Chapter,
+    Course,
+    CourseHistory,
+    Page,
+    Schedule,
+    Section,
+)
 from discussion_forum.models import DiscussionForum
 from registration.models import SubscriptionHistory
 from utils import credentials
@@ -1789,4 +1797,411 @@ class AnnouncementViewSetTest(APITestCase):
         # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permission class
         self.login(**stu_cred)
         self._delete_announcement_helper("Body 4", status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+
+class ScheduleViewSetTest(APITestCase):
+    """Test for `ScheduleViewSet`."""
+
+    fixtures = [
+        "users.test.yaml",
+        "departments.test.yaml",
+        "colleges.test.yaml",
+        "courses.test.yaml",
+        "coursehistories.test.yaml",
+        "schedule.test.yaml",
+    ]
+
+    def login(self, email, password):
+        self.client.login(email=email, password=password)
+
+    def logout(self):
+        self.client.logout()
+
+    def _create_schedule_helper(
+        self, course_id, start_date, end_date, content_list, status_code
+    ):
+        """Helper function for `test_create_schedule()`.
+
+        Args:
+            course_id (int): Course id
+            start_date (date): Start date of the schedule
+            end_date (date): End date of the schedule
+            content_list (array): Array of contents
+            status_code (int): Expected status code of the API call
+        """
+        data = {
+            "course": course_id,
+            "start_date": start_date,
+            "end_date": end_date,
+            "content_list": content_list,
+        }
+        url = reverse("course:schedule-create-schedule")
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            response_data = response.data
+            self.assertEqual(response_data["course"], data["course"])
+            self.assertEqual(response_data["start_date"], data["start_date"])
+            self.assertEqual(response_data["end_date"], data["end_date"])
+            self.assertEqual(response_data["content_list"], data["content_list"])
+
+    def test_create_schedule(self):
+        """Test: create a schedule."""
+        course_id = 1  # course with id 1 is created by django fixture
+
+        # Created by instructor
+        self.login(**ins_cred)
+        self._create_schedule_helper(
+            course_id,
+            "2021-05-12",
+            "2021-05-20",
+            [[0, 1], [1, 2], [2, 3]],
+            status.HTTP_201_CREATED,
+        )
+        self.logout()
+
+        # Created by ta
+        self.login(**ta_cred)
+        self._create_schedule_helper(
+            course_id,
+            "2021-05-13",
+            "2021-05-20",
+            [[0, 5], [1, 2], [2, 3]],
+            status.HTTP_201_CREATED,
+        )
+        self.logout()
+
+        # `HTTP_400_BAD_REQUEST` due to serialization errors
+        self.login(**ins_cred)
+        self._create_schedule_helper(
+            course_id,
+            "",
+            "2021-05-20",
+            [[0, 5], [1, 2], [2, 3]],
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._create_schedule_helper(
+            course_id,
+            "",
+            "2021-05-20",
+            [[0, 5], [1, 2], [2, 3]],
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+        # `HTTP_403_FORBIDDEN` due to `_is_instructor_or_ta()` method
+        self.login(**stu_cred)
+        self._create_schedule_helper(
+            course_id,
+            "",
+            "2021-05-20",
+            [[0, 5], [1, 2], [2, 3]],
+            status.HTTP_403_FORBIDDEN,
+        )
+        self.logout()
+
+        # `HTTP_403_FORBIDDEN` due to `IntegrityError` of the database
+        self.login(**ins_cred)
+        with transaction.atomic():
+            self._create_schedule_helper(
+                course_id,
+                "2021-05-12",
+                "2021-05-20",
+                [[0, 1], [1, 2], [2, 3]],
+                status.HTTP_403_FORBIDDEN,
+            )
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to the course does not exist
+        course_id = 100
+        self.login(**ins_cred)
+        self._create_schedule_helper(
+            course_id,
+            "2021-05-12",
+            "2021-05-20",
+            [[0, 1], [1, 2], [2, 4]],
+            status.HTTP_404_NOT_FOUND,
+        )
+        self.logout()
+
+    def _list_schedules_helper(self, course_id, status_code):
+        """Helper function for `test_list_schedules()`.
+
+        Args:
+            course_id (int): Course id
+            status_code (int): Expected status code of the API call
+        """
+        url = reverse("course:schedule-list-schedules", args=[course_id])
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            self.assertEqual(
+                len(response.data), Schedule.objects.filter(course_id=course_id).count()
+            )
+
+    def test_list_schedules(self):
+        """Test: list all schedules."""
+        course_id = 1  # course with id 1 is created by django fixture
+
+        # Listed by instructor
+        self.login(**ins_cred)
+        self._list_schedules_helper(course_id, status.HTTP_200_OK)
+        self.logout()
+
+        # Listed by ta
+        self.login(**ta_cred)
+        self._list_schedules_helper(course_id, status.HTTP_200_OK)
+        self.logout()
+
+        # Listed by student
+        self.login(**stu_cred)
+        self._list_schedules_helper(course_id, status.HTTP_200_OK)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._list_schedules_helper(course_id, status.HTTP_401_UNAUTHORIZED)
+
+        # `HTTP_403_FORBIDDEN` due to `_is_registered()` method
+        course_id = 3  # course with id 3 is created by django fixture
+        self.login(**ins_cred)
+        self._list_schedules_helper(course_id, status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to the course does not exist
+        course_id = 100
+        self.login(**ins_cred)
+        self._list_schedules_helper(course_id, status.HTTP_404_NOT_FOUND)
+        self.logout()
+
+    def _retrieve_schedule_helper(self, schedule_id, status_code):
+        """Helper function for `test_retrieve_schedule()`.
+
+        Args:
+            schedule_id (int): Schedule id
+            status_code (int): Expected status code of the API call
+        """
+        url = reverse("course:schedule-retrieve-schedule", args=[schedule_id])
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            self.assertEqual(response.data["id"], schedule_id)
+
+    def test_retrieve_schedule(self):
+        """Test: retrieve the schedule."""
+        schedule_id = 1  # schedule with id 1 is created by django fixture
+
+        # Retrieved by instructor
+        self.login(**ins_cred)
+        self._retrieve_schedule_helper(schedule_id, status.HTTP_200_OK)
+        self.logout()
+
+        # Retrieved by ta
+        self.login(**ta_cred)
+        self._retrieve_schedule_helper(schedule_id, status.HTTP_200_OK)
+        self.logout()
+
+        # Retrieved by student
+        self.login(**stu_cred)
+        self._retrieve_schedule_helper(schedule_id, status.HTTP_200_OK)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._retrieve_schedule_helper(schedule_id, status.HTTP_401_UNAUTHORIZED)
+
+        # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permission class
+        schedule_id = 3  # schedule with id 3 is created by django fixture
+        self.login(**ins_cred)
+        self._retrieve_schedule_helper(schedule_id, status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to `get_object()` method
+        schedule_id = 100
+        self.login(**ins_cred)
+        self._retrieve_schedule_helper(schedule_id, status.HTTP_404_NOT_FOUND)
+        self.logout()
+
+    def _update_schedule_helper(
+        self, schedule_id, start_date, end_date, content_list, status_code, method
+    ):
+        """Helper function for `test_update_chapter()` & `test_partial_update_chapter()`.
+
+        Args:
+            schedule_id (int): schedule id
+            start_date (date): Start date of the schedule
+            end_date (date): End date of the schedule
+            content_list (array): Array of contents
+            status_code (int): Expected status code of the API call
+            method (str): HTTP method ("PUT" or "PATCH")
+        """
+        course_id = 1  # course with id 1 is created by django fixture
+        data = {
+            "course": course_id,
+            "start_date": start_date,
+            "end_date": end_date,
+            "content_list": content_list,
+        }
+        url = reverse(("course:schedule-update-schedule"), args=[schedule_id])
+
+        if method == "PUT":
+            response = self.client.put(url, data)
+        else:
+            response = self.client.patch(url, data)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            response_data = response.data
+            self.assertEqual(response_data["course"], data["course"])
+            self.assertEqual(response_data["start_date"], data["start_date"])
+            self.assertEqual(response_data["end_date"], data["end_date"])
+            self.assertEqual(response_data["content_list"], data["content_list"])
+
+    def _put_or_patch(self, method):
+        """Helper function to decide full(PUT) or partial(PATCH) update.
+
+        Args:
+            method (str): HTTP method ("PUT" or "PATCH")
+        """
+        schedule_id = 1
+
+        # Updated by instructor
+        self.login(**ins_cred)
+        self._update_schedule_helper(
+            schedule_id,
+            "2021-05-12",
+            "2021-05-20",
+            [[0, 1], [1, 2], [2, 3]],
+            status.HTTP_200_OK,
+            method,
+        )
+        self.logout()
+
+        # Updated by ta
+        self.login(**ta_cred)
+        self._update_schedule_helper(
+            schedule_id,
+            "2021-05-12",
+            "2021-05-20",
+            [[0, 1], [1, 2], [2, 9]],
+            status.HTTP_200_OK,
+            method,
+        )
+        self.logout()
+
+        # `HTTP_400_BAD_REQUEST` due to serialization errors
+        self.login(**ins_cred)
+        self._update_schedule_helper(
+            schedule_id,
+            "",
+            "2021-05-20",
+            [[0, 1], [1, 2], [2, 3]],
+            status.HTTP_400_BAD_REQUEST,
+            method,
+        )
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._update_schedule_helper(
+            schedule_id,
+            "2021-05-12",
+            "2021-05-20",
+            [[0, 1], [1, 2], [2, 3]],
+            status.HTTP_401_UNAUTHORIZED,
+            method,
+        )
+
+        # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permission class
+        self.login(**stu_cred)
+        self._update_schedule_helper(
+            schedule_id,
+            "2021-05-12",
+            "2021-05-20",
+            [[0, 1], [1, 2], [2, 3]],
+            status.HTTP_403_FORBIDDEN,
+            method,
+        )
+        self.logout()
+
+        # HTTP_403_FORBIDDEN due to IntegrityError
+        self.login(**ins_cred)
+        with transaction.atomic():
+            self._update_schedule_helper(
+                schedule_id,
+                "2021-05-04",
+                "2021-05-11",
+                [],
+                status.HTTP_403_FORBIDDEN,
+                method,
+            )
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to `get_object()` method
+        schedule_id = 100
+        self.login(**ins_cred)
+        self._update_schedule_helper(
+            schedule_id,
+            "2021-05-12",
+            "2021-05-20",
+            [[0, 1], [1, 2], [2, 3]],
+            status.HTTP_404_NOT_FOUND,
+            method,
+        )
+        self.logout()
+
+    def test_update_schedule(self):
+        """Test: update the schedule."""
+        self._put_or_patch("PUT")
+
+    def test_partial_update_schedule(self):
+        """Test: partial update the schedule."""
+        self._put_or_patch("PATCH")
+
+    def _delete_schedule_helper(self, start_date, end_date, status_code):
+        """Helper function for `test_delete_schedule()`.
+
+        Args:
+            start_date (date): Start date of the schedule
+            end_date (date): End date of the schedule
+            status_code (int): Expected status code of the API call
+        """
+        schedule_id = Schedule.objects.create(
+            course_id=1, start_date=start_date, end_date=end_date
+        ).id
+        url = reverse(("course:schedule-delete-schedule"), args=[schedule_id])
+
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_204_NO_CONTENT:
+            self.assertEqual(Schedule.objects.filter(id=schedule_id).count(), 0)
+
+    def test_delete_schedule(self):
+        """Test: delete the schedule."""
+        # Deleted by instructor
+        self.login(**ins_cred)
+        self._delete_schedule_helper(
+            "2021-05-12", "2021-05-20", status.HTTP_204_NO_CONTENT
+        )
+        self.logout()
+
+        # Deleted by ta
+        self.login(**ta_cred)
+        self._delete_schedule_helper(
+            "2021-05-12", "2021-05-20", status.HTTP_204_NO_CONTENT
+        )
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._delete_schedule_helper(
+            "2021-05-12", "2021-05-20", status.HTTP_401_UNAUTHORIZED
+        )
+
+        # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permission class
+        self.login(**stu_cred)
+        self._delete_schedule_helper(
+            "2021-05-12", "2021-05-21", status.HTTP_403_FORBIDDEN
+        )
         self.logout()

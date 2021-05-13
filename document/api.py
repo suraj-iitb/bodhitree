@@ -13,7 +13,14 @@ from .serializers import DocumentSerializer
 logger = logging.getLogger(__name__)
 
 
-class DocumentViewSet(viewsets.GenericViewSet, custom_mixins.ContentMixin):
+class DocumentViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.ContentMixin_Create,
+    custom_mixins.ContentMixin_List,
+    custom_mixins.RetrieveMixin,
+    custom_mixins.DeleteMixin,
+    custom_mixins.UpdateMixin,
+):
     """Viewset for `Document`."""
 
     queryset = Document.objects.all()
@@ -34,12 +41,12 @@ class DocumentViewSet(viewsets.GenericViewSet, custom_mixins.ContentMixin):
 
     @action(detail=True, methods=["GET"])
     def retrieve_document(self, request, pk):
-        return self.retrieve_content(request, pk)
+        return self.retrieve(request, pk)
 
     @action(detail=True, methods=["PUT", "PATCH"])
     def update_document(self, request, pk):
-        return self.update_content(request, pk)
+        return self.update(request, pk)
 
     @action(detail=True, methods=["DELETE"])
     def delete_document(self, request, pk):
-        return self.delete_content(request, pk)
+        return self._delete(request, pk)

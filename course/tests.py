@@ -1,3 +1,8 @@
+import os
+import shutil
+
+from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -291,6 +296,25 @@ class CourseViewSetTest(APITestCase):
         self.login(**stu_cred)
         self._delete_course_helper(status.HTTP_403_FORBIDDEN, "Course 19", 3, "S")
         self.logout()
+
+    def test_bulk_register_into_course(self):
+
+        file = os.path.join(settings.BASE_DIR, "main/test_data", "test.csv")
+
+        file_utf8 = SimpleUploadedFile(
+            file, open(file, "rb").read(), content_type="application/vnd.ms-excel"
+        )
+        self.login(**ins_cred)
+        data = {"enrollment_file": file_utf8}
+        url = reverse("course:course-bulk-register-into-course", args=[1])
+
+        response = self.client.post(url, data, format="multipart")
+        print(response.data)
+        self.logout()
+        try:
+            shutil.rmtree(settings.MEDIA_ROOT)
+        except OSError:
+            pass
 
 
 class CourseHistoryViewSetTest(APITestCase):

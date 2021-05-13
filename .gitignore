@@ -3,6 +3,7 @@
 
 # User data
 main/data/
+main/test/
 
 # Log files
 **/*.log

@@ -543,7 +543,9 @@ class AnnouncementViewSet(
     permission_classes = (IsInstructorOrTA,)
 
     def get_queryset_list(self, course_id):
-        queryset = Announcement.objects.filter(course=course_id)
+        queryset = Announcement.objects.filter(course=course_id).order_by(
+            "-is_pinned", "-id"
+        )
         return queryset
 
     @action(detail=False, methods=["POST"])
@@ -554,6 +556,36 @@ class AnnouncementViewSet(
     @action(detail=True, methods=["GET"])
     def list_announcements(self, request, pk):
         return self.list(request, pk)
+
+    @action(detail=True, methods=["GET"])
+    def list_latest_announcements(self, request, pk):
+        """Gets all the latest announcements in the course with primary key as pk.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): Course id
+
+        Returns:
+            `Response` with all the announcement data and status HTTP_200_OK.
+
+        Raises:
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`:  Raised due to `_is_registered()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `_is_registered()` method
+        """
+        check = self._is_registered(pk, request.user)
+        if check is not True:
+            return check
+
+        queryset = Announcement.objects.filter(course=pk).order_by("-is_pinned", "-id")[
+            :2
+        ]
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=["GET"])
     def retrieve_announcement(self, request, pk):

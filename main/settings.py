@@ -258,7 +258,10 @@ USE_TZ = True
 STATIC_URL = "/static/"
 
 # User uploaded files locations
-MEDIA_ROOT = os.path.join(BASE_DIR, "main/data/")
+if TEST:
+    MEDIA_ROOT = os.path.join(BASE_DIR, "main/test/")
+else:
+    MEDIA_ROOT = os.path.join(BASE_DIR, "main/data/")
 
 # User model
 AUTH_USER_MODEL = "registration.User"

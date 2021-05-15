@@ -182,16 +182,18 @@ GENDER_CATEGORY = (
 
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    gender = models.CharField(max_length=1, choices=GENDER_CATEGORY)
-    college = models.ForeignKey(College, on_delete=models.CASCADE)
+    gender = models.CharField(max_length=1, choices=GENDER_CATEGORY, blank=True)
+    college = models.ForeignKey(
+        College, on_delete=models.CASCADE, null=True, blank=True
+    )
     city = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
     state = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
-    dept = models.ForeignKey(Department, on_delete=models.CASCADE)
-    roll_no = models.CharField(
-        max_length=settings.MAX_CHARFIELD_LENGTH, blank=True, null=True
+    dept = models.ForeignKey(
+        Department, on_delete=models.CASCADE, null=True, blank=True
     )
+    roll_no = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH, blank=True)
     degree = models.ForeignKey(Degree, on_delete=models.CASCADE, blank=True, null=True)
 
     def __str__(self):

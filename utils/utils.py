@@ -1,5 +1,6 @@
 import logging
 import os
+from csv import DictReader
 
 from django.db.models import Q
 
@@ -101,3 +102,20 @@ def check_is_instructor_or_ta(course_id, user):
     if course_history:
         return True
     return False
+
+
+class CaseInsensitiveHeaderDictReader(DictReader):
+    @property
+    def fieldnames(self):
+        return [
+            field.strip().lower()
+            for field in super(CaseInsensitiveHeaderDictReader, self).fieldnames
+        ]
+
+    def next(self):
+        return CaseInsensitiveDict(super(CaseInsensitiveHeaderDictReader, self).next())
+
+
+class CaseInsensitiveDict(dict):
+    def __getitem__(self, key):
+        return super(CaseInsensitiveDict, self).__getitem__(key.lower())

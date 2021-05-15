@@ -1,3 +1,8 @@
+import os
+import shutil
+
+from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -447,6 +452,25 @@ class CourseViewSetTest(APITestCase):
         self.login(**stu_cred)
         self._ta_permission_helper(status.HTTP_403_FORBIDDEN, "true")
         self.logout()
+
+    def test_bulk_register_into_course(self):
+
+        file = os.path.join(settings.BASE_DIR, "main/test_data", "test.csv")
+
+        file_utf8 = SimpleUploadedFile(
+            file, open(file, "rb").read(), content_type="application/vnd.ms-excel"
+        )
+        self.login(**ins_cred)
+        data = {"enrollment_file": file_utf8}
+        url = reverse("course:course-bulk-register-into-course", args=[1])
+
+        response = self.client.post(url, data, format="multipart")
+        print(response.data)
+        self.logout()
+        try:
+            shutil.rmtree(settings.MEDIA_ROOT)
+        except OSError:
+            pass
 
 
 class CourseHistoryViewSetTest(APITestCase):
@@ -1723,22 +1747,34 @@ class AnnouncementViewSetTest(APITestCase):
         self._create_announcement_helper(course_id, "body 5", status.HTTP_404_NOT_FOUND)
         self.logout()
 
-    def _list_announcements_helper(self, course_id, status_code):
+    def _list_announcements_helper(self, course_id, status_code, latest=False):
         """Helper function for `test_list_announcements()`.
 
         Args:
             course_id (int): Course id
             status_code (int): Expected status code of the API call
         """
-        url = reverse("course:announcement-list-announcements", args=[course_id])
+        if latest:
+            url = reverse(
+                "course:announcement-list-latest-announcements", args=[course_id]
+            )
+        else:
+            url = reverse("course:announcement-list-announcements", args=[course_id])
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, status_code)
         if status_code == status.HTTP_200_OK:
-            self.assertEqual(
-                len(response.data),
-                Announcement.objects.filter(course_id=course_id).count(),
-            )
+            if latest:
+                announcement_count = (
+                    Announcement.objects.filter(course=course_id)
+                    .order_by("-is_pinned", "-id")[:2]
+                    .count()
+                )
+            else:
+                announcement_count = Announcement.objects.filter(
+                    course_id=course_id
+                ).count()
+            self.assertEqual(len(response.data), announcement_count)
 
     def test_list_announcements(self):
         """Test: list all announcements."""
@@ -1772,6 +1808,40 @@ class AnnouncementViewSetTest(APITestCase):
         course_id = 100
         self.login(**ins_cred)
         self._list_announcements_helper(course_id, status.HTTP_404_NOT_FOUND)
+        self.logout()
+
+    def test_list_latest_announcements(self):
+        """Test: list latest announcements."""
+        course_id = 1  # course with id 1 is created by django fixture
+
+        # Listed by instructor
+        self.login(**ins_cred)
+        self._list_announcements_helper(course_id, status.HTTP_200_OK, True)
+        self.logout()
+
+        # Listed by ta
+        self.login(**ta_cred)
+        self._list_announcements_helper(course_id, status.HTTP_200_OK, True)
+        self.logout()
+
+        # Listed by student
+        self.login(**stu_cred)
+        self._list_announcements_helper(course_id, status.HTTP_200_OK, True)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._list_announcements_helper(course_id, status.HTTP_401_UNAUTHORIZED, True)
+
+        # `HTTP_403_FORBIDDEN` due to `_is_registered()` method
+        course_id = 3  # course with id 3 is created by django fixture
+        self.login(**ins_cred)
+        self._list_announcements_helper(course_id, status.HTTP_403_FORBIDDEN, True)
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to the course does not exist
+        course_id = 100
+        self.login(**ins_cred)
+        self._list_announcements_helper(course_id, status.HTTP_404_NOT_FOUND, True)
         self.logout()
 
     def _retrieve_announcement_helper(self, announcement_id, status_code):

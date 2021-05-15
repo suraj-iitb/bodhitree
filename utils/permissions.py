@@ -222,6 +222,8 @@ class StrictIsInstructorOrTA(permissions.BasePermission):
             course_id = obj.course_id
         elif type(obj) == CribReply:
             course_id = obj.crib.course_id
+        else:
+            course_id = obj.id
         if request.user.is_authenticated:
             instructor_or_ta = check_is_instructor_or_ta(course_id, request.user)
             if instructor_or_ta:

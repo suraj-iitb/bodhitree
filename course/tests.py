@@ -305,6 +305,154 @@ class CourseViewSetTest(APITestCase):
         self._delete_course_helper(status.HTTP_403_FORBIDDEN, "Course 19", 3, "S")
         self.logout()
 
+    def _list_tas_non_tas_helper(self, status_code, course_id, tas=False):
+        """Helper function for `test_list_non_tas()` and `test_list_tas()`.
+
+        Args:
+            status_code (int): Expected status code of the API call
+            course_id (int): Course id
+        """
+        if tas:
+            url = reverse(
+                "course:course-list-tas",
+                args=[course_id],
+            )
+        else:
+            url = reverse(
+                "course:course-list-non-tas",
+                args=[course_id],
+            )
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            if tas:
+                count = CourseHistory.objects.filter(
+                    course=course_id, role="T", status="E"
+                ).count()
+            else:
+                count = CourseHistory.objects.filter(
+                    course=course_id, role="S", status="E"
+                ).count()
+            self.assertEqual(len(response.data), count)
+
+    def test_list_non_tas(self):
+        """Test: list non tas in the course."""
+        # List by owner
+        self.login(**ins_cred)
+        self._list_tas_non_tas_helper(status.HTTP_200_OK, 1)
+        self.logout()
+
+        # List by ta
+        self.login(**ta_cred)
+        self._list_tas_non_tas_helper(status.HTTP_200_OK, 1)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `StrictIsInstructorOrTA` permissioon class
+        self._list_tas_non_tas_helper(status.HTTP_401_UNAUTHORIZED, 1)
+
+        # `HTTP_403_FORBIDDEN` due to `StrictIsInstructorOrTA` permission class
+        # (delete by student)
+        self.login(**stu_cred)
+        self._list_tas_non_tas_helper(status.HTTP_403_FORBIDDEN, 1)
+        self.logout()
+
+    def test_list_tas(self):
+        """Test: list non tas in the course."""
+        # List by owner
+        self.login(**ins_cred)
+        self._list_tas_non_tas_helper(status.HTTP_200_OK, 1, True)
+        self.logout()
+
+        # List by ta
+        self.login(**ta_cred)
+        self._list_tas_non_tas_helper(status.HTTP_200_OK, 1, True)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `StrictIsInstructorOrTA` permissioon class
+        self._list_tas_non_tas_helper(status.HTTP_401_UNAUTHORIZED, 1, True)
+
+        # `HTTP_403_FORBIDDEN` due to `StrictIsInstructorOrTA` permission class
+        # (delete by student)
+        self.login(**stu_cred)
+        self._list_tas_non_tas_helper(status.HTTP_403_FORBIDDEN, 1, True)
+        self.logout()
+
+    def _ta_permission_helper(self, status_code, remove_ta="false"):
+        """Helper function for `test_grant_ta_permission()` and `test_remove_ta_permission()`.
+
+        Args:
+            status_code (int): Expected status code of the API call
+            remove_ta (boolean): Remove ta boolean
+        """
+        course_id = 1
+        if remove_ta == "false":
+            data = {
+                "user_emails": ("student@bodhitree.com", "ta@bodhitree.com"),
+                "grant_ta": "true",
+            }
+        else:
+            data = {
+                "user_emails": ("student@bodhitree.com", "ta@bodhitree.com"),
+                "remove_ta": remove_ta,
+            }
+        url = reverse(
+            "course:course-handle-ta-permission",
+            args=[course_id],
+        )
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            course_histories = CourseHistory.objects.filter(
+                course=course_id, user__email__in=data["user_emails"]
+            )
+            for course_history in course_histories:
+                if remove_ta == "true":
+                    self.assertEqual(course_history.role, "S")
+                else:
+                    self.assertEqual(course_history.role, "T")
+
+    def test_grant_ta_permission(self):
+        """Test: grant ta permission."""
+        # Grant by owner
+        self.login(**ins_cred)
+        self._ta_permission_helper(status.HTTP_200_OK)
+        self.logout()
+
+        # `HTTP_403_FORBIDDEN` due to `IsOwner` permission class (access by ta)
+        self.login(**ta_cred)
+        self._ta_permission_helper(status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsOwner` permissioon class
+        self._ta_permission_helper(status.HTTP_401_UNAUTHORIZED)
+
+        # `HTTP_403_FORBIDDEN` due to `IsOwner` permission class (access by student)
+        self.login(**stu_cred)
+        self._ta_permission_helper(status.HTTP_403_FORBIDDEN)
+        self.logout()
+
+    def test_remove_ta_permission(self):
+        """Test: remove ta permission."""
+        # Grant by owner
+        self.login(**ins_cred)
+        self._ta_permission_helper(status.HTTP_200_OK, "true")
+        self.logout()
+
+        # `HTTP_403_FORBIDDEN` due to `IsOwner` permission class (access by ta)
+        self.login(**ta_cred)
+        self._ta_permission_helper(status.HTTP_403_FORBIDDEN, "true")
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsOwner` permissioon class
+        self._ta_permission_helper(status.HTTP_401_UNAUTHORIZED, "true")
+
+        # `HTTP_403_FORBIDDEN` due to `IsOwner` permission class (access by student)
+        self.login(**stu_cred)
+        self._ta_permission_helper(status.HTTP_403_FORBIDDEN, "true")
+        self.logout()
+
     def test_bulk_register_into_course(self):
 
         file = os.path.join(settings.BASE_DIR, "main/test_data", "test.csv")

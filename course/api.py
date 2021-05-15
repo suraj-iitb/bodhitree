@@ -19,6 +19,7 @@ from utils.permissions import (
     IsInstructorOrTAOrReadOnly,
     IsInstructorOrTAOrStudent,
     IsOwner,
+    StrictIsInstructorOrTA,
 )
 from utils.subscription import SubscriptionView
 from utils.utils import CaseInsensitiveHeaderDictReader, get_course_folder
@@ -213,6 +214,94 @@ class CourseViewSet(
             `HTTP_404_NOT_FOUND`: due to `_delete()` method
         """
         return self._delete(request, pk)
+
+    @action(detail=True, methods=["GET"], permission_classes=[StrictIsInstructorOrTA])
+    def list_non_tas(self, request, pk):
+        """Lists the non tas in the course with id as pk.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): Course id
+
+        Returns:
+            `Response` with non ta data and status HTTP_200_OK.
+
+        Raises:
+            `HTTP_401_UNAUTHORIZED`: Raised by `StrictIsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised by `StrictIsInstructorOrTA` permission class
+            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
+        """
+        course = self.get_object()
+        course_histories = CourseHistory.objects.filter(
+            course=course, role="S", status="E"
+        ).select_related("user")
+        non_tas = []
+        for course_history in course_histories:
+            non_tas.append(course_history.user.email)
+        return Response(non_tas, status.HTTP_200_OK)
+
+    @action(detail=True, methods=["GET"], permission_classes=[StrictIsInstructorOrTA])
+    def list_tas(self, request, pk):
+        """Lists the tas in the course with id as pk.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): Course id
+
+        Returns:
+            `Response` with ta data and status HTTP_200_OK.
+
+        Raises:
+            `HTTP_401_UNAUTHORIZED`: Raised by `StrictIsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised by `StrictIsInstructorOrTA` permission class
+            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
+        """
+        course = self.get_object()
+        course_histories = CourseHistory.objects.filter(
+            course=course, role="T", status="E"
+        ).select_related("user")
+        tas = []
+        for course_history in course_histories:
+            tas.append(course_history.user.email)
+        return Response(tas, status.HTTP_200_OK)
+
+    @action(
+        detail=True,
+        methods=["POST"],
+        permission_classes=[
+            IsOwner,
+        ],
+    )
+    def handle_ta_permission(self, request, pk):
+        """Handles ta permission to the requested user in the course with id as pk.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): Course id
+
+        Returns:
+            `Response` with status HTTP_200_OK.
+
+        Raises:
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsOwner` permission class
+            `HTTP_403_FORBIDDEN`: Raised by `IsOwner` permission class
+            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
+        """
+        course = self.get_object()
+        course_histories = CourseHistory.objects.filter(
+            course=course, user__email__in=request.data["user_emails"]
+        )
+
+        if "grant_ta" in request.data and request.data["grant_ta"] == "true":
+            for course_history in course_histories:
+                course_history.role = "T"
+                course_history.save()
+            return Response(status.HTTP_200_OK)
+        elif "remove_ta" in request.data and request.data["remove_ta"] == "true":
+            for course_history in course_histories:
+                course_history.role = "S"
+                course_history.save()
+            return Response(status.HTTP_200_OK)
 
     def _store_file(self, request, course):
         """Helper function to store the attached file in the server.

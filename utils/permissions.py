@@ -132,13 +132,12 @@ class IsInstructorOrTA(permissions.BasePermission):
             )
         elif type(obj) in (
             SimpleProgrammingAssignment,
-            AssignmentSection,
-            Exam,
+            AdvancedProgrammingAssignment,
             SubjectiveAssignment,
         ):
+            course = obj.course
+        elif type(obj) in (Exam, AssignmentSection):
             course = obj.assignment.course
-        elif type(obj) == AdvancedProgrammingAssignment:
-            course = obj.simple_programming_assignment.assignment.course
         elif type(obj) == Testcase:
             course = (
                 obj.assignment.course
@@ -358,14 +357,13 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
             user = obj.user
         elif type(obj) in (
             SimpleProgrammingAssignmentHistory,
-            SubjectiveAssignmentHistory,
+            AdvancedProgrammingAssignmentHistory,
         ):
-            course = obj.assignment_history.assignment.course
-            user = obj.assignment_history.user
-        elif type(obj) == AdvancedProgrammingAssignmentHistory:
-            simple_assign_hist = obj.simple_programming_assignment_history
-            course = simple_assign_hist.assignment_history.assignment.course
-            user = obj.simple_programming_assignment_history.assignment_history.user
+            course = obj.simple_prog_assignment.course
+            user = obj.user
+        elif type(obj) in (SubjectiveAssignmentHistory,):
+            course = obj.assignment.course
+            user = obj.user
         elif type(obj) == ExamHistory:
             course = obj.exam.assignment.course
             user = obj.user

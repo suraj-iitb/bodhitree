@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.test import TestCase
 
 from course.models import Course, CourseHistory
-from programming_assignments.models import Assignment
+from programming_assignments.models import SimpleProgrammingAssignment
 from utils.utils import (
     check_course_registration,
     check_is_instructor_or_ta,
@@ -60,7 +60,9 @@ class TestGetAssignmentFolder(TestCase):
 
     def setUp(self):
         # Mocking of Assignment
-        self.assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
+        self.assignment_mock = mock.MagicMock(
+            spec=SimpleProgrammingAssignment, name="AssignmentMock"
+        )
         self.assignment_mock.id = 1
         self.assignment_mock.name = "   Assignment 1 "
 
@@ -107,7 +109,9 @@ class TestGetAssignmentFileUploadPath(TestCase):
         self.course_mock.code = " Code 1      "
         self.course_mock.title = "Course  1 "
         # Mocking of Assignment
-        self.assignment_mock = mock.MagicMock(spec=Assignment, name="AssignmentMock")
+        self.assignment_mock = mock.MagicMock(
+            spec=SimpleProgrammingAssignment, name="AssignmentMock"
+        )
         self.assignment_mock.id = 1
         self.assignment_mock.name = "   Assignment 1 "
         self.assignment_mock.course = self.course_mock

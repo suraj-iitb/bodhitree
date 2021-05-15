@@ -1,7 +1,15 @@
 - model: subjective_assignments.subjectiveassignment
   pk: 1
   fields:
-    assignment: 1
+    course: 2
+    name: Assignment 1
+    description: ''
+    is_published: false
+    start_date: 2021-05-10 13:32:03+00:00
+    end_date: 2021-05-19 06:30:00+00:00
+    extended_date: 2021-05-12 13:32:16+00:00
+    created_on: 2021-05-03 13:32:18.139623+00:00
+    modified_on: 2021-05-03 13:32:18.139634+00:00
     team_size: 4
     question_file: 2.123:new_course2/subjective_assignment/1.Assignment_1/question_files/eye-of-the-tiger-workout.pdf
     helper_file: ''
@@ -9,7 +17,15 @@
 - model: subjective_assignments.subjectiveassignment
   pk: 2
   fields:
-    assignment: 2
+    course: 2
+    name: Assignment 2
+    description: ''
+    is_published: false
+    start_date: 2021-05-10 13:32:03+00:00
+    end_date: 2021-05-19 06:30:00+00:00
+    extended_date: 2021-05-12 13:32:16+00:00
+    created_on: 2021-05-03 13:32:18.139623+00:00
+    modified_on: 2021-05-03 13:32:18.139634+00:00
     team_size: 6
     question_file: 2.123:new_course2/subjective_assignment/2.Assignment_2/question_files/eye-of-the-tiger-workout.pdf
     helper_file: ''

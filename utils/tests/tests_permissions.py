@@ -114,7 +114,6 @@ class IsInstructorOrTATest(APITestCase, PermissionHelperMixin):
         "pages.test.yaml",
         "announcement.test.yaml",
         "discussionforum.test.yaml",
-        "assignment.test.yaml",
         "simpleprogrammingassignment.test.yaml",
         "advancedprogrammingassignment.test.yaml",
         "assignmentsection.test.yaml",
@@ -331,17 +330,13 @@ class IsInstructorOrTATest(APITestCase, PermissionHelperMixin):
         actual_course = self.permission_class._get_course_from_object(
             self.simpleprogrammingassignment
         )
-        expected_course = self.simpleprogrammingassignment.assignment.course
+        expected_course = self.simpleprogrammingassignment.course
         self.assertEqual(actual_course, expected_course)
 
         actual_course = self.permission_class._get_course_from_object(
             self.advancedprogrammingassignment
         )
-        advancedprogrammingassignment = self.advancedprogrammingassignment
-        simpleprogrammingassignment = (
-            advancedprogrammingassignment.simple_programming_assignment
-        )
-        expected_course = simpleprogrammingassignment.assignment.course
+        expected_course = self.advancedprogrammingassignment.course
         self.assertEqual(actual_course, expected_course)
 
         actual_course = self.permission_class._get_course_from_object(
@@ -361,7 +356,7 @@ class IsInstructorOrTATest(APITestCase, PermissionHelperMixin):
         actual_course = self.permission_class._get_course_from_object(
             self.subjectiveassignment
         )
-        expected_course = self.subjectiveassignment.assignment.course
+        expected_course = self.subjectiveassignment.course
         self.assertEqual(actual_course, expected_course)
 
         actual_course = self.permission_class._get_course_from_object(self.notification)
@@ -473,7 +468,6 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
         "discussionreply.test.yaml",
         "crib.test.yaml",
         "cribreply.test.yaml",
-        "assignment.test.yaml",
         "simpleprogrammingassignment.test.yaml",
         "advancedprogrammingassignment.test.yaml",
         "assignmentsection.test.yaml",
@@ -482,7 +476,6 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
         "subjectiveassignment.test.yaml",
         "notification.test.yaml",
         "email.test.yaml",
-        "assignmenthistory.test.yaml",
         "simpleprogrammingassignmenthistory.test.yaml",
         "advancedprogrammingassignmenthistory.test.yaml",
         "testcasehistory.test.yaml",
@@ -736,11 +729,9 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
         ) = self.permission_class._get_course_and_user_from_object(
             self.simple_programming_assignment_history
         )
-        expected_user = (
-            self.simple_programming_assignment_history.assignment_history.user
-        )
-        assign_hist = self.simple_programming_assignment_history.assignment_history
-        expected_course = assign_hist.assignment.course
+        expected_user = self.simple_programming_assignment_history.user
+        assign_hist = self.simple_programming_assignment_history
+        expected_course = assign_hist.simple_prog_assignment.course
         self.assertEqual(actual_user, expected_user)
         self.assertEqual(actual_course, expected_course)
 
@@ -751,11 +742,8 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
             self.advanced_programming_assignment_history
         )
         adv_prog_assign_hist = self.advanced_programming_assignment_history
-        sim_prog_assign_hist = (
-            adv_prog_assign_hist.simple_programming_assignment_history
-        )
-        expected_user = sim_prog_assign_hist.assignment_history.user
-        expected_course = sim_prog_assign_hist.assignment_history.assignment.course
+        expected_user = adv_prog_assign_hist.user
+        expected_course = adv_prog_assign_hist.simple_prog_assignment.course
         self.assertEqual(actual_user, expected_user)
         self.assertEqual(actual_course, expected_course)
 
@@ -790,10 +778,8 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
         ) = self.permission_class._get_course_and_user_from_object(
             self.subjective_assignment_history
         )
-        expected_user = self.subjective_assignment_history.assignment_history.user
-        expected_course = (
-            self.subjective_assignment_history.assignment_history.assignment.course
-        )
+        expected_user = self.subjective_assignment_history.user
+        expected_course = self.subjective_assignment_history.assignment.course
         self.assertEqual(actual_user, expected_user)
         self.assertEqual(actual_course, expected_course)
 

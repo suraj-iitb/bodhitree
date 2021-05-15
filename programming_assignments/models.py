@@ -54,7 +54,11 @@ class TAAllocation(models.Model):
     mapping = models.JSONField()
 
 
-class Assignment(models.Model):
+class SimpleProgrammingAssignment(models.Model):
+    programming_language = models.CharField(max_length=10, choices=PROG_LANG)
+    document = models.FileField(
+        upload_to=programming_assignment_file_upload_path, blank=True, null=True
+    )
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
@@ -69,45 +73,21 @@ class Assignment(models.Model):
         return self.name
 
 
-class AssignmentHistory(models.Model):
-    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
+class SimpleProgrammingAssignmentHistory(models.Model):
+    simple_prog_assignment = models.ForeignKey(
+        SimpleProgrammingAssignment, on_delete=models.CASCADE
+    )
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     instructor_feedback = models.TextField(blank=True)
+    file_submitted = models.FileField(upload_to=programming_assignment_file_upload_path)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return "{}: {}".format(self.user.email, self.assignment.name)
+        return "{}: {}".format(self.user.email, self.simple_prog_assignment.name)
 
 
-class SimpleProgrammingAssignment(models.Model):
-    assignment = models.OneToOneField(Assignment, on_delete=models.CASCADE)
-    programming_language = models.CharField(max_length=10, choices=PROG_LANG)
-    document = models.FileField(
-        upload_to=programming_assignment_file_upload_path, blank=True, null=True
-    )
-
-    def __str__(self):
-        return self.assignment.name
-
-
-class SimpleProgrammingAssignmentHistory(models.Model):
-    assignment_history = models.OneToOneField(
-        AssignmentHistory, on_delete=models.CASCADE
-    )
-    file_submitted = models.FileField(upload_to=programming_assignment_file_upload_path)
-
-    def __str__(self):
-        assign_history = self.assignment_history
-        return "{}: {}".format(
-            assign_history.user.email, assign_history.assignment.name
-        )
-
-
-class AdvancedProgrammingAssignment(models.Model):
-    simple_programming_assignment = models.OneToOneField(
-        SimpleProgrammingAssignment, on_delete=models.CASCADE
-    )
+class AdvancedProgrammingAssignment(SimpleProgrammingAssignment):
     helper_code = models.FileField(
         upload_to=programming_assignment_file_upload_path, null=True, blank=True
     )
@@ -129,25 +109,22 @@ class AdvancedProgrammingAssignment(models.Model):
     indentation_percentage_calculate = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.simple_programming_assignment.assignment.name
+        return self.name
 
 
-class AdvancedProgrammingAssignmentHistory(models.Model):
-    simple_programming_assignment_history = models.OneToOneField(
-        SimpleProgrammingAssignmentHistory, on_delete=models.CASCADE
-    )
+class AdvancedProgrammingAssignmentHistory(SimpleProgrammingAssignmentHistory):
     execution_time = models.FloatField(null=True, blank=True)
     indentation_percentage = models.FloatField(null=True, blank=True)
 
     def __str__(self):
-        assign_history = self.simple_programming_assignment_history.assignment_history
-        return "{}: {}".format(
-            assign_history.user.email, assign_history.assignment.name
-        )
+        assign_history = self.simple_prog_assignment
+        return "{}: {}".format(self.user.email, assign_history.name)
 
 
 class AssignmentSection(models.Model):
-    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
+    assignment = models.ForeignKey(
+        SimpleProgrammingAssignment, on_delete=models.CASCADE
+    )
     name = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)
     description = models.TextField(blank=True)
     section_type = models.CharField(max_length=1, choices=SECTION_TYPE, default="V")
@@ -166,7 +143,7 @@ class AssignmentSection(models.Model):
 
 class Testcase(models.Model):
     assignment = models.ForeignKey(
-        Assignment, on_delete=models.CASCADE, blank=True, null=True
+        SimpleProgrammingAssignment, on_delete=models.CASCADE, blank=True, null=True
     )
     assignment_section = models.ForeignKey(
         AssignmentSection, on_delete=models.CASCADE, blank=True, null=True
@@ -220,7 +197,9 @@ class TestcaseHistory(models.Model):
 
 
 class Exam(models.Model):
-    assignment = models.OneToOneField(Assignment, on_delete=models.CASCADE)
+    assignment = models.OneToOneField(
+        SimpleProgrammingAssignment, on_delete=models.CASCADE
+    )
     duration = models.DurationField()
     late_duration = models.DurationField()
     allowed_ip_range = models.CharField(max_length=settings.MAX_CHARFIELD_LENGTH)

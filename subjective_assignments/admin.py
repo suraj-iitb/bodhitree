@@ -10,27 +10,38 @@ from .models import (
 class SubjectiveAssignmentAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "assignment",
         "team_size",
         "question_file",
         "helper_file",
         "files_to_be_submitted",
+        "course",
+        "name",
+        "description",
+        "is_published",
+        "start_date",
+        "end_date",
+        "extended_date",
+        "created_on",
+        "modified_on",
     )
     search_fields = (
-        "assignment__name",
-        "assignment__description",
+        "name",
+        "description",
     )
 
 
 class SubjectiveAssignmentHistoryAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "assignment_history",
+        "user",
+        "instructor_feedback",
+        "created_on",
+        "modified_on",
         "submitted_file",
         "marks_obtained",
         "subjective_assignment_team",
     )
-    search_fields = ("assignment_history__user__email",)
+    search_fields = ("user__email",)
 
 
 class SubjectiveAssignmentTeamAdmin(admin.ModelAdmin):

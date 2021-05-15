@@ -1,18 +1,30 @@
 - model: programming_assignments.advancedprogrammingassignmenthistory
   pk: 1
   fields:
-    simple_programming_assignment_history: 1
+    simple_prog_assignment: 1
+    user: 1
+    instructor_feedback: ''
+    created_on: 2021-05-04 07:36:55.500760+00:00
+    modified_on: 2021-05-04 07:36:55.500790+00:00
     execution_time: null
     indentation_percentage: null
 - model: programming_assignments.advancedprogrammingassignmenthistory
   pk: 2
   fields:
-    simple_programming_assignment_history: 2
+    simple_prog_assignment: 2
+    user: 2
+    instructor_feedback: ''
+    created_on: 2021-05-04 07:36:55.500760+00:00
+    modified_on: 2021-05-04 07:36:55.500790+00:00
     execution_time: null
     indentation_percentage: null
 - model: programming_assignments.advancedprogrammingassignmenthistory
   pk: 3
   fields:
-    simple_programming_assignment_history: 3
+    simple_prog_assignment: 3
+    user: 3
+    instructor_feedback: ''
+    created_on: 2021-05-04 07:36:55.500760+00:00
+    modified_on: 2021-05-04 07:36:55.500790+00:00
     execution_time: null
     indentation_percentage: null

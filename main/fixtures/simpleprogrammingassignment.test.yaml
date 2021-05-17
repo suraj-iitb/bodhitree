@@ -1,7 +1,7 @@
 - model: programming_assignments.simpleprogrammingassignment
   pk: 1
   fields:
-    course: 2
+    course: 1
     name: Assignment 1
     description: ''
     is_published: false
@@ -15,8 +15,8 @@
 - model: programming_assignments.simpleprogrammingassignment
   pk: 2
   fields:
-    course: 2
-    name: Assignment 1
+    course: 1
+    name: Assignment 2
     description: ''
     is_published: false
     start_date: 2021-05-10 13:32:03+00:00

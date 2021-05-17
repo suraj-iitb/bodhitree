@@ -31,12 +31,10 @@ from programming_assignments.models import (
     TestcaseHistory,
 )
 from quiz.models import (
-    DescriptiveQuestion,
-    DescriptiveQuestionHistory,
     FixedAnswerQuestion,
-    FixedCorrectQuestionHistory,
-    MulitpleCorrectQuestionHistory,
+    FixedAnswerQuestionHistory,
     MultipleCorrectQuestion,
+    MultipleCorrectQuestionHistory,
     QuestionModule,
     Quiz,
     SingleCorrectQuestion,
@@ -57,7 +55,6 @@ class IsInstructorOrTA(permissions.BasePermission):
         1. Chapter, Section, Video, Document
         2. Quiz, QuestionModule, SectionMarker, QuizMarker
         3. SingleCorrectQuestion, MultipleCorrectQuestion, FixedAnswerQuestion,
-           DescriptiveQuestion
         4. Schedule, Page, Announcement, DiscussionForum
         5. SimpleProgrammingAssignment, AdvancedProgrammingAssignment
         6. AssignmentSection, Testcase, Exam
@@ -123,7 +120,6 @@ class IsInstructorOrTA(permissions.BasePermission):
             SingleCorrectQuestion,
             MultipleCorrectQuestion,
             FixedAnswerQuestion,
-            DescriptiveQuestion,
         ):
             course = (
                 obj.question_module.quiz.chapter.course
@@ -290,7 +286,7 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
     Applicable for:
         1. CourseHistory, VideoHistory
         2. SingleCorrectQuestionHistory, MultipleCorrectQuestionHistory,
-           FixedAnswerQuestionHistory, DescriptiveQuestionhistory
+           FixedAnswerQuestionHistory
         3. DiscussionThread, DiscussionComment, DiscussionReply
         4. Crib, CribReply
         5. SimpleProgrammingAssignmentHistory, AdvancedProgrammingAssignmentHistory
@@ -332,9 +328,8 @@ class IsInstructorOrTAOrStudent(permissions.BasePermission):
             user = obj.user
         elif type(obj) in (
             SingleCorrectQuestionHistory,
-            MulitpleCorrectQuestionHistory,
-            FixedCorrectQuestionHistory,
-            DescriptiveQuestionHistory,
+            MultipleCorrectQuestionHistory,
+            FixedAnswerQuestionHistory,
         ):
             course = (
                 obj.question.question_module.quiz.chapter.course

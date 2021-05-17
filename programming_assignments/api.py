@@ -8,30 +8,25 @@ from course.models import CourseHistory
 from utils import mixins as custom_mixins
 from utils.permissions import IsInstructorOrTA
 
-from .models import SimpleProgrammingAssignment
-from .serializers import SimpleProgrammingAssignmentSerializer
+from .models import AdvancedProgrammingAssignment, SimpleProgrammingAssignment
+from .serializers import (
+    AdvancedProgrammingAssignmentSerializer,
+    SimpleProgrammingAssignmentSerializer,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
-class SimpleProgrammingAssignmentViewSet(
-    viewsets.GenericViewSet,
+class AssignmentMixin(
     custom_mixins.InsOrTACreateMixin,
     custom_mixins.InsOrTAListMixin,
     custom_mixins.RetrieveMixin,
     custom_mixins.UpdateMixin,
     custom_mixins.DeleteMixin,
 ):
-    """Viewset for `SimpleProgrammingAssignment`."""
-
-    queryset = SimpleProgrammingAssignment.objects.all()
-    serializer_class = SimpleProgrammingAssignmentSerializer
-    permission_classes = (IsInstructorOrTA,)
-
-    def get_queryset_list(self, course_id):
-        queryset = SimpleProgrammingAssignment.objects.filter(course=course_id)
-        return queryset
+    """Common mixin for `SimpleProgrammingAssignmentViewSet()` and
+    `AdvancedProgrammingAssignmentViewSet()`."""
 
     def date_check(self, start_date, end_date):
         if start_date > end_date:
@@ -40,8 +35,7 @@ class SimpleProgrammingAssignmentViewSet(
             return Response(error, status.HTTP_400_BAD_REQUEST)
         return True
 
-    @action(detail=False, methods=["POST"])
-    def create_assignment(self, request):
+    def create_assign(self, request):
         """Adds an assignment to the course.
 
         Args:
@@ -72,8 +66,7 @@ class SimpleProgrammingAssignmentViewSet(
         logger.error(errors)
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=["GET"])
-    def list_assignments(self, request, pk):
+    def list_assign(self, request, pk):
         """Gets all the assignment in the current course.
 
         Args:
@@ -90,8 +83,7 @@ class SimpleProgrammingAssignmentViewSet(
         """
         return self.list(request, pk)
 
-    @action(detail=True, methods=["GET"])
-    def list_assignments_stud(self, request, pk):
+    def list_assign_stud(self, request, pk):
         """Gets all the published assignment to the registered student in the current course.
 
         Args:
@@ -121,11 +113,7 @@ class SimpleProgrammingAssignmentViewSet(
         serializer = self.get_serializer(assignments, many=True)
         return Response(serializer.data)
 
-    @action(
-        detail=True,
-        methods=["GET"],
-    )
-    def retrieve_assignment(self, request, pk):
+    def retrieve_assign(self, request, pk):
         """Gets the assignment with primary key as pk to the instructor.
            Gets the assignment with primary key as pk, only if published to the student.
 
@@ -157,8 +145,7 @@ class SimpleProgrammingAssignmentViewSet(
         serializer = self.get_serializer(assignment)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["PUT", "PATCH"])
-    def update_assignment(self, request, pk):
+    def update_assign(self, request, pk):
         """Updates an assignment of the course..
 
         Args:
@@ -192,8 +179,7 @@ class SimpleProgrammingAssignmentViewSet(
         logger.error(errors)
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=["DELETE"])
-    def delete_assignment(self, request, pk):
+    def delete_assign(self, request, pk):
         """Deletes the assignment with id as pk.
 
         Args:
@@ -209,3 +195,81 @@ class SimpleProgrammingAssignmentViewSet(
             `HTTP_404_NOT_FOUND`: due to `_delete()` method
         """
         return self._delete(request, pk)
+
+
+class SimpleProgrammingAssignmentViewSet(viewsets.GenericViewSet, AssignmentMixin):
+    """Viewset for `SimpleProgrammingAssignment()`."""
+
+    queryset = SimpleProgrammingAssignment.objects.all()
+    serializer_class = SimpleProgrammingAssignmentSerializer
+    permission_classes = (IsInstructorOrTA,)
+
+    def get_queryset_list(self, course_id):
+        queryset = SimpleProgrammingAssignment.objects.filter(course=course_id)
+        return queryset
+
+    @action(detail=False, methods=["POST"])
+    def create_assignment(self, request):
+        return self.create_assign(request)
+
+    @action(detail=True, methods=["GET"])
+    def list_assignments(self, request, pk):
+        return self.list_assign(request, pk)
+
+    @action(detail=True, methods=["GET"])
+    def list_assignments_stud(self, request, pk):
+        return self.list_assign_stud(request, pk)
+
+    @action(
+        detail=True,
+        methods=["GET"],
+    )
+    def retrieve_assignment(self, request, pk):
+        return self.retrieve_assign(request, pk)
+
+    @action(detail=True, methods=["PUT", "PATCH"])
+    def update_assignment(self, request, pk):
+        return self.update_assign(request, pk)
+
+    @action(detail=True, methods=["DELETE"])
+    def delete_assignment(self, request, pk):
+        return self.delete_assign(request, pk)
+
+
+class AdvancedProgrammingAssignmentViewSet(viewsets.GenericViewSet, AssignmentMixin):
+    """Viewset for `AdvancedProgrammingAssignment()`."""
+
+    queryset = AdvancedProgrammingAssignment.objects.all()
+    serializer_class = AdvancedProgrammingAssignmentSerializer
+    permission_classes = (IsInstructorOrTA,)
+
+    def get_queryset_list(self, course_id):
+        queryset = AdvancedProgrammingAssignment.objects.filter(course=course_id)
+        return queryset
+
+    @action(detail=False, methods=["POST"])
+    def create_assignment(self, request):
+        return self.create_assign(request)
+
+    @action(detail=True, methods=["GET"])
+    def list_assignments(self, request, pk):
+        return self.list_assign(request, pk)
+
+    @action(detail=True, methods=["GET"])
+    def list_assignments_stud(self, request, pk):
+        return self.list_assign_stud(request, pk)
+
+    @action(
+        detail=True,
+        methods=["GET"],
+    )
+    def retrieve_assignment(self, request, pk):
+        return self.retrieve_assign(request, pk)
+
+    @action(detail=True, methods=["PUT", "PATCH"])
+    def update_assignment(self, request, pk):
+        return self.update_assign(request, pk)
+
+    @action(detail=True, methods=["DELETE"])
+    def delete_assignment(self, request, pk):
+        return self.delete_assign(request, pk)

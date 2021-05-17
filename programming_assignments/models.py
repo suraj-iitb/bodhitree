@@ -8,13 +8,8 @@ from utils.utils import get_assignment_file_upload_path
 
 
 def programming_assignment_file_upload_path(instance, filename):
-    if type(instance) is SimpleProgrammingAssignment:
-        assignment = instance.assignment
-        return get_assignment_file_upload_path(
-            assignment, "programming", "question_files", filename
-        )
-    elif type(instance) is AdvancedProgrammingAssignment:
-        assignment = instance.simple_programming_assignment.assignment
+    if type(instance) in [SimpleProgrammingAssignment, AdvancedProgrammingAssignment]:
+        assignment = instance
         return get_assignment_file_upload_path(
             assignment, "programming", "question_files", filename
         )

@@ -40,6 +40,7 @@ urlpatterns = [
     path("cribs/", include("cribs.urls")),
     path("email_notices/", include("email_notices.urls")),
     path("discussion_forum/", include("discussion_forum.urls")),
+    path("programming_assignments/", include("programming_assignments.urls")),
 ]
 
 if settings.DEBUG:

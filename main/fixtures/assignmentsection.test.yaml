@@ -12,7 +12,7 @@
 - model: programming_assignments.assignmentsection
   pk: 2
   fields:
-    assignment: 2
+    assignment: 3
     name: Section 2
     description: ''
     section_type: H

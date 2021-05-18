@@ -7,7 +7,11 @@ from rest_framework.test import APITestCase
 
 from utils import credentials
 
-from .models import AdvancedProgrammingAssignment, SimpleProgrammingAssignment
+from .models import (
+    AdvancedProgrammingAssignment,
+    AssignmentSection,
+    SimpleProgrammingAssignment,
+)
 
 
 ins_cred = credentials.TEST_INSTRUCTOR_CREDENTIALS
@@ -47,7 +51,7 @@ class AssignmentViewSetTest(APITestCase):
         start_date = "2021-10-25T14:30:59+05:30"
         end_date = "2021-11-25T14:30:59+05:30"
         extended_date = "2021-11-25T14:30:59+05:30"
-        data1 = {
+        data_simple = {
             "course": course_id,
             "programming_language": programming_language,
             "name": name,
@@ -64,13 +68,13 @@ class AssignmentViewSetTest(APITestCase):
             instructor_solution_code_mock = mock.MagicMock(spec=File, name="FileMock")
             instructor_solution_code_mock.name = "ins_solution_code.cpp"
 
-            data2 = {
+            data_adv = {
                 "helper_code": helper_code_mock,
                 "instructor_solution_code": instructor_solution_code_mock,
                 "files_to_be_submitted": ["file1.cpp", "file2.cpp"],
                 "policy": "A",
             }
-            data = dict(data1, **data2)
+            data = dict(data_simple, **data_adv)
             create_url = (
                 "programming_assignments:advancedprogrammingassignment"
                 "-create-assignment"
@@ -79,7 +83,7 @@ class AssignmentViewSetTest(APITestCase):
             url = reverse(create_url)
 
         else:
-            data = data1
+            data = data_simple
             url = reverse(
                 "programming_assignments:simpleprogrammingassignment-create-assignment"
             )
@@ -172,66 +176,63 @@ class AssignmentViewSetTest(APITestCase):
                 "programming_assignments:simpleprogrammingassignment-"
                 "list-assignments-stud"
             )
-            stud_url = stud_url_str
-        else:
+            ins_url_str = (
+                "programming_assignments:simpleprogrammingassignment-list-assignments"
+            )
+        elif assign_type == "adv":
             stud_url_str = (
                 "programming_assignments:advancedprogrammingassignment-"
                 "list-assignments-stud"
             )
-            stud_url = stud_url_str
-
-        if user_id != 3 and assign_type == "simple":
-            url = reverse(
-                "programming_assignments:simpleprogrammingassignment-list-assignments",
-                args=[course_id],
-            )
-        elif user_id != 3 and assign_type == "adv":
-            list_url = (
+            ins_url_str = (
                 "programming_assignments:advancedprogrammingassignment-"
                 "list-assignments"
             )
+
+        if user_id == 3:
             url = reverse(
-                list_url,
+                stud_url_str,
                 args=[course_id],
             )
         else:
             url = reverse(
-                stud_url,
+                ins_url_str,
                 args=[course_id],
             )
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, status_code)
-        if status_code == status.HTTP_200_OK and user_id == 3:
-            if assign_type == "simple":
-                self.assertEqual(
-                    len(response.data),
-                    SimpleProgrammingAssignment.objects.filter(
-                        course=course_id, is_published=True
-                    ).count(),
-                )
+        if status_code == status.HTTP_200_OK:
+            if user_id == 3:
+                if assign_type == "simple":
+                    self.assertEqual(
+                        len(response.data),
+                        SimpleProgrammingAssignment.objects.filter(
+                            course=course_id, is_published=True
+                        ).count(),
+                    )
+                else:
+                    self.assertEqual(
+                        len(response.data),
+                        AdvancedProgrammingAssignment.objects.filter(
+                            course=course_id, is_published=True
+                        ).count(),
+                    )
             else:
-                self.assertEqual(
-                    len(response.data),
-                    AdvancedProgrammingAssignment.objects.filter(
-                        course=course_id, is_published=True
-                    ).count(),
-                )
-        elif status_code == status.HTTP_200_OK:
-            if assign_type == "simple":
-                self.assertEqual(
-                    len(response.data),
-                    SimpleProgrammingAssignment.objects.filter(
-                        course_id=course_id
-                    ).count(),
-                )
-            else:
-                self.assertEqual(
-                    len(response.data),
-                    AdvancedProgrammingAssignment.objects.filter(
-                        course_id=course_id
-                    ).count(),
-                )
+                if assign_type == "simple":
+                    self.assertEqual(
+                        len(response.data),
+                        SimpleProgrammingAssignment.objects.filter(
+                            course_id=course_id
+                        ).count(),
+                    )
+                else:
+                    self.assertEqual(
+                        len(response.data),
+                        AdvancedProgrammingAssignment.objects.filter(
+                            course_id=course_id
+                        ).count(),
+                    )
 
     def _list_simple_or_advanced_assignments_helper(self, assign_type):
         """Test: list all assignments.
@@ -297,19 +298,15 @@ class AssignmentViewSetTest(APITestCase):
                 "programming_assignments:simpleprogrammingassignment-"
                 "retrieve-assignment"
             )
-            url = reverse(
-                retrieve_url,
-                args=[assignment_id],
-            )
         else:
             retrieve_url = (
                 "programming_assignments:advancedprogrammingassignment-"
                 "retrieve-assignment"
             )
-            url = reverse(
-                retrieve_url,
-                args=[assignment_id],
-            )
+        url = reverse(
+            retrieve_url,
+            args=[assignment_id],
+        )
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, status_code)
@@ -339,6 +336,7 @@ class AssignmentViewSetTest(APITestCase):
             assignment_id, status.HTTP_401_UNAUTHORIZED, assign_type
         )
 
+        assignment_id = 3
         # Retrieve by student
         self.login(**stu_cred)
         self._retrieve_assignment_helper(
@@ -387,7 +385,7 @@ class AssignmentViewSetTest(APITestCase):
         start_date = "2021-10-25T14:30:59+05:30"
         end_date = "2021-11-25T14:30:59+05:30"
         extended_date = "2021-11-25T14:30:59+05:30"
-        data1 = {
+        data_simple = {
             "course": course_id,
             "programming_language": programming_language,
             "name": name,
@@ -404,13 +402,13 @@ class AssignmentViewSetTest(APITestCase):
             instructor_solution_code_mock = mock.MagicMock(spec=File, name="FileMock")
             instructor_solution_code_mock.name = "ins_solution_code.cpp"
 
-            data2 = {
+            data_adv = {
                 "helper_code": helper_code_mock,
                 "instructor_solution_code": instructor_solution_code_mock,
                 "files_to_be_submitted": ["file1.cpp", "file2.cpp"],
                 "policy": "A",
             }
-            data = dict(data1, **data2)
+            data = dict(data_simple, **data_adv)
             update_url = (
                 "programming_assignments:advancedprogrammingassignment-"
                 "update-assignment"
@@ -421,7 +419,7 @@ class AssignmentViewSetTest(APITestCase):
             )
 
         else:
-            data = data1
+            data = data_simple
             url = reverse(
                 "programming_assignments:simpleprogrammingassignment-update-assignment",
                 args=[assignment_id],
@@ -432,7 +430,7 @@ class AssignmentViewSetTest(APITestCase):
         else:
             response = self.client.patch(url, data, format="multipart")
         self.assertEqual(response.status_code, status_code)
-        if status_code == status.HTTP_201_CREATED:
+        if status_code == status.HTTP_200_OK:
             response_data = response.data
             self.assertEqual(response_data["course"], data["course"])
             self.assertEqual(
@@ -508,7 +506,7 @@ class AssignmentViewSetTest(APITestCase):
             assign_type: "simple" or "adv"
         """
         if assign_type == "simple":
-            assignment1 = SimpleProgrammingAssignment.objects.create(
+            assignment = SimpleProgrammingAssignment.objects.create(
                 course_id=1,
                 programming_language="C++",
                 name=name,
@@ -516,18 +514,14 @@ class AssignmentViewSetTest(APITestCase):
                 end_date="2021-11-25T14:30:59+05:30",
                 extended_date="2021-12-25T14:30:59+05:30",
             )
-            assignment1.save()
+            assignment.save()
 
             delete_url = (
                 "programming_assignments:simpleprogrammingassignment-"
                 "delete-assignment"
             )
-            url = reverse(
-                delete_url,
-                args=[assignment1.id],
-            )
         else:
-            assignment2 = AdvancedProgrammingAssignment.objects.create(
+            assignment = AdvancedProgrammingAssignment.objects.create(
                 course_id=1,
                 programming_language="C++",
                 name=name,
@@ -537,17 +531,14 @@ class AssignmentViewSetTest(APITestCase):
                 files_to_be_submitted=["file1.cpp", "file2.cpp"],
                 policy="A",
             )
-            assignment2.save()
+            assignment.save()
 
             delete_url = (
                 "programming_assignments:advancedprogrammingassignment-"
                 "delete-assignment"
             )
 
-            url = reverse(
-                delete_url,
-                args=[assignment2.id],
-            )
+        url = reverse(delete_url, args=[assignment.id])
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status_code)
@@ -555,14 +546,14 @@ class AssignmentViewSetTest(APITestCase):
             if assign_type == "simple":
                 self.assertEqual(
                     SimpleProgrammingAssignment.objects.filter(
-                        id=assignment1.id
+                        id=assignment.id
                     ).count(),
                     0,
                 )
             else:
                 self.assertEqual(
                     AdvancedProgrammingAssignment.objects.filter(
-                        id=assignment2.id
+                        id=assignment.id
                     ).count(),
                     0,
                 )
@@ -604,3 +595,411 @@ class AssignmentViewSetTest(APITestCase):
 
     def test_delete_advanced_assignment(self):
         self._delete_simple_or_advanced_assignment_helper("adv")
+
+
+class AssignmentSectionViewSetTest(APITestCase):
+    """Test for `AssignmentSectionViewSet`."""
+
+    fixtures = [
+        "users.test.yaml",
+        "departments.test.yaml",
+        "colleges.test.yaml",
+        "courses.test.yaml",
+        "coursehistories.test.yaml",
+        "simpleprogrammingassignment.test.yaml",
+        "advancedprogrammingassignment.test.yaml",
+        "assignmentsection.test.yaml",
+    ]
+
+    def login(self, email, password):
+        self.client.login(email=email, password=password)
+
+    def logout(self):
+        self.client.logout()
+
+    def _create_section_helper(self, assignment_id, name, description, status_code):
+        """Helper function for `test_create_section()`.
+
+        Args:
+            assignment_id (int): Assignment id
+            name (str): Name of the section
+            description (str): Description of the section
+            status_code (int): Expected status code of the API call
+        """
+        data = {
+            "assignment": assignment_id,
+            "name": name,
+            "description": description,
+        }
+        url = reverse("programming_assignments:assignmentsection-create-section")
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_201_CREATED:
+            response_data = response.data
+            self.assertEqual(response_data["assignment"], data["assignment"])
+            self.assertEqual(response_data["name"], data["name"])
+            self.assertEqual(response_data["description"], data["description"])
+
+    def test_create_section(self):
+        """Test: create a section."""
+        assignment_id = 1
+
+        # Created by instructor
+        self.login(**ins_cred)
+        self._create_section_helper(
+            assignment_id, "Section 1", "Description section 1", status.HTTP_201_CREATED
+        )
+        self.logout()
+
+        # Created by ta
+        self.login(**ta_cred)
+        self._create_section_helper(
+            assignment_id, "Section 2", "Description section 2", status.HTTP_201_CREATED
+        )
+        self.logout()
+
+        # `HTTP_400_BAD_REQUEST` due to serialization errors
+        self.login(**ins_cred)
+        self._create_section_helper(
+            assignment_id, "", "Description section 3", status.HTTP_400_BAD_REQUEST
+        )
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._create_section_helper(
+            assignment_id,
+            "Section 4",
+            "Description section 4",
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+        # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permission class
+        self.login(**stu_cred)
+        self._create_section_helper(
+            assignment_id,
+            "Section 5",
+            "Description section 5",
+            status.HTTP_403_FORBIDDEN,
+        )
+        self.logout()
+
+        # `HTTP_403_FORBIDDEN` due to `_is_registered()` method
+        assignment_id = 3
+        self.login(**ins_cred)
+        self._create_section_helper(
+            assignment_id,
+            "Section 6",
+            "Description section 6",
+            status.HTTP_403_FORBIDDEN,
+        )
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to
+        # `SimpleProgrammingAssignment.DoesNotExist` exception
+        assignment_id = 100
+        self.login(**stu_cred)
+        self._create_section_helper(
+            assignment_id,
+            "Section 7",
+            "Description section 7",
+            status.HTTP_404_NOT_FOUND,
+        )
+        self.logout()
+
+    def _list_sections_helper(self, assignment_id, status_code, user_id):
+        """Helper function for `test_list_sections()`.
+
+        Args:
+            assignment_id (int): Assignment id
+            status_code (int): Expected status code of the API call
+            user_id (int): User id
+        """
+        url = reverse(
+            "programming_assignments:assignmentsection-list-sections",
+            args=[assignment_id],
+        )
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status_code)
+
+        if status_code == status.HTTP_200_OK:
+            if user_id == 3:
+                assignment = SimpleProgrammingAssignment.objects.get(id=assignment_id)
+                if assignment.is_published == "True":
+                    self.assertEqual(
+                        len(response.data),
+                        AssignmentSection.objects.filter(
+                            assignment=assignment_id, section_type="V"
+                        ).count(),
+                    )
+            else:
+                self.assertEqual(
+                    len(response.data),
+                    AssignmentSection.objects.filter(assignment=assignment_id).count(),
+                )
+
+    def test_list_sections(self):
+        """Test: list all sections."""
+        assignment_id = 1
+
+        # List by instructor
+        self.login(**ins_cred)
+        self._list_sections_helper(assignment_id, status.HTTP_200_OK, 1)
+        self.logout()
+
+        # List by ta
+        self.login(**ta_cred)
+        self._list_sections_helper(assignment_id, status.HTTP_200_OK, 2)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._list_sections_helper(assignment_id, status.HTTP_401_UNAUTHORIZED, 1)
+
+        # List by student
+        self.login(**stu_cred)
+        self._list_sections_helper(assignment_id, status.HTTP_200_OK, 3)
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to
+        # `SimpleProgrammingAssignment.DoesNotExist` exception
+        assignment_id = 100
+        self.login(**stu_cred)
+        self._list_sections_helper(assignment_id, status.HTTP_404_NOT_FOUND, 3)
+        self.logout()
+
+    def _retrieve_section_helper(self, section_id, status_code, user_id):
+        """Helper function for `test_retrieve_section()`.
+
+        Args:
+            section_id (int): Section id
+            status_code (int): Expected status code of the API call
+            user_id (int): User id
+        """
+        url = reverse(
+            "programming_assignments:assignmentsection-retrieve-section",
+            args=[section_id],
+        )
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            section = AssignmentSection.objects.get(id=section_id)
+            if user_id == 3:
+                if (
+                    section.section_type == "V"
+                    and section.assignment.is_published == "True"
+                ):
+                    self.assertEqual(response.data["id"], section_id)
+            else:
+                self.assertEqual(response.data["id"], section_id)
+
+    def test_retrieve_section(self):
+        """Test: retrieve the section."""
+        section_id = 1
+
+        # Retrieve by instructor
+        self.login(**ins_cred)
+        self._retrieve_section_helper(section_id, status.HTTP_200_OK, 1)
+        self.logout()
+
+        # Retrieve by ta
+        self.login(**ta_cred)
+        self._retrieve_section_helper(section_id, status.HTTP_200_OK, 2)
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `StrictIsInstructorOrTA`/`IsOwner` permission
+        # class
+        self._retrieve_section_helper(section_id, status.HTTP_401_UNAUTHORIZED, 1)
+
+        # Retrive by student
+        self.login(**stu_cred)
+        self._retrieve_section_helper(section_id, status.HTTP_200_OK, 3)
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to `get_object()` method
+        section_id = 100
+        self.login(**ta_cred)
+        self._retrieve_section_helper(section_id, status.HTTP_404_NOT_FOUND, 2)
+        self.logout()
+
+    def _update_section_helper(
+        self, section_id, assignment_id, name, description, status_code, method
+    ):
+        """Helper function for `test_update_section()` and `test_partial_update_section()`.
+
+        Args:
+            section_id (int): Section id
+            assignment_id (int): Assignment id
+            name (str): Name of the section
+            description (str): Description of the section
+            status_code (int): Expected status code of the API call
+            method: HTTP method ("PUT or "PATCH")
+        """
+        data = {
+            "assignment": assignment_id,
+            "name": name,
+            "description": description,
+        }
+        url = reverse(
+            "programming_assignments:assignmentsection-update-section",
+            args=[section_id],
+        )
+
+        if method == "PUT":
+            response = self.client.put(url, data)
+        else:
+            response = self.client.patch(url, data)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_200_OK:
+            response_data = response.data
+            self.assertEqual(response_data["assignment"], data["assignment"])
+            self.assertEqual(response_data["name"], data["name"])
+            self.assertEqual(response_data["description"], data["description"])
+
+    def _put_or_patch(self, method):
+        """Test: update a section."""
+        section_id = 1
+        assignment_id = 1
+
+        # Update by instructor
+        self.login(**ins_cred)
+        self._update_section_helper(
+            section_id,
+            assignment_id,
+            "Section 1",
+            "Description section 1",
+            status.HTTP_200_OK,
+            method,
+        )
+        self.logout()
+
+        # Update by ta
+        self.login(**ta_cred)
+        self._update_section_helper(
+            section_id,
+            assignment_id,
+            "Section 1",
+            "Description section 1",
+            status.HTTP_200_OK,
+            method,
+        )
+        self.logout()
+
+        # `HTTP_400_BAD_REQUEST` due to serialization errors
+        self.login(**ins_cred)
+        self._update_section_helper(
+            section_id,
+            assignment_id,
+            "",
+            "Description section 1",
+            status.HTTP_400_BAD_REQUEST,
+            method,
+        )
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._update_section_helper(
+            section_id,
+            assignment_id,
+            "Section 1",
+            "Description section 1",
+            status.HTTP_401_UNAUTHORIZED,
+            method,
+        )
+
+        # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permission class
+        self.login(**stu_cred)
+        self._update_section_helper(
+            section_id,
+            assignment_id,
+            "Section 1",
+            "Description section 1",
+            status.HTTP_403_FORBIDDEN,
+            method,
+        )
+        self.logout()
+
+        # `HTTP_403_FORBIDDEN` due to `_is_registered()` method
+        section_id = 2
+        self.login(**ins_cred)
+        self._update_section_helper(
+            section_id,
+            assignment_id,
+            "Section 1",
+            "Description section 1",
+            status.HTTP_403_FORBIDDEN,
+            method,
+        )
+        self.logout()
+
+        # `HTTP_404_NOT_FOUND` due to
+        # `SimpleProgrammingAssignment.DoesNotExist` exception
+        section_id = 100
+        self.login(**stu_cred)
+        self._update_section_helper(
+            section_id,
+            assignment_id,
+            "Section 1",
+            "Description section 1",
+            status.HTTP_404_NOT_FOUND,
+            method,
+        )
+        self.logout()
+
+    def test_update_section(self):
+        """Test: update the section."""
+        self._put_or_patch("PUT")
+
+    def test_partial_update_section(self):
+        """Test: partial update the section."""
+        self._put_or_patch("PATCH")
+
+    def _delete_section_helper(self, name, description, status_code):
+        """Helper function for `test_delete_section()`.
+
+        Args:
+            name (str): Name of the section
+            description (str): Description of the section
+            status_code (int): Expected status code of the API call
+        """
+        section_id = AssignmentSection.objects.create(
+            assignment_id=1, name=name, description=description
+        ).id
+        url = reverse(
+            ("programming_assignments:assignmentsection-delete-section"),
+            args=[section_id],
+        )
+
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status_code)
+        if status_code == status.HTTP_204_NO_CONTENT:
+            self.assertEqual(AssignmentSection.objects.filter(id=section_id).count(), 0)
+
+    def test_delete_section(self):
+        """Test: delete the section."""
+        # Deleted by instructor
+        self.login(**ins_cred)
+        self._delete_section_helper(
+            "Section 1", "section 1 description", status.HTTP_204_NO_CONTENT
+        )
+        self.logout()
+
+        # Deleted by ta
+        self.login(**ta_cred)
+        self._delete_section_helper(
+            "Section 2", "section 2 description", status.HTTP_204_NO_CONTENT
+        )
+        self.logout()
+
+        # `HTTP_401_UNAUTHORIZED` due to `IsInstructorOrTA` permission class
+        self._delete_section_helper(
+            "Section 3", "section 3 description", status.HTTP_401_UNAUTHORIZED
+        )
+
+        # `HTTP_403_FORBIDDEN` due to `IsInstructorOrTA` permission class
+        self.login(**stu_cred)
+        self._delete_section_helper(
+            "Section 4", "section 4 description", status.HTTP_403_FORBIDDEN
+        )
+        self.logout()

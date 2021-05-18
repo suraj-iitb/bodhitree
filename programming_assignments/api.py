@@ -8,9 +8,14 @@ from course.models import CourseHistory
 from utils import mixins as custom_mixins
 from utils.permissions import IsInstructorOrTA
 
-from .models import AdvancedProgrammingAssignment, SimpleProgrammingAssignment
+from .models import (
+    AdvancedProgrammingAssignment,
+    AssignmentSection,
+    SimpleProgrammingAssignment,
+)
 from .serializers import (
     AdvancedProgrammingAssignmentSerializer,
+    AssignmentSectionSerializer,
     SimpleProgrammingAssignmentSerializer,
 )
 
@@ -220,10 +225,7 @@ class SimpleProgrammingAssignmentViewSet(viewsets.GenericViewSet, AssignmentMixi
     def list_assignments_stud(self, request, pk):
         return self.list_assign_stud(request, pk)
 
-    @action(
-        detail=True,
-        methods=["GET"],
-    )
+    @action(detail=True, methods=["GET"])
     def retrieve_assignment(self, request, pk):
         return self.retrieve_assign(request, pk)
 
@@ -259,10 +261,7 @@ class AdvancedProgrammingAssignmentViewSet(viewsets.GenericViewSet, AssignmentMi
     def list_assignments_stud(self, request, pk):
         return self.list_assign_stud(request, pk)
 
-    @action(
-        detail=True,
-        methods=["GET"],
-    )
+    @action(detail=True, methods=["GET"])
     def retrieve_assignment(self, request, pk):
         return self.retrieve_assign(request, pk)
 
@@ -273,3 +272,162 @@ class AdvancedProgrammingAssignmentViewSet(viewsets.GenericViewSet, AssignmentMi
     @action(detail=True, methods=["DELETE"])
     def delete_assignment(self, request, pk):
         return self.delete_assign(request, pk)
+
+
+class AssignmentSectionViewSet(
+    viewsets.GenericViewSet,
+    custom_mixins.InsOrTACreateMixin,
+    custom_mixins.UpdateMixin,
+    custom_mixins.DeleteMixin,
+):
+    """ViewSet for `AssignmentSectionViewSet()`."""
+
+    queryset = AssignmentSection.objects.all()
+    serializer_class = AssignmentSectionSerializer
+    permission_classes = (IsInstructorOrTA,)
+
+    @action(detail=False, methods=["POST"])
+    def create_section(self, request):
+        """Adds a section to the assignment.
+
+        Args:
+            request (Request): DRF `Request` object
+
+        Returns:
+            `Response` with the created section data and status `HTTP_201_CREATED`
+
+        Raises:
+            `HTTP_400_BAD_REQUEST`: Raised due to `create()` method
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission
+                class
+            `HTTP_403_FORBIDDEN`: Raised due to `create()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `create()` method
+        """
+        assignment_id = request.data["assignment"]
+
+        try:
+            assignment = SimpleProgrammingAssignment.objects.select_related(
+                "course"
+            ).get(id=assignment_id)
+        except SimpleProgrammingAssignment.DoesNotExist as e:
+            logger.exception(e)
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
+        course_id = assignment.course_id
+
+        return self.create(request, course_id)
+
+    @action(detail=True, methods=["GET"])
+    def list_sections(self, request, pk):
+        """Gets all the section in the current assignment.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): SimpleProgrammingAssignment id
+
+        Returns:
+            `Response` with all the section data and status `HTTP_200_OK`
+
+        Raises:
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised due to `list()` method
+            `HTTP_404_NOT_FOUND`: Raised due to `list()` method
+        """
+        user = request.user
+        try:
+            assignment = SimpleProgrammingAssignment.objects.get(id=pk)
+        except SimpleProgrammingAssignment.DoesNotExist as e:
+            logger.exception(e)
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
+
+        course_id = assignment.course_id
+        role = CourseHistory.objects.get(
+            course_id=course_id, user=user, status="E"
+        ).role
+        sections = []
+        if role == "S":
+            if assignment.is_published == "True":
+                sections = AssignmentSection.objects.filter(
+                    assignment=pk, section_type="V"
+                )
+        else:
+            sections = AssignmentSection.objects.filter(assignment=pk)
+        page = self.paginate_queryset(sections)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(sections, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["GET"])
+    def retrieve_section(self, request, pk):
+        """Gets the section with primary key as pk to the instructor.
+           Gets the section with primary key as pk, only if it is visible
+           and assignment is published to the student.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): Primary key of the section
+
+        Returns:
+            `Response` with the assignment data and status `HTTP_200_OK`
+
+        Raises:
+            `HTTP_401_UNAUTHORIZED`: Raised by:
+                1.`IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`:  Raised:
+                1. If student is trying to access an unpublished assignment
+            `HTTP_404_NOT_FOUND`: Raised by `get_object()` method
+        """
+        user = request.user
+        section = self.get_object()
+        if (
+            CourseHistory.objects.get(user=user, course=section.assignment.course).role
+            == "S"
+        ):
+            if section.section_type == "V" and section.assignment.is_published is True:
+                serializer = self.get_serializer(section)
+                return Response(serializer.data)
+            else:
+                return Response(
+                    "You are not allowed to view this section",
+                    status.HTTP_403_FORBIDDEN,
+                )
+        serializer = self.get_serializer(section)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["PUT", "PATCH"])
+    def update_section(self, request, pk):
+        """Updates a section of the assignment..
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): Primary key of the section
+
+        Returns:
+            `Response` with the updated section data and status `HTTP_200_OK`
+
+        Raises:
+            `HTTP_400_BAD_REQUEST`: Raised by `update()` method
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_404_NOT_FOUND`: Raised by `update()` method
+        """
+        return self.update(request, pk)
+
+    @action(detail=True, methods=["DELETE"])
+    def delete_section(self, request, pk):
+        """Deletes the section with id as pk.
+
+        Args:
+            request (Request): DRF `Request` object
+            pk (int): section id
+
+        Returns:
+            `Response` with no data and status HTTP_204_NO_CONTENT.
+
+        Raises:
+            `HTTP_401_UNAUTHORIZED`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_403_FORBIDDEN`: Raised by `IsInstructorOrTA` permission class
+            `HTTP_404_NOT_FOUND`: due to `_delete()` method
+        """
+        return self._delete(request, pk)

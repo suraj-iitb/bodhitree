@@ -33,12 +33,10 @@ from programming_assignments.models import (
     TestcaseHistory,
 )
 from quiz.models import (
-    DescriptiveQuestion,
-    DescriptiveQuestionHistory,
     FixedAnswerQuestion,
-    FixedCorrectQuestionHistory,
-    MulitpleCorrectQuestionHistory,
+    FixedAnswerQuestionHistory,
     MultipleCorrectQuestion,
+    MultipleCorrectQuestionHistory,
     QuestionModule,
     Quiz,
     SingleCorrectQuestion,
@@ -105,11 +103,9 @@ class IsInstructorOrTATest(APITestCase, PermissionHelperMixin):
         "questionmodule.test.yaml",
         "sectionmarker.test.yaml",
         "quizmarker.test.yaml",
-        "question.test.yaml",
         "singlecorrectquestion.test.yaml",
         "multiplecorrectquestion.test.yaml",
         "fixedanswerquestion.test.yaml",
-        "descriptivequestion.test.yaml",
         "schedule.test.yaml",
         "pages.test.yaml",
         "announcement.test.yaml",
@@ -143,9 +139,8 @@ class IsInstructorOrTATest(APITestCase, PermissionHelperMixin):
         cls.sectionmarker = SectionMarker.objects.get(id=1)
         cls.quizmarker = QuizMarker.objects.get(id=1)
         cls.singlecorrectquestion = SingleCorrectQuestion.objects.get(id=1)
-        cls.multiplecorrectquestion = MultipleCorrectQuestion.objects.get(id=3)
-        cls.fixedanswerquestion = FixedAnswerQuestion.objects.get(id=5)
-        cls.descriptivequestion = DescriptiveQuestion.objects.get(id=7)
+        cls.multiplecorrectquestion = MultipleCorrectQuestion.objects.get(id=1)
+        cls.fixedanswerquestion = FixedAnswerQuestion.objects.get(id=1)
         cls.schedule = Schedule.objects.get(id=1)
         cls.page = Page.objects.get(id=1)
         cls.announcement = Announcement.objects.get(id=1)
@@ -296,19 +291,6 @@ class IsInstructorOrTATest(APITestCase, PermissionHelperMixin):
             )
         self.assertEqual(actual_course, expected_course)
 
-        actual_course = self.permission_class._get_course_from_object(
-            self.descriptivequestion
-        )
-        try:
-            expected_course = (
-                self.descriptivequestion.question_module.quiz.chapter.course
-            )
-        except Exception:
-            expected_course = (
-                self.descriptivequestion.question_module.quiz.section.chapter.course
-            )
-        self.assertEqual(actual_course, expected_course)
-
         actual_course = self.permission_class._get_course_from_object(self.schedule)
         expected_course = self.schedule.course
         self.assertEqual(actual_course, expected_course)
@@ -451,16 +433,12 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
         "questionmodule.test.yaml",
         "sectionmarker.test.yaml",
         "quizmarker.test.yaml",
-        "question.test.yaml",
         "singlecorrectquestion.test.yaml",
         "multiplecorrectquestion.test.yaml",
         "fixedanswerquestion.test.yaml",
-        "descriptivequestion.test.yaml",
-        "questionhistory.test.yaml",
         "singlecorrectquestionhistory.test.yaml",
         "multiplecorrectquestionhistory.test.yaml",
         "fixedanswerquestionhistory.test.yaml",
-        "descriptivequestionhistory.test.yaml",
         "discussionforum.test.yaml",
         "tags.test.yaml",
         "discussionthread.test.yaml",
@@ -502,13 +480,10 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
             SingleCorrectQuestionHistory.objects.get(id=1)
         )
         cls.multiple_correct_question_history_inst = (
-            MulitpleCorrectQuestionHistory.objects.get(id=4)
+            MultipleCorrectQuestionHistory.objects.get(id=1)
         )
-        cls.fixed_answer_question_history_inst = (
-            FixedCorrectQuestionHistory.objects.get(id=7)
-        )
-        cls.descriptive_question_history_inst = DescriptiveQuestionHistory.objects.get(
-            id=10
+        cls.fixed_answer_question_history_inst = FixedAnswerQuestionHistory.objects.get(
+            id=1
         )
         cls.discussion_thread = DiscussionThread.objects.get(id=1)
         cls.discussion_comment = DiscussionComment.objects.get(id=1)
@@ -645,21 +620,6 @@ class IsInstructorOrTAOrStudentTest(APITestCase, PermissionHelperMixin):
         )
         expected_user = self.fixed_answer_question_history_inst.user
         question = self.fixed_answer_question_history_inst.question
-        try:
-            expected_course = question.question_module.quiz.chapter.course
-        except Exception:
-            expected_course = question.question_module.quiz.section.chapter.course
-        self.assertEqual(actual_user, expected_user)
-        self.assertEqual(actual_course, expected_course)
-
-        (
-            actual_course,
-            actual_user,
-        ) = self.permission_class._get_course_and_user_from_object(
-            self.descriptive_question_history_inst
-        )
-        expected_user = self.descriptive_question_history_inst.user
-        question = self.descriptive_question_history_inst.question
         try:
             expected_course = question.question_module.quiz.chapter.course
         except Exception:

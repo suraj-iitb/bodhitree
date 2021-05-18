@@ -1,12 +1,33 @@
-- model: quiz.mulitplecorrectquestionhistory
-  pk: 4
+- model: quiz.multiplecorrectquestionhistory
+  pk: 1
   fields:
+    question: 1
+    user: 1
+    no_of_times_attempted: 5
+    marks_obtained: 5
+    hint_taken: false
+    created_on: 2021-05-04 06:53:54.954875+00:00
+    modified_on: 2021-05-04 06:53:54.954894+00:00
     options_selected: '["1"]'
-- model: quiz.mulitplecorrectquestionhistory
-  pk: 5
+- model: quiz.multiplecorrectquestionhistory
+  pk: 2
   fields:
+    question: 2
+    user: 1
+    no_of_times_attempted: 5
+    marks_obtained: 5
+    hint_taken: false
+    created_on: 2021-05-04 06:53:54.954875+00:00
+    modified_on: 2021-05-04 06:53:54.954894+00:00
     options_selected: '["2"]'
-- model: quiz.mulitplecorrectquestionhistory
-  pk: 6
+- model: quiz.multiplecorrectquestionhistory
+  pk: 3
   fields:
+    question: 1
+    user: 2
+    no_of_times_attempted: 5
+    marks_obtained: 5
+    hint_taken: false
+    created_on: 2021-05-04 06:53:54.954875+00:00
+    modified_on: 2021-05-04 06:53:54.954894+00:00
     options_selected: '["3"]'

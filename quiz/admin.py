@@ -1,12 +1,10 @@
 from django.contrib import admin
 
 from .models import (
-    DescriptiveQuestion,
-    DescriptiveQuestionHistory,
     FixedAnswerQuestion,
-    FixedCorrectQuestionHistory,
-    MulitpleCorrectQuestionHistory,
+    FixedAnswerQuestionHistory,
     MultipleCorrectQuestion,
+    MultipleCorrectQuestionHistory,
     QuestionModule,
     Quiz,
     SingleCorrectQuestion,
@@ -100,7 +98,7 @@ class MultipleCorrectQuestionAdmin(admin.ModelAdmin):
     search_fields = ("question_description",)
 
 
-class MulitpleCorrectQuestionHistoryAdmin(admin.ModelAdmin):
+class MultipleCorrectQuestionHistoryAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "question",
@@ -133,40 +131,7 @@ class FixedAnswerQuestionAdmin(admin.ModelAdmin):
     search_fields = ("question_description",)
 
 
-class FixedCorrectQuestionHistoryAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "question",
-        "user",
-        "no_of_times_attempted",
-        "marks_obtained",
-        "hint_taken",
-        "answer_submitted",
-        "created_on",
-        "modified_on",
-    )
-    search_fields = ("user__email",)
-
-
-class DescriptiveQuestionAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "question_module",
-        "question_description",
-        "answer_description",
-        "hint",
-        "max_no_of_attempts",
-        "marks",
-        "gradable",
-        "is_published",
-        "answer",
-        "created_on",
-        "modified_on",
-    )
-    search_fields = ("question_description",)
-
-
-class DescriptiveQuestionHistoryAdmin(admin.ModelAdmin):
+class FixedAnswerQuestionHistoryAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "question",
@@ -186,8 +151,6 @@ admin.site.register(QuestionModule, QuestionModuleAdmin)
 admin.site.register(SingleCorrectQuestion, SingleCorrectQuestionAdmin)
 admin.site.register(SingleCorrectQuestionHistory, SingleCorrectQuestionHistoryAdmin)
 admin.site.register(MultipleCorrectQuestion, MultipleCorrectQuestionAdmin)
-admin.site.register(MulitpleCorrectQuestionHistory, MulitpleCorrectQuestionHistoryAdmin)
+admin.site.register(MultipleCorrectQuestionHistory, MultipleCorrectQuestionHistoryAdmin)
 admin.site.register(FixedAnswerQuestion, FixedAnswerQuestionAdmin)
-admin.site.register(FixedCorrectQuestionHistory, FixedCorrectQuestionHistoryAdmin)
-admin.site.register(DescriptiveQuestion, DescriptiveQuestionAdmin)
-admin.site.register(DescriptiveQuestionHistory, DescriptiveQuestionHistoryAdmin)
+admin.site.register(FixedAnswerQuestionHistory, FixedAnswerQuestionHistoryAdmin)

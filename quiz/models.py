@@ -60,18 +60,23 @@ class Question(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        abstract = True
+
     def __str__(self):
         return "{}...".format(self.question_description[0:20])
 
 
 class QuestionHistory(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     no_of_times_attempted = models.IntegerField(default=0)
     marks_obtained = models.IntegerField(default=0)
     hint_taken = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
 
     def __str__(self):
         return "{}: {}...".format(
@@ -85,6 +90,7 @@ class SingleCorrectQuestion(Question):
 
 
 class SingleCorrectQuestionHistory(QuestionHistory):
+    question = models.ForeignKey(SingleCorrectQuestion, on_delete=models.CASCADE)
     option_selected = models.IntegerField()
 
 
@@ -93,7 +99,8 @@ class MultipleCorrectQuestion(Question):
     correct_options = ArrayField(models.IntegerField())
 
 
-class MulitpleCorrectQuestionHistory(QuestionHistory):
+class MultipleCorrectQuestionHistory(QuestionHistory):
+    question = models.ForeignKey(MultipleCorrectQuestion, on_delete=models.CASCADE)
     options_selected = ArrayField(models.IntegerField())
 
 
@@ -101,13 +108,6 @@ class FixedAnswerQuestion(Question):
     answer = models.TextField()
 
 
-class FixedCorrectQuestionHistory(QuestionHistory):
-    answer_submitted = models.TextField()
-
-
-class DescriptiveQuestion(Question):
-    answer = models.TextField()
-
-
-class DescriptiveQuestionHistory(QuestionHistory):
+class FixedAnswerQuestionHistory(QuestionHistory):
+    question = models.ForeignKey(FixedAnswerQuestion, on_delete=models.CASCADE)
     answer_submitted = models.TextField()
